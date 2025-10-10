@@ -3,7 +3,11 @@
 ##
 ## Get latest from https://github.com/github/gitignore/blob/master/VisualStudio.gitignore
 
+#Server files
+TrucoServer/Connected Services/
+
 # User-specific files
+HostServer/App.config
 *.rsuser
 *.suo
 *.user
