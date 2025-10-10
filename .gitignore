@@ -8,6 +8,7 @@ TrucoServer/Connected Services/
 
 # User-specific files
 HostServer/App.config
+TrucoServer/App.config
 *.rsuser
 *.suo
 *.user
