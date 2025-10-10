@@ -49,6 +49,7 @@
     <Reference Include="System.ComponentModel.DataAnnotations" />
     <Reference Include="System.Core" />
     <Reference Include="System.Runtime.Serialization" />
+    <Reference Include="System.Security" />
     <Reference Include="System.ServiceModel" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
@@ -58,16 +59,98 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AuthToken.cs">
+      <DependentUpon>baseDatosTruco.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Ban.cs">
+      <DependentUpon>baseDatosTruco.tt</DependentUpon>
+    </Compile>
+    <Compile Include="BannedWord.cs">
+      <DependentUpon>baseDatosTruco.tt</DependentUpon>
+    </Compile>
+    <Compile Include="baseDatosTruco.Context.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>baseDatosTruco.Context.tt</DependentUpon>
+    </Compile>
+    <Compile Include="baseDatosTruco.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>baseDatosTruco.tt</DependentUpon>
+    </Compile>
+    <Compile Include="baseDatosTruco.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>baseDatosTruco.edmx</DependentUpon>
+    </Compile>
+    <Compile Include="Card.cs">
+      <DependentUpon>baseDatosTruco.tt</DependentUpon>
+    </Compile>
+    <Compile Include="DealtCard.cs">
+      <DependentUpon>baseDatosTruco.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Friendship.cs">
+      <DependentUpon>baseDatosTruco.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Invitation.cs">
+      <DependentUpon>baseDatosTruco.tt</DependentUpon>
+    </Compile>
     <Compile Include="ITrucoCallback.cs" />
     <Compile Include="ITrucoService.cs" />
+    <Compile Include="Lobby.cs">
+      <DependentUpon>baseDatosTruco.tt</DependentUpon>
+    </Compile>
+    <Compile Include="LobbyMember.cs">
+      <DependentUpon>baseDatosTruco.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Match.cs">
+      <DependentUpon>baseDatosTruco.tt</DependentUpon>
+    </Compile>
+    <Compile Include="MatchPlayer.cs">
+      <DependentUpon>baseDatosTruco.tt</DependentUpon>
+    </Compile>
     <Compile Include="MatchResult.cs" />
     <Compile Include="PlayerStats.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Round.cs">
+      <DependentUpon>baseDatosTruco.tt</DependentUpon>
+    </Compile>
     <Compile Include="TrucoServer.cs" />
+    <Compile Include="User.cs">
+      <DependentUpon>baseDatosTruco.tt</DependentUpon>
+    </Compile>
+    <Compile Include="UserProfile.cs">
+      <DependentUpon>baseDatosTruco.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Versions.cs">
+      <DependentUpon>baseDatosTruco.tt</DependentUpon>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
+    <EntityDeploy Include="baseDatosTruco.edmx">
+      <Generator>EntityModelCodeGenerator</Generator>
+      <LastGenOutput>baseDatosTruco.Designer.cs</LastGenOutput>
+    </EntityDeploy>
+    <None Include="baseDatosTruco.edmx.diagram">
+      <DependentUpon>baseDatosTruco.edmx</DependentUpon>
+    </None>
     <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="baseDatosTruco.Context.tt">
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <DependentUpon>baseDatosTruco.edmx</DependentUpon>
+      <LastGenOutput>baseDatosTruco.Context.cs</LastGenOutput>
+    </Content>
+    <Content Include="baseDatosTruco.tt">
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <DependentUpon>baseDatosTruco.edmx</DependentUpon>
+      <LastGenOutput>baseDatosTruco.cs</LastGenOutput>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <Service Include="{508349B6-6B84-4DF5-91F0-309BEEBAD82D}" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
