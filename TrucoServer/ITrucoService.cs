@@ -11,6 +11,12 @@ namespace TrucoServer
     public interface ITrucoUserService
     {
         [OperationContract]
+        bool RequestEmailVerification(string email);
+
+        [OperationContract]
+        bool ConfirmEmailVerification(string email, string code);
+
+        [OperationContract]
         bool Register(string username, string password, string email);
 
         [OperationContract]
