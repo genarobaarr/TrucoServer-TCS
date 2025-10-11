@@ -51,9 +51,9 @@ namespace TrucoServer
 
         private void SendVerificationEmail(string email, string code)
         {
-            var fromAddress = new MailAddress("genaelcrack0409@gmail.com", "Truco Argentino");
+            var fromAddress = new MailAddress("trucoargentinotcs@gmail.com", "Truco Argentino");
             var toAddress = new MailAddress(email);
-            const string fromPassword = "foos ssth gute ltnb";
+            const string fromPassword = "obbw ipgm klkt tdxa";
             const string subject = "Código de verificación - Truco Argentino";
             string body = $"Tu código de verificación es: {code}";
 
