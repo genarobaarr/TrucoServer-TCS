@@ -15,6 +15,7 @@ namespace HostServer
             using (ServiceHost host = new ServiceHost(typeof(TrucoServer.TrucoServer)))
             { 
                 host.Open();
+
                 Console.WriteLine("Servidor iniciado en net.tcp://localhost:8091/TrucoServiceBase  http://localhost:8080/TrucoServiceBase");
                 Console.ReadLine();
             }
