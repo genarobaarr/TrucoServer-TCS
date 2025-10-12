@@ -11,7 +11,7 @@ namespace TrucoServer
     public interface ITrucoUserService
     {
         [OperationContract]
-        bool RequestEmailVerification(string email);
+        bool RequestEmailVerification(string email, string languageCode);
 
         [OperationContract]
         bool ConfirmEmailVerification(string email, string code);
@@ -20,7 +20,7 @@ namespace TrucoServer
         bool Register(string username, string password, string email);
 
         [OperationContract]
-        bool Login(string username, string password);
+        bool Login(string username, string password, string languageCode);
 
         [OperationContract(IsOneWay = true)]
         void Logout(string username);
@@ -44,10 +44,7 @@ namespace TrucoServer
         bool SaveUserProfile(UserProfileData profile);
 
         [OperationContract]
-        bool SendPasswordResetCode(string username);
-
-        [OperationContract]
-        bool ResetPassword(string username, string code, string newPassword);
+        bool PasswordReset(string email, string code, string newPassword);
     }
 
     [ServiceContract(CallbackContract = typeof(ITrucoCallback))]

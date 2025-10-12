@@ -4,22 +4,22 @@
   <edmx:Designer xmlns="http://schemas.microsoft.com/ado/2009/11/edmx">
     <!-- Diagram content (shape and connector positions) -->
     <edmx:Diagrams>
-      <Diagram DiagramId="5ddc9f45780c4d8a830498c836cb839c" Name="Diagram1">
+      <Diagram DiagramId="413f7d2377734db1ae995c669e2753f5" Name="Diagram1">
         <EntityTypeShape EntityType="baseDatosPruebaModel.AuthToken" Width="1.5" PointX="3" PointY="7.875" IsExpanded="true" />
         <EntityTypeShape EntityType="baseDatosPruebaModel.Ban" Width="1.5" PointX="3" PointY="10.625" IsExpanded="true" />
         <EntityTypeShape EntityType="baseDatosPruebaModel.BannedWord" Width="1.5" PointX="0.75" PointY="0.75" IsExpanded="true" />
-        <EntityTypeShape EntityType="baseDatosPruebaModel.Card" Width="1.5" PointX="3.75" PointY="4.5" IsExpanded="true" />
-        <EntityTypeShape EntityType="baseDatosPruebaModel.DealtCard" Width="1.5" PointX="6" PointY="13.25" IsExpanded="true" />
+        <EntityTypeShape EntityType="baseDatosPruebaModel.Card" Width="1.5" PointX="0.75" PointY="9.25" IsExpanded="true" />
+        <EntityTypeShape EntityType="baseDatosPruebaModel.DealtCard" Width="1.5" PointX="3" PointY="13.375" IsExpanded="true" />
         <EntityTypeShape EntityType="baseDatosPruebaModel.Friendship" Width="1.5" PointX="3" PointY="16.5" IsExpanded="true" />
         <EntityTypeShape EntityType="baseDatosPruebaModel.Invitation" Width="1.5" PointX="3" PointY="19.375" IsExpanded="true" />
-        <EntityTypeShape EntityType="baseDatosPruebaModel.Lobby" Width="1.5" PointX="6" PointY="9.125" IsExpanded="true" />
-        <EntityTypeShape EntityType="baseDatosPruebaModel.LobbyMember" Width="1.5" PointX="8.25" PointY="11.75" IsExpanded="true" />
-        <EntityTypeShape EntityType="baseDatosPruebaModel.Match" Width="1.5" PointX="8.25" PointY="8" IsExpanded="true" />
-        <EntityTypeShape EntityType="baseDatosPruebaModel.MatchPlayer" Width="1.5" PointX="10.5" PointY="8.125" IsExpanded="true" />
-        <EntityTypeShape EntityType="baseDatosPruebaModel.Round" Width="1.5" PointX="10.5" PointY="11.25" IsExpanded="true" />
+        <EntityTypeShape EntityType="baseDatosPruebaModel.Lobby" Width="1.5" PointX="6" PointY="13.25" IsExpanded="true" />
+        <EntityTypeShape EntityType="baseDatosPruebaModel.LobbyMember" Width="1.5" PointX="8.25" PointY="13.625" IsExpanded="true" />
+        <EntityTypeShape EntityType="baseDatosPruebaModel.Match" Width="1.5" PointX="11.25" PointY="13.125" IsExpanded="true" />
+        <EntityTypeShape EntityType="baseDatosPruebaModel.MatchPlayer" Width="1.5" PointX="13.5" PointY="13.5" IsExpanded="true" />
+        <EntityTypeShape EntityType="baseDatosPruebaModel.Round" Width="1.5" PointX="13.5" PointY="16.375" IsExpanded="true" />
         <EntityTypeShape EntityType="baseDatosPruebaModel.User" Width="1.5" PointX="0.75" PointY="12.5" IsExpanded="true" />
         <EntityTypeShape EntityType="baseDatosPruebaModel.UserProfile" Width="1.5" PointX="3" PointY="25.875" IsExpanded="true" />
-        <EntityTypeShape EntityType="baseDatosPruebaModel.Versions" Width="1.5" PointX="3.75" PointY="13.5" IsExpanded="true" />
+        <EntityTypeShape EntityType="baseDatosPruebaModel.Versions" Width="1.5" PointX="3.75" PointY="4.625" IsExpanded="true" />
         <AssociationConnector Association="baseDatosPruebaModel.FK_AuthToken_User" ManuallyRouted="false" />
         <AssociationConnector Association="baseDatosPruebaModel.FK_Ban_User" ManuallyRouted="false" />
         <AssociationConnector Association="baseDatosPruebaModel.FK_DealtCard_Card" ManuallyRouted="false" />

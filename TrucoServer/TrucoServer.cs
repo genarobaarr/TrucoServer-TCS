@@ -20,14 +20,14 @@ namespace TrucoServer
     {
         private static ConcurrentDictionary<string, string> verificationCodes = new ConcurrentDictionary<string, string>();
         private const int MAX_CHANGES = 2;
-        public bool RequestEmailVerification(string email)
+        public bool RequestEmailVerification(string email, string languageCode)
         {
             try
             {
                 string code = new Random().Next(100000, 999999).ToString();
                 verificationCodes[email] = code;
 
-                SendVerificationEmail(email, code);
+                SendVerificationEmail(email, code, languageCode);
                 Console.WriteLine($"Código enviado a {email}: {code}");
 
                 return true;
@@ -52,7 +52,7 @@ namespace TrucoServer
             return false;
         }
 
-        private void SendVerificationEmail(string email, string code)
+        private void SendVerificationEmail(string email, string code, string languageCode)
         {
             var fromAddress = new MailAddress("trucoargentinotcs@gmail.com", "Truco Argentino");
             var toAddress = new MailAddress(email);
@@ -143,7 +143,6 @@ namespace TrucoServer
                     XHandle = socialLinks.X ?? string.Empty,
                     InstagramHandle = socialLinks.Instagram ?? string.Empty,
                     NameChangeCount = user.nameChangeCount,
-                    // 🚀 CORRECCIÓN CRUCIAL: Agregar la propiedad AvatarId
                     AvatarId = user.UserProfile?.avatarID ?? "avatar_default"
                 };
 
@@ -159,41 +158,42 @@ namespace TrucoServer
             {
                 using (var context = new baseDatosPruebaEntities())
                 {
-                    // Buscar al usuario por Email (clave inmutable para la búsqueda)
                     var userRecord = context.User
                         .Include(u => u.UserProfile)
                         .SingleOrDefault(u => u.email == profile.Email);
 
-                    if (userRecord == null) return false;
+                    if (userRecord == null)
+                    {
+                        return false;
+                    }
 
-                    // --- LÓGICA DE CAMBIO DE NICKNAME ---
                     if (userRecord.nickname != profile.Username)
                     {
-                        // Validación 1: Límite de cambios
-                        if (userRecord.nameChangeCount >= MAX_CHANGES) return false;
+                        if (userRecord.nameChangeCount >= MAX_CHANGES)
+                        {
+                            return false;
+                        }
 
-                        // Validación 2: Nickname ya tomado
                         bool nicknameExists = context.User
                             .Any(u => u.nickname == profile.Username && u.userID != userRecord.userID);
 
-                        if (nicknameExists) return false;
+                        if (nicknameExists)
+                        {
+                            return false;
+                        }
 
-                        // Aplicar cambio de nickname y actualizar contador
                         userRecord.nickname = profile.Username;
                         userRecord.nameChangeCount = profile.NameChangeCount;
                     }
 
-                    // --- PREPARACIÓN Y SERIALIZACIÓN DE DATOS DEL PERFIL ---
                     if (userRecord.UserProfile == null)
                     {
-                        // Si el perfil no existe, crearlo.
                         userRecord.UserProfile = new UserProfile { userID = userRecord.userID };
                         context.UserProfile.Add(userRecord.UserProfile);
                     }
 
                     var userProfileRecord = userRecord.UserProfile;
 
-                    // 1. Crear el objeto SocialLinks a partir de los datos del cliente.
                     var socialLinks = new SocialLinks
                     {
                         FacebookHandle = profile.FacebookHandle,
@@ -201,15 +201,11 @@ namespace TrucoServer
                         InstagramHandle = profile.InstagramHandle
                     };
 
-                    // 2. Serializar el objeto a JSON (string) y luego a byte array (UTF8).
                     string jsonString = JsonConvert.SerializeObject(socialLinks);
                     userProfileRecord.socialLinksJson = Encoding.UTF8.GetBytes(jsonString);
 
-                    // 3. Actualizar AvatarID (aunque la página de perfil usa UpdateUserAvatarAsync, 
-                    // esta línea es un buen respaldo para el guardado general)
                     userProfileRecord.avatarID = profile.AvatarId;
 
-                    // 4. Guardar los cambios.
                     context.SaveChanges();
 
                     return true;
@@ -222,7 +218,6 @@ namespace TrucoServer
             }
         }
 
-        // 🚀 CORRECCIÓN PRINCIPAL: Se cambia la firma a Task<bool> y se renombra a UpdateUserAvatarAsync
         public Task<bool> UpdateUserAvatarAsync(string username, string newAvatarId)
         {
             try
@@ -230,13 +225,15 @@ namespace TrucoServer
                 using (var context = new baseDatosPruebaEntities())
                 {
                     var user = context.User.FirstOrDefault(u => u.nickname == username);
-                    if (user == null) return Task.FromResult(false);
+                    if (user == null)
+                    {
+                        return Task.FromResult(false);
+                    }
 
                     var profile = context.UserProfile.FirstOrDefault(p => p.userID == user.userID);
 
                     if (profile == null)
                     {
-                        // Si el perfil no existe, crearlo antes de guardar el avatar
                         profile = new UserProfile { userID = user.userID, socialLinksJson = Encoding.UTF8.GetBytes("{}") };
                         context.UserProfile.Add(profile);
                     }
@@ -253,17 +250,7 @@ namespace TrucoServer
                 return Task.FromResult(false);
             }
         }
-
-        public bool SendPasswordResetCode(string username)
-        {
-            throw new NotImplementedException();
-        }
-
-        public bool ResetPassword(string username, string code, string newPassword)
-        {
-            throw new NotImplementedException();
-        }
-        private void SendLoginNotificationEmail(string email, string nickname)
+        private void SendLoginNotificationEmail(string email, string nickname, string languageCode)
         {
             try
             {
@@ -301,7 +288,7 @@ namespace TrucoServer
                 Console.WriteLine($"Error enviando notificación de login a {email}: {ex.Message}");
             }
         }
-        public bool Login(string username, string password)
+        public bool Login(string username, string password, string languageCode)
         {
             using (var context = new baseDatosPruebaEntities())
             {
@@ -312,11 +299,46 @@ namespace TrucoServer
                 {
                     if (!string.IsNullOrEmpty(user.passwordHash) && PasswordHasher.Verify(password, user.passwordHash))
                     {
-                        SendLoginNotificationEmail(user.email, user.nickname);
+                        SendLoginNotificationEmail(user.email, user.nickname, languageCode);
                         return true;
                     }
                 }
 
+                return false;
+            }
+        }
+
+        public bool PasswordReset(string email, string code, string newPassword)
+        {
+            try
+            {
+                bool valid = ConfirmEmailVerification(email, code);
+                if (!valid)
+                {
+                    Console.WriteLine($"Código incorrecto o expirado para {email}");
+                    return false;
+                }
+
+                using (var context = new baseDatosPruebaEntities())
+                {
+                    var user = context.User.FirstOrDefault(u => u.email == email);
+                    if (user == null)
+                    {
+                        Console.WriteLine($"No se encontró usuario con correo {email}");
+                        return false;
+                    }
+
+                    string hashedPassword = PasswordHasher.Hash(newPassword);
+                    user.passwordHash = hashedPassword;
+
+                    context.SaveChanges();
+                    Console.WriteLine($"Contraseña actualizada correctamente para {email}");
+                    return true;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error al restablecer contraseña para {email}: {ex.Message}");
                 return false;
             }
         }
