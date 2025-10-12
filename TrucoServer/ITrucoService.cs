@@ -26,6 +26,9 @@ namespace TrucoServer
         void Logout(string username);
 
         [OperationContract]
+        Task<bool> UpdateUserAvatarAsync(string username, string newAvatarId);
+
+        [OperationContract]
         List<string> GetOnlinePlayers();
 
         [OperationContract]
@@ -33,6 +36,18 @@ namespace TrucoServer
 
         [OperationContract]
         List<MatchResult> GetLastMatches(string username);
+
+        [OperationContract]
+        UserProfileData GetUserProfile(string username);
+
+        [OperationContract]
+        bool SaveUserProfile(UserProfileData profile);
+
+        [OperationContract]
+        bool SendPasswordResetCode(string username);
+
+        [OperationContract]
+        bool ResetPassword(string username, string code, string newPassword);
     }
 
     [ServiceContract(CallbackContract = typeof(ITrucoCallback))]

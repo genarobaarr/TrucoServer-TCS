@@ -1,6 +1,9 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Data.Entity;
 using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Net;
@@ -16,7 +19,7 @@ namespace TrucoServer
     public partial class TrucoServer : ITrucoUserService
     {
         private static ConcurrentDictionary<string, string> verificationCodes = new ConcurrentDictionary<string, string>();
-
+        private const int MAX_CHANGES = 2;
         public bool RequestEmailVerification(string email)
         {
             try
@@ -42,7 +45,7 @@ namespace TrucoServer
             {
                 if (storedCode == code)
                 {
-                    verificationCodes.TryRemove(email, out _); // eliminar tras confirmación
+                    verificationCodes.TryRemove(email, out _);
                     return true;
                 }
             }
@@ -76,17 +79,30 @@ namespace TrucoServer
                 smtp.Send(message);
             }
         }
-        bool ITrucoUserService.Register(string username, string password, string email)
+
+        public bool Register(string username, string password, string email)
         {
             try
             {
                 using (var context = new baseDatosPruebaEntities())
                 {
+                    bool existsEmail = context.User.Any(u => u.email == email);
+                    bool existsUsername = context.User.Any(u => u.nickname == username);
+
+                    if (existsEmail || existsUsername)
+                    {
+                        return false;
+                    }
+
+                    string hashedPassword = PasswordHasher.Hash(password);
+
                     User user = new User
                     {
                         nickname = username,
-                        passwordHash = password,
-                        email = email
+                        passwordHash = hashedPassword,
+                        email = email,
+                        wins = 0,
+                        nameChangeCount = 0
                     };
 
                     context.User.Add(user);
@@ -100,24 +116,227 @@ namespace TrucoServer
                 return false;
             }
         }
-        bool ITrucoUserService.Login(string username, string password)
+
+        public UserProfileData GetUserProfile(string username)
         {
-            throw new NotImplementedException();
+            using (var context = new baseDatosPruebaEntities())
+            {
+                var user = context.User
+                                    .Include(u => u.UserProfile)
+                                    .FirstOrDefault(u => u.nickname == username);
+
+                if (user == null)
+                {
+                    return null;
+                }
+                var socialLinksText = (user.UserProfile?.socialLinksJson != null)
+                    ? System.Text.Encoding.UTF8.GetString(user.UserProfile.socialLinksJson)
+                    : "{}";
+
+                dynamic socialLinks = Newtonsoft.Json.JsonConvert.DeserializeObject(socialLinksText);
+
+                UserProfileData profile = new UserProfileData
+                {
+                    Username = user.nickname,
+                    Email = user.email,
+                    FacebookHandle = socialLinks.Facebook ?? string.Empty,
+                    XHandle = socialLinks.X ?? string.Empty,
+                    InstagramHandle = socialLinks.Instagram ?? string.Empty,
+                    NameChangeCount = user.nameChangeCount,
+                    // 🚀 CORRECCIÓN CRUCIAL: Agregar la propiedad AvatarId
+                    AvatarId = user.UserProfile?.avatarID ?? "avatar_default"
+                };
+
+                return profile;
+            }
         }
-        void ITrucoUserService.Logout(string username)
+
+        public bool SaveUserProfile(UserProfileData profile)
         {
-            throw new NotImplementedException();
+            if (profile == null || string.IsNullOrWhiteSpace(profile.Email)) return false;
+
+            try
+            {
+                using (var context = new baseDatosPruebaEntities())
+                {
+                    // Buscar al usuario por Email (clave inmutable para la búsqueda)
+                    var userRecord = context.User
+                        .Include(u => u.UserProfile)
+                        .SingleOrDefault(u => u.email == profile.Email);
+
+                    if (userRecord == null) return false;
+
+                    // --- LÓGICA DE CAMBIO DE NICKNAME ---
+                    if (userRecord.nickname != profile.Username)
+                    {
+                        // Validación 1: Límite de cambios
+                        if (userRecord.nameChangeCount >= MAX_CHANGES) return false;
+
+                        // Validación 2: Nickname ya tomado
+                        bool nicknameExists = context.User
+                            .Any(u => u.nickname == profile.Username && u.userID != userRecord.userID);
+
+                        if (nicknameExists) return false;
+
+                        // Aplicar cambio de nickname y actualizar contador
+                        userRecord.nickname = profile.Username;
+                        userRecord.nameChangeCount = profile.NameChangeCount;
+                    }
+
+                    // --- PREPARACIÓN Y SERIALIZACIÓN DE DATOS DEL PERFIL ---
+                    if (userRecord.UserProfile == null)
+                    {
+                        // Si el perfil no existe, crearlo.
+                        userRecord.UserProfile = new UserProfile { userID = userRecord.userID };
+                        context.UserProfile.Add(userRecord.UserProfile);
+                    }
+
+                    var userProfileRecord = userRecord.UserProfile;
+
+                    // 1. Crear el objeto SocialLinks a partir de los datos del cliente.
+                    var socialLinks = new SocialLinks
+                    {
+                        FacebookHandle = profile.FacebookHandle,
+                        XHandle = profile.XHandle,
+                        InstagramHandle = profile.InstagramHandle
+                    };
+
+                    // 2. Serializar el objeto a JSON (string) y luego a byte array (UTF8).
+                    string jsonString = JsonConvert.SerializeObject(socialLinks);
+                    userProfileRecord.socialLinksJson = Encoding.UTF8.GetBytes(jsonString);
+
+                    // 3. Actualizar AvatarID (aunque la página de perfil usa UpdateUserAvatarAsync, 
+                    // esta línea es un buen respaldo para el guardado general)
+                    userProfileRecord.avatarID = profile.AvatarId;
+
+                    // 4. Guardar los cambios.
+                    context.SaveChanges();
+
+                    return true;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error al guardar perfil para {profile.Email}: {ex.Message}");
+                return false;
+            }
         }
-        List<PlayerStats> ITrucoUserService.GetGlobalRanking()
+
+        // 🚀 CORRECCIÓN PRINCIPAL: Se cambia la firma a Task<bool> y se renombra a UpdateUserAvatarAsync
+        public Task<bool> UpdateUserAvatarAsync(string username, string newAvatarId)
         {
-            throw new NotImplementedException();
+            try
+            {
+                using (var context = new baseDatosPruebaEntities())
+                {
+                    var user = context.User.FirstOrDefault(u => u.nickname == username);
+                    if (user == null) return Task.FromResult(false);
+
+                    var profile = context.UserProfile.FirstOrDefault(p => p.userID == user.userID);
+
+                    if (profile == null)
+                    {
+                        // Si el perfil no existe, crearlo antes de guardar el avatar
+                        profile = new UserProfile { userID = user.userID, socialLinksJson = Encoding.UTF8.GetBytes("{}") };
+                        context.UserProfile.Add(profile);
+                    }
+
+                    profile.avatarID = newAvatarId;
+
+                    context.SaveChanges();
+                    return Task.FromResult(true);
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error actualizando avatar para {username}: {ex.Message}");
+                return Task.FromResult(false);
+            }
         }
-        List<MatchResult> ITrucoUserService.GetLastMatches(string username)
+
+        public bool SendPasswordResetCode(string username)
         {
             throw new NotImplementedException();
         }
 
-        List<string> ITrucoUserService.GetOnlinePlayers()
+        public bool ResetPassword(string username, string code, string newPassword)
+        {
+            throw new NotImplementedException();
+        }
+        private void SendLoginNotificationEmail(string email, string nickname)
+        {
+            try
+            {
+                var fromAddress = new MailAddress("trucoargentinotcs@gmail.com", "Truco Argentino");
+                var toAddress = new MailAddress(email);
+                const string fromPassword = "obbw ipgm klkt tdxa";
+                string subject = "Nuevo inicio de sesión en Truco Argentino";
+                string body = $"Hola {nickname},\n\n" +
+                              "Detectamos un inicio de sesión reciente en tu cuenta de Truco Argentino.\n" +
+                              $"Hora de inicio de sesión: {DateTime.Now} (Hora del Servidor).\n" +
+                              "\nSi fuiste tú, puedes ignorar este mensaje.\n" +
+                              "Si no reconoces esta actividad, por favor cambia tu contraseña inmediatamente.";
+
+                var smtp = new SmtpClient
+                {
+                    Host = "smtp.gmail.com",
+                    Port = 587,
+                    EnableSsl = true,
+                    DeliveryMethod = SmtpDeliveryMethod.Network,
+                    UseDefaultCredentials = false,
+                    Credentials = new NetworkCredential(fromAddress.Address, fromPassword)
+                };
+
+                using (var message = new MailMessage(fromAddress, toAddress)
+                {
+                    Subject = subject,
+                    Body = body
+                })
+                {
+                    smtp.Send(message);
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error enviando notificación de login a {email}: {ex.Message}");
+            }
+        }
+        public bool Login(string username, string password)
+        {
+            using (var context = new baseDatosPruebaEntities())
+            {
+                var user = context.User
+                    .FirstOrDefault(u => u.email == username || u.nickname == username);
+
+                if (user != null)
+                {
+                    if (!string.IsNullOrEmpty(user.passwordHash) && PasswordHasher.Verify(password, user.passwordHash))
+                    {
+                        SendLoginNotificationEmail(user.email, user.nickname);
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+        }
+
+        public void Logout(string username)
+        {
+            throw new NotImplementedException();
+        }
+
+        public List<PlayerStats> GetGlobalRanking()
+        {
+            throw new NotImplementedException();
+        }
+
+        public List<MatchResult> GetLastMatches(string username)
+        {
+            throw new NotImplementedException();
+        }
+
+        public List<string> GetOnlinePlayers()
         {
             throw new NotImplementedException();
         }
@@ -125,16 +344,17 @@ namespace TrucoServer
 
     public partial class TrucoServer : ITrucoFriendService
     {
-        bool ITrucoFriendService.SendFriendRequest(string fromUser, string toUser)
+        public bool SendFriendRequest(string fromUser, string toUser)
         {
             throw new NotImplementedException();
         }
 
-        void ITrucoFriendService.AcceptFriendRequest(string fromUser, string toUser)
+        public void AcceptFriendRequest(string fromUser, string toUser)
         {
             throw new NotImplementedException();
         }
-        List<string> ITrucoFriendService.GetFriends(string username)
+
+        public List<string> GetFriends(string username)
         {
             throw new NotImplementedException();
         }
@@ -142,26 +362,27 @@ namespace TrucoServer
 
     public partial class TrucoServer : ITrucoMatchService
     {
-        string ITrucoMatchService.CreateMatch(string hostPlayer)
+        public string CreateMatch(string hostPlayer)
         {
             throw new NotImplementedException();
         }
 
-        bool ITrucoMatchService.JoinMatch(string matchCode, string player)
+        public bool JoinMatch(string matchCode, string player)
         {
             throw new NotImplementedException();
         }
 
-        void ITrucoMatchService.LeaveMatch(string matchCode, string player)
-        {
-            throw new NotImplementedException();
-        }
-        void ITrucoMatchService.PlayCard(string matchCode, string player, string card)
+        public void LeaveMatch(string matchCode, string player)
         {
             throw new NotImplementedException();
         }
 
-        void ITrucoMatchService.SendChatMessage(string matchCode, string player, string message)
+        public void PlayCard(string matchCode, string player, string card)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void SendChatMessage(string matchCode, string player, string message)
         {
             throw new NotImplementedException();
         }

@@ -33,6 +33,7 @@ namespace TrucoServer
         public string passwordHash { get; set; }
         public string nickname { get; set; }
         public int wins { get; set; }
+        public int nameChangeCount { get; set; }
     
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
         public virtual ICollection<AuthToken> AuthToken { get; set; }

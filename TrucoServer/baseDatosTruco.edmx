@@ -4,7 +4,7 @@
   <edmx:Runtime>
     <!-- SSDL content -->
     <edmx:StorageModels>
-      <Schema Namespace="baseDatosPruebaModel.Store" Provider="System.Data.SqlClient" ProviderManifestToken="2012" Alias="Self" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator" xmlns:customannotation="http://schemas.microsoft.com/ado/2013/11/edm/customannotation" xmlns="http://schemas.microsoft.com/ado/2009/11/edm/ssdl">
+    <Schema Namespace="baseDatosPruebaModel.Store" Provider="System.Data.SqlClient" ProviderManifestToken="2012" Alias="Self" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator" xmlns:customannotation="http://schemas.microsoft.com/ado/2013/11/edm/customannotation" xmlns="http://schemas.microsoft.com/ado/2009/11/edm/ssdl">
         <EntityType Name="AuthToken">
           <Key>
             <PropertyRef Name="tokenID" />
@@ -125,6 +125,7 @@
           <Property Name="passwordHash" Type="varchar" MaxLength="64" Nullable="false" />
           <Property Name="nickname" Type="varchar" MaxLength="50" Nullable="false" />
           <Property Name="wins" Type="int" Nullable="false" />
+          <Property Name="nameChangeCount" Type="int" Nullable="false" />
         </EntityType>
         <EntityType Name="UserProfile">
           <Key>
@@ -132,6 +133,7 @@
           </Key>
           <Property Name="userID" Type="int" Nullable="false" />
           <Property Name="socialLinksJson" Type="varbinary(max)" Nullable="false" />
+          <Property Name="avatarID" Type="varchar" MaxLength="50" Nullable="false" />
         </EntityType>
         <EntityType Name="Versions">
           <Key>
@@ -445,8 +447,7 @@
             <End Role="UserProfile" EntitySet="UserProfile" />
           </AssociationSet>
         </EntityContainer>
-      </Schema>
-    </edmx:StorageModels>
+      </Schema></edmx:StorageModels>
     <!-- CSDL content -->
     <edmx:ConceptualModels>
       <Schema Namespace="baseDatosPruebaModel" Alias="Self" annotation:UseStrongSpatialTypes="false" xmlns:annotation="http://schemas.microsoft.com/ado/2009/02/edm/annotation" xmlns:customannotation="http://schemas.microsoft.com/ado/2013/11/edm/customannotation" xmlns="http://schemas.microsoft.com/ado/2009/11/edm">
@@ -603,6 +604,7 @@
           <NavigationProperty Name="LobbyMember" Relationship="Self.FK_LobbyMember_User" FromRole="User" ToRole="LobbyMember" />
           <NavigationProperty Name="MatchPlayer" Relationship="Self.FK_MatchPlayer_User" FromRole="User" ToRole="MatchPlayer" />
           <NavigationProperty Name="UserProfile" Relationship="Self.FK_UserProfile_User" FromRole="User" ToRole="UserProfile" />
+          <Property Name="nameChangeCount" Type="Int32" Nullable="false" />
         </EntityType>
         <EntityType Name="UserProfile">
           <Key>
@@ -611,6 +613,7 @@
           <Property Name="userID" Type="Int32" Nullable="false" />
           <Property Name="socialLinksJson" Type="Binary" MaxLength="Max" FixedLength="false" Nullable="false" />
           <NavigationProperty Name="User" Relationship="Self.FK_UserProfile_User" FromRole="UserProfile" ToRole="User" />
+          <Property Name="avatarID" Type="String" Nullable="false" MaxLength="50" FixedLength="false" Unicode="false" />
         </EntityType>
         <EntityType Name="Versions">
           <Key>
@@ -1056,6 +1059,7 @@
           <EntitySetMapping Name="User">
             <EntityTypeMapping TypeName="baseDatosPruebaModel.User">
               <MappingFragment StoreEntitySet="User">
+                <ScalarProperty Name="nameChangeCount" ColumnName="nameChangeCount" />
                 <ScalarProperty Name="userID" ColumnName="userID" />
                 <ScalarProperty Name="email" ColumnName="email" />
                 <ScalarProperty Name="passwordHash" ColumnName="passwordHash" />
@@ -1067,6 +1071,7 @@
           <EntitySetMapping Name="UserProfile">
             <EntityTypeMapping TypeName="baseDatosPruebaModel.UserProfile">
               <MappingFragment StoreEntitySet="UserProfile">
+                <ScalarProperty Name="avatarID" ColumnName="avatarID" />
                 <ScalarProperty Name="userID" ColumnName="userID" />
                 <ScalarProperty Name="socialLinksJson" ColumnName="socialLinksJson" />
               </MappingFragment>
