@@ -12,6 +12,7 @@ using System.ServiceModel;
 using System.Text;
 using System.Threading.Tasks;
 using TrucoServer;
+using TrucoServer.Langs;
 
 namespace TrucoServer
 {
@@ -54,11 +55,13 @@ namespace TrucoServer
 
         private void SendVerificationEmail(string email, string code, string languageCode)
         {
+            LanguageManager.SetLanguage(languageCode);
+
             var fromAddress = new MailAddress("trucoargentinotcs@gmail.com", "Truco Argentino");
             var toAddress = new MailAddress(email);
             const string fromPassword = "obbw ipgm klkt tdxa";
-            const string subject = "Código de verificación - Truco Argentino";
-            string body = $"Tu código de verificación es: {code}";
+            string subject = Lang.EmailVerificationSubject;
+            string body = string.Format(Lang.EmailVerificationBody, code).Replace("\\n", Environment.NewLine);
 
             var smtp = new SmtpClient
             {
@@ -254,15 +257,13 @@ namespace TrucoServer
         {
             try
             {
+                LanguageManager.SetLanguage(languageCode);
+
                 var fromAddress = new MailAddress("trucoargentinotcs@gmail.com", "Truco Argentino");
                 var toAddress = new MailAddress(email);
                 const string fromPassword = "obbw ipgm klkt tdxa";
-                string subject = "Nuevo inicio de sesión en Truco Argentino";
-                string body = $"Hola {nickname},\n\n" +
-                              "Detectamos un inicio de sesión reciente en tu cuenta de Truco Argentino.\n" +
-                              $"Hora de inicio de sesión: {DateTime.Now} (Hora del Servidor).\n" +
-                              "\nSi fuiste tú, puedes ignorar este mensaje.\n" +
-                              "Si no reconoces esta actividad, por favor cambia tu contraseña inmediatamente.";
+                string subject = Lang.EmailLoginNotificationSubject;
+                string body = string.Format(Lang.EmailLoginNotificactionBody, nickname, DateTime.Now).Replace("\\n", Environment.NewLine);
 
                 var smtp = new SmtpClient
                 {
