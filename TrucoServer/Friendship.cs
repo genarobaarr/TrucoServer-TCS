@@ -21,5 +21,10 @@ namespace TrucoServer
     
         public virtual User User { get; set; }
         public virtual User User1 { get; set; }
+        public virtual User Friend
+        {
+            get => User1;
+            set => User1 = value;
+        }
     }
 }

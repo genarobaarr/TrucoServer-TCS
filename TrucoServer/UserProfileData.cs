@@ -45,6 +45,6 @@ namespace TrucoServer
         [DataMember]
         public List<EmblemLayer> EmblemLayers { get; set; }
         [DataMember]
-        public string SocialLinksJson { get; set; }
+        public byte[] SocialLinksJson { get; set; }
     }
 }

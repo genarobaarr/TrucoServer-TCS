@@ -8,6 +8,7 @@ using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Net;
 using System.Net.Mail;
+using System.Reflection;
 using System.ServiceModel;
 using System.Text;
 using System.Threading.Tasks;
@@ -20,7 +21,25 @@ namespace TrucoServer
     public partial class TrucoServer : ITrucoUserService
     {
         private static ConcurrentDictionary<string, string> verificationCodes = new ConcurrentDictionary<string, string>();
+        private static ConcurrentDictionary<string, ITrucoCallback> onlineUsers = new ConcurrentDictionary<string, ITrucoCallback>();
         private const int MAX_CHANGES = 2;
+
+        private static ITrucoCallback GetUserCallback(string username)
+        {
+            if (onlineUsers.TryGetValue(username, out ITrucoCallback callback))
+            {
+                if (((System.ServiceModel.ICommunicationObject)callback).State == System.ServiceModel.CommunicationState.Opened)
+                {
+                    return callback;
+                }
+                else
+                {
+                    ((System.ServiceModel.ICommunicationObject)callback).Abort();
+                    onlineUsers.TryRemove(username, out _);
+                }
+            }
+            return null;
+        }
         public bool RequestEmailVerification(string email, string languageCode)
         {
             try
@@ -155,7 +174,8 @@ namespace TrucoServer
 
         public bool SaveUserProfile(UserProfileData profile)
         {
-            if (profile == null || string.IsNullOrWhiteSpace(profile.Email)) return false;
+            if (profile == null || string.IsNullOrWhiteSpace(profile.Email))
+                return false;
 
             try
             {
@@ -166,51 +186,47 @@ namespace TrucoServer
                         .SingleOrDefault(u => u.email == profile.Email);
 
                     if (userRecord == null)
-                    {
                         return false;
-                    }
 
                     if (userRecord.nickname != profile.Username)
                     {
+                        const int MAX_CHANGES = 2;
+
                         if (userRecord.nameChangeCount >= MAX_CHANGES)
-                        {
                             return false;
-                        }
 
                         bool nicknameExists = context.User
                             .Any(u => u.nickname == profile.Username && u.userID != userRecord.userID);
 
                         if (nicknameExists)
-                        {
                             return false;
-                        }
 
                         userRecord.nickname = profile.Username;
-                        userRecord.nameChangeCount = profile.NameChangeCount;
+                        userRecord.nameChangeCount++;
                     }
 
                     if (userRecord.UserProfile == null)
                     {
-                        userRecord.UserProfile = new UserProfile { userID = userRecord.userID };
+                        userRecord.UserProfile = new UserProfile
+                        {
+                            userID = userRecord.userID
+                        };
                         context.UserProfile.Add(userRecord.UserProfile);
                     }
 
                     var userProfileRecord = userRecord.UserProfile;
-
-                    var socialLinks = new SocialLinks
+                    userProfileRecord.avatarID = profile.AvatarId ?? "avatar_default";
+                    var socialLinks = new
                     {
-                        FacebookHandle = profile.FacebookHandle,
-                        XHandle = profile.XHandle,
-                        InstagramHandle = profile.InstagramHandle
+                        facebook = profile.FacebookHandle ?? "",
+                        x = profile.XHandle ?? "",
+                        instagram = profile.InstagramHandle ?? ""
                     };
 
-                    string jsonString = JsonConvert.SerializeObject(socialLinks);
-                    userProfileRecord.socialLinksJson = Encoding.UTF8.GetBytes(jsonString);
-
-                    userProfileRecord.avatarID = profile.AvatarId;
+                    string json = Newtonsoft.Json.JsonConvert.SerializeObject(socialLinks);
+                    userProfileRecord.socialLinksJson = System.Text.Encoding.UTF8.GetBytes(json);
 
                     context.SaveChanges();
-
                     return true;
                 }
             }
@@ -300,6 +316,8 @@ namespace TrucoServer
                 {
                     if (!string.IsNullOrEmpty(user.passwordHash) && PasswordHasher.Verify(password, user.passwordHash))
                     {
+                        ITrucoCallback callback = OperationContext.Current.GetCallbackChannel<ITrucoCallback>();
+                        onlineUsers.TryAdd(user.nickname, callback);
                         SendLoginNotificationEmail(user.email, user.nickname, languageCode);
                         return true;
                     }
@@ -346,7 +364,7 @@ namespace TrucoServer
 
         public void Logout(string username)
         {
-            throw new NotImplementedException();
+            onlineUsers.TryRemove(username, out _);
         }
 
         public List<PlayerStats> GetGlobalRanking()
@@ -369,39 +387,42 @@ namespace TrucoServer
     {
         private FriendData GetFriendData(string nickname, baseDatosPruebaEntities db)
         {
-            var user = db.User
-                         .Include(u => u.UserProfile)
-                         .AsNoTracking()
-                         .FirstOrDefault(u => u.nickname == nickname);
+            var user = db.User.AsNoTracking().FirstOrDefault(u =>
+                EfHelpers.GetPropValue<string>(u, "nickname", "NickName", "nick") == nickname);
 
             if (user == null) return null;
 
+            var profileObj = EfHelpers.GetNavigation(user, "UserProfile", "Profile", "userProfile");
+
+            string avatarId = EfHelpers.GetPropValue<string>(profileObj, "avatarID", "avatarId", "AvatarID", "AvatarId")
+                              ?? "avatar_default";
+
             return new FriendData
             {
-                Username = user.nickname,
-                AvatarId = user.UserProfile?.avatarID ?? "avatar_default"
+                Username = EfHelpers.GetPropValue<string>(user, "nickname", "NickName"),
+                AvatarId = avatarId
             };
         }
 
         private UserProfileData GetUserProfileData(string nickname, baseDatosPruebaEntities db)
         {
-            var user = db.User
-                         .Include(u => u.UserProfile)
-                         .AsNoTracking()
-                         .FirstOrDefault(u => u.nickname == nickname);
+            var user = db.User.AsNoTracking().FirstOrDefault(u =>
+                EfHelpers.GetPropValue<string>(u, "nickname", "NickName", "nick") == nickname);
 
             if (user == null) return null;
 
-            var profile = user.UserProfile;
+            var profileObj = EfHelpers.GetNavigation(user, "UserProfile", "Profile", "userProfile");
 
             return new UserProfileData
             {
-                //Fix: Sigo trabajando en mejorar esto:
-                Username = user.nickname,
-                AvatarId = profile?.avatarID ?? "avatar_default",
-                SocialLinksJson = profile?.socialLinksJson != null
-                    ? Encoding.UTF8.GetString(profile.socialLinksJson)
-                    : null
+                Username = EfHelpers.GetPropValue<string>(user, "nickname", "NickName"),
+                Email = EfHelpers.GetPropValue<string>(user, "email", "Email", "mail"),
+                AvatarId = EfHelpers.GetPropValue<string>(profileObj, "avatarID", "avatarId", "AvatarID") ?? "avatar_default",
+                NameChangeCount = EfHelpers.GetPropValue<int>(user, "nameChangeCount", "NameChangeCount", "name_changes"),
+                FacebookHandle = EfHelpers.GetPropValue<string>(profileObj, "facebookHandle", "FacebookHandle", "facebook"),
+                XHandle = EfHelpers.GetPropValue<string>(profileObj, "xHandle", "XHandle", "x"),
+                InstagramHandle = EfHelpers.GetPropValue<string>(profileObj, "instagramHandle", "InstagramHandle", "instagram"),
+                EmblemLayers = new List<EmblemLayer>()
             };
         }
 
@@ -409,24 +430,32 @@ namespace TrucoServer
         {
             using (var db = new baseDatosPruebaEntities())
             {
-                var user = db.User.FirstOrDefault(u => u.nickname == username);
-                if (user == null) return new List<FriendData>();
+                var users = db.User.AsNoTracking().ToList();
+                var friendships = db.Friendship.AsNoTracking().ToList();
 
-                var friends1 = db.Friendship
-                    .Where(f => f.userID1 == user.userID && f.status == "Accepted")
-                    .Select(f => f.User2.nickname);
+                var userObj = users.FirstOrDefault(u => EfHelpers.GetPropValue<string>(u, "nickname", "NickName") == username);
+                if (userObj == null) return new List<FriendData>();
 
-                var friends2 = db.Friendship
-                    .Where(f => f.userID2 == user.userID && f.status == "Accepted")
-                    .Select(f => f.User.nickname);
+                int userId = EfHelpers.GetPropValue<int>(userObj, "userID", "UserID", "Id");
 
-                var allFriendsNicknames = friends1.Union(friends2).ToList();
+                Func<object, int> getUID1 = f => EfHelpers.GetPropValue<int>(f, "userID1", "userID", "UserID", "userID_1", "UserId1");
+                Func<object, int> getUID2 = f => EfHelpers.GetPropValue<int>(f, "userID2", "friendID", "userID_2", "UserId2", "FriendID");
 
-                var friendsData = allFriendsNicknames
-                    .Select(n => GetFriendData(n, db))
-                    .Where(fd => fd != null)
+                Func<object, string> getStatus = f => EfHelpers.GetPropValue<string>(f, "status", "Status", "estado");
+
+                var accepted = friendships.Where(f =>
+                    (getUID1(f) == userId || getUID2(f) == userId) &&
+                    string.Equals(getStatus(f), "Accepted", StringComparison.OrdinalIgnoreCase))
                     .ToList();
 
+                var friendIds = accepted.Select(f => getUID1(f) == userId ? getUID2(f) : getUID1(f)).Distinct().ToList();
+
+                var friendNicknames = users.Where(u => friendIds.Contains(EfHelpers.GetPropValue<int>(u, "userID", "UserID", "Id")))
+                                           .Select(u => EfHelpers.GetPropValue<string>(u, "nickname", "NickName"))
+                                           .Where(n => !string.IsNullOrEmpty(n))
+                                           .ToList();
+
+                var friendsData = friendNicknames.Select(n => GetFriendData(n, db)).Where(fd => fd != null).ToList();
                 return friendsData;
             }
         }
@@ -435,50 +464,71 @@ namespace TrucoServer
         {
             using (var db = new baseDatosPruebaEntities())
             {
-                var user = db.User.FirstOrDefault(u => u.nickname == username);
-                if (user == null) return new List<FriendData>();
+                var users = db.User.AsNoTracking().ToList();
+                var friendships = db.Friendship.AsNoTracking().ToList();
 
-                var pendingRequests = db.Friendship
-                    .Where(f => f.userID2 == user.userID && f.status == "Pending")
-                    .Select(f => f.User.nickname)
+                var userObj = users.FirstOrDefault(u => EfHelpers.GetPropValue<string>(u, "nickname", "NickName") == username);
+                if (userObj == null) return new List<FriendData>();
+                int userId = EfHelpers.GetPropValue<int>(userObj, "userID", "UserID", "Id");
+
+                Func<object, int> getUID1 = f => EfHelpers.GetPropValue<int>(f, "userID1", "userID", "UserID", "userID_1", "UserId1");
+                Func<object, int> getUID2 = f => EfHelpers.GetPropValue<int>(f, "userID2", "friendID", "userID_2", "UserId2", "FriendID");
+                Func<object, string> getStatus = f => EfHelpers.GetPropValue<string>(f, "status", "Status", "estado");
+
+                var pending = friendships.Where(f =>
+                    getUID2(f) == userId &&
+                    string.Equals(getStatus(f), "Pending", StringComparison.OrdinalIgnoreCase))
                     .ToList();
 
-                var requestsData = pendingRequests
-                    .Select(n => GetFriendData(n, db))
-                    .Where(fd => fd != null)
-                    .ToList();
+                var requesterIds = pending.Select(f => getUID1(f)).Distinct().ToList();
 
+                var requesterNicknames = users.Where(u => requesterIds.Contains(EfHelpers.GetPropValue<int>(u, "userID", "UserID", "Id")))
+                                             .Select(u => EfHelpers.GetPropValue<string>(u, "nickname", "NickName"))
+                                             .Where(n => !string.IsNullOrEmpty(n))
+                                             .ToList();
+
+                var requestsData = requesterNicknames.Select(n => GetFriendData(n, db)).Where(fd => fd != null).ToList();
                 return requestsData;
             }
         }
-
         public bool SendFriendRequest(string fromUser, string toUser)
         {
             using (var db = new baseDatosPruebaEntities())
             {
-                var sender = db.User.FirstOrDefault(u => u.nickname == fromUser);
-                var receiver = db.User.FirstOrDefault(u => u.nickname == toUser);
+                var users = db.User.ToList();
+                var sender = users.FirstOrDefault(u => EfHelpers.GetPropValue<string>(u, "nickname", "NickName") == fromUser);
+                var receiver = users.FirstOrDefault(u => EfHelpers.GetPropValue<string>(u, "nickname", "NickName") == toUser);
 
-                if (sender == null || receiver == null || sender.userID == receiver.userID)
+                if (sender == null || receiver == null || EfHelpers.GetPropValue<int>(sender, "userID", "UserID") == EfHelpers.GetPropValue<int>(receiver, "userID"))
                     return false;
 
-                var existingRel = db.Friendship
+                var existing = db.Friendship
+                    .AsNoTracking()
+                    .ToList()
                     .FirstOrDefault(f =>
-                        (f.userID1 == sender.userID && f.userID2 == receiver.userID) ||
-                        (f.userID1 == receiver.userID && f.userID2 == sender.userID));
+                    {
+                        int a = EfHelpers.GetPropValue<int>(f, "userID1", "userID", "UserID");
+                        int b = EfHelpers.GetPropValue<int>(f, "userID2", "friendID", "UserID");
+                        return (a == EfHelpers.GetPropValue<int>(sender, "userID", "UserID") && b == EfHelpers.GetPropValue<int>(receiver, "userID", "UserID"))
+                               || (a == EfHelpers.GetPropValue<int>(receiver, "userID", "UserID") && b == EfHelpers.GetPropValue<int>(sender, "userID", "UserID"));
+                    });
 
-                if (existingRel != null)
-                    return false;
+                if (existing != null) return false;
 
-                db.Friendship.Add(new Friendship
+                var newRel = Activator.CreateInstance(typeof(Friendship));
+                var setProp = new Action<object, string, object>((obj, propName, val) =>
                 {
-                    userID1 = sender.userID,
-                    userID2 = receiver.userID,
-                    status = "Pending",
-                    requestDate = DateTime.Now
+                    var p = obj.GetType().GetProperty(propName, BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase);
+                    if (p != null && p.CanWrite) p.SetValue(obj, val);
                 });
-                db.SaveChanges();
 
+                setProp(newRel, "userID1", EfHelpers.GetPropValue<int>(sender, "userID", "UserID"));
+                setProp(newRel, "userID2", EfHelpers.GetPropValue<int>(receiver, "userID", "UserID"));
+                setProp(newRel, "status", "Pending");
+                setProp(newRel, "requestDate", DateTime.UtcNow);
+
+                db.Friendship.Add((Friendship)newRel);
+                db.SaveChanges();
                 return true;
             }
         }
@@ -487,21 +537,25 @@ namespace TrucoServer
         {
             using (var db = new baseDatosPruebaEntities())
             {
-                var requester = db.User.FirstOrDefault(u => u.nickname == fromUser);
-                var acceptor = db.User.FirstOrDefault(u => u.nickname == toUser);
-
+                var users = db.User.ToList();
+                var requester = users.FirstOrDefault(u => EfHelpers.GetPropValue<string>(u, "nickname", "NickName") == fromUser);
+                var acceptor = users.FirstOrDefault(u => EfHelpers.GetPropValue<string>(u, "nickname", "NickName") == toUser);
                 if (requester == null || acceptor == null) return false;
 
-                var request = db.Friendship.FirstOrDefault(f =>
-                    f.userID1 == requester.userID &&
-                    f.userID2 == acceptor.userID &&
-                    f.status == "Pending");
+                var all = db.Friendship.ToList();
+                var request = all.FirstOrDefault(f =>
+                    EfHelpers.GetPropValue<int>(f, "userID1", "userID") == EfHelpers.GetPropValue<int>(requester, "userID")
+                    && EfHelpers.GetPropValue<int>(f, "userID2", "friendID") == EfHelpers.GetPropValue<int>(acceptor, "userID")
+                    && string.Equals(EfHelpers.GetPropValue<string>(f, "status", "Status"), "Pending", StringComparison.OrdinalIgnoreCase)
+                );
 
                 if (request == null) return false;
 
-                request.status = "Accepted";
-                db.SaveChanges();
+                var prop = request.GetType().GetProperty("status", BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase);
+                if (prop != null && prop.CanWrite) prop.SetValue(request, "Accepted");
 
+                db.Entry(request).State = EntityState.Modified;
+                db.SaveChanges();
                 return true;
             }
         }
@@ -510,19 +564,24 @@ namespace TrucoServer
         {
             using (var db = new baseDatosPruebaEntities())
             {
-                var u1 = db.User.FirstOrDefault(u => u.nickname == user1);
-                var u2 = db.User.FirstOrDefault(u => u.nickname == user2);
-
+                var users = db.User.ToList();
+                var u1 = users.FirstOrDefault(u => EfHelpers.GetPropValue<string>(u, "nickname", "NickName") == user1);
+                var u2 = users.FirstOrDefault(u => EfHelpers.GetPropValue<string>(u, "nickname", "NickName") == user2);
                 if (u1 == null || u2 == null) return false;
 
-                var relationships = db.Friendship.Where(f =>
-                    (f.userID1 == u1.userID && f.userID2 == u2.userID) ||
-                    (f.userID1 == u2.userID && f.userID2 == u1.userID)).ToList();
+                var all = db.Friendship.ToList();
 
-                if (!relationships.Any()) return false;
-                db.Friendship.RemoveRange(relationships);
+                var toRemove = all.Where(f =>
+                    (EfHelpers.GetPropValue<int>(f, "userID1", "userID") == EfHelpers.GetPropValue<int>(u1, "userID")
+                     && EfHelpers.GetPropValue<int>(f, "userID2", "userID", "friendID") == EfHelpers.GetPropValue<int>(u2, "userID"))
+                    ||
+                    (EfHelpers.GetPropValue<int>(f, "userID1", "userID") == EfHelpers.GetPropValue<int>(u2, "userID")
+                     && EfHelpers.GetPropValue<int>(f, "userID2", "userID", "friendID") == EfHelpers.GetPropValue<int>(u1, "userID"))
+                ).ToList();
+
+                if (!toRemove.Any()) return false;
+                db.Friendship.RemoveRange(toRemove);
                 db.SaveChanges();
-
                 return true;
             }
         }
@@ -531,25 +590,53 @@ namespace TrucoServer
         {
             using (var db = new baseDatosPruebaEntities())
             {
-                var user = await db.User.FirstOrDefaultAsync(u => u.nickname == username);
-                if (user == null) return new List<UserProfileData>();
+                var user = db.User.FirstOrDefault(u => u.nickname == username);
+                if (user == null)
+                    return new List<UserProfileData>();
 
-                var friends1 = db.Friendship
-                    .Where(f => f.userID1 == user.userID && f.status == "Accepted")
-                    .Select(f => f.User2.nickname);
-
-                var friends2 = db.Friendship
-                    .Where(f => f.userID2 == user.userID && f.status == "Accepted")
-                    .Select(f => f.User.nickname);
-
-                var allFriends = await friends1.Union(friends2).ToListAsync();
-
-                var result = allFriends
-                    .Select(n => GetUserProfileData(n, db))
-                    .Where(p => p != null)
+                var friends = db.Friendship
+                    .Where(f =>
+                        (f.userID == user.userID || f.friendID == user.userID)
+                        && f.status == "Accepted")
+                    .Select(f => f.userID == user.userID ? f.Friend : f.User)
                     .ToList();
 
-                return result;
+                var profiles = new List<UserProfileData>();
+
+                foreach (var friend in friends)
+                {
+                    var profile = friend.UserProfile;
+                    if (profile == null)
+                        continue;
+
+                    string json = profile.socialLinksJson != null
+                        ? System.Text.Encoding.UTF8.GetString(profile.socialLinksJson)
+                        : "{}";
+
+                    dynamic links = null;
+                    try
+                    {
+                        links = Newtonsoft.Json.JsonConvert.DeserializeObject(json);
+                    }
+                    catch
+                    {
+                        links = new { facebook = "", x = "", instagram = "" };
+                    }
+
+                    profiles.Add(new UserProfileData
+                    {
+                        Username = friend.nickname,
+                        Email = friend.email,
+                        AvatarId = profile.avatarID ?? "avatar_default",
+                        NameChangeCount = friend.nameChangeCount,
+                        FacebookHandle = links?.facebook ?? "",
+                        XHandle = links?.x ?? "",
+                        InstagramHandle = links?.instagram ?? "",
+                        EmblemLayers = new List<EmblemLayer>()
+                    });
+                }
+
+                return await Task.FromResult(profiles);
             }
         }
 
@@ -557,20 +644,51 @@ namespace TrucoServer
         {
             using (var db = new baseDatosPruebaEntities())
             {
-                var user = await db.User.FirstOrDefaultAsync(u => u.nickname == username);
-                if (user == null) return new List<UserProfileData>();
+                var user = db.User.FirstOrDefault(u => u.nickname == username);
+                if (user == null)
+                    return new List<UserProfileData>();
 
-                var pending = await db.Friendship
-                    .Where(f => f.userID2 == user.userID && f.status == "Pending")
-                    .Select(f => f.User.nickname)
-                    .ToListAsync();
-
-                var result = pending
-                    .Select(n => GetUserProfileData(n, db))
-                    .Where(p => p != null)
+                var pendingRequests = db.Friendship
+                    .Where(f => f.friendID == user.userID && f.status == "Pending")
+                    .Select(f => f.User)
                     .ToList();
 
-                return result;
+                var profiles = new List<UserProfileData>();
+
+                foreach (var requester in pendingRequests)
+                {
+                    var profile = requester.UserProfile;
+                    if (profile == null)
+                        continue;
+
+                    string json = profile.socialLinksJson != null
+                        ? System.Text.Encoding.UTF8.GetString(profile.socialLinksJson)
+                        : "{}";
+
+                    dynamic links = null;
+                    try
+                    {
+                        links = Newtonsoft.Json.JsonConvert.DeserializeObject(json);
+                    }
+                    catch
+                    {
+                        links = new { facebook = "", x = "", instagram = "" };
+                    }
+
+                    profiles.Add(new UserProfileData
+                    {
+                        Username = requester.nickname,
+                        Email = requester.email,
+                        AvatarId = profile.avatarID ?? "avatar_default",
+                        NameChangeCount = requester.nameChangeCount,
+                        FacebookHandle = links?.facebook ?? "",
+                        XHandle = links?.x ?? "",
+                        InstagramHandle = links?.instagram ?? "",
+                        EmblemLayers = new List<EmblemLayer>()
+                    });
+                }
+
+                return await Task.FromResult(profiles);
             }
         }
     }
@@ -591,7 +709,6 @@ namespace TrucoServer
         {
             throw new NotImplementedException();
         }
-
         public void PlayCard(string matchCode, string player, string card)
         {
             throw new NotImplementedException();
