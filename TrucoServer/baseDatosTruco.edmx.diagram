@@ -4,7 +4,7 @@
   <edmx:Designer xmlns="http://schemas.microsoft.com/ado/2009/11/edmx">
     <!-- Diagram content (shape and connector positions) -->
     <edmx:Diagrams>
-      <Diagram DiagramId="413f7d2377734db1ae995c669e2753f5" Name="Diagram1">
+      <Diagram DiagramId="804bd8a779e141e396da36816fd4cbb3" Name="Diagram1">
         <EntityTypeShape EntityType="baseDatosPruebaModel.AuthToken" Width="1.5" PointX="3" PointY="7.875" IsExpanded="true" />
         <EntityTypeShape EntityType="baseDatosPruebaModel.Ban" Width="1.5" PointX="3" PointY="10.625" IsExpanded="true" />
         <EntityTypeShape EntityType="baseDatosPruebaModel.BannedWord" Width="1.5" PointX="0.75" PointY="0.75" IsExpanded="true" />
