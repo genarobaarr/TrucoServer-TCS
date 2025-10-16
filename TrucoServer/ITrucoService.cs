@@ -64,6 +64,12 @@ namespace TrucoServer
 
         [OperationContract]
         List<FriendData> GetPendingFriendRequests(string username);
+
+        [OperationContract]
+        Task<List<UserProfileData>> GetAcceptedFriendsDataAsync(string username);
+
+        [OperationContract]
+        Task<List<UserProfileData>> GetPendingFriendRequestsDataAsync(string username);
     }
 
     [ServiceContract(CallbackContract = typeof(ITrucoCallback))]

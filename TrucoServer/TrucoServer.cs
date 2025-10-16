@@ -382,6 +382,29 @@ namespace TrucoServer
                 AvatarId = user.UserProfile?.avatarID ?? "avatar_default"
             };
         }
+
+        private UserProfileData GetUserProfileData(string nickname, baseDatosPruebaEntities db)
+        {
+            var user = db.User
+                         .Include(u => u.UserProfile)
+                         .AsNoTracking()
+                         .FirstOrDefault(u => u.nickname == nickname);
+
+            if (user == null) return null;
+
+            var profile = user.UserProfile;
+
+            return new UserProfileData
+            {
+                //Fix: Sigo trabajando en mejorar esto:
+                Username = user.nickname,
+                AvatarId = profile?.avatarID ?? "avatar_default",
+                SocialLinksJson = profile?.socialLinksJson != null
+                    ? Encoding.UTF8.GetString(profile.socialLinksJson)
+                    : null
+            };
+        }
+
         public List<FriendData> GetFriends(string username)
         {
             using (var db = new baseDatosPruebaEntities())
@@ -396,7 +419,9 @@ namespace TrucoServer
                 var friends2 = db.Friendship
                     .Where(f => f.userID2 == user.userID && f.status == "Accepted")
                     .Select(f => f.User.nickname);
+
                 var allFriendsNicknames = friends1.Union(friends2).ToList();
+
                 var friendsData = allFriendsNicknames
                     .Select(n => GetFriendData(n, db))
                     .Where(fd => fd != null)
@@ -435,9 +460,7 @@ namespace TrucoServer
                 var receiver = db.User.FirstOrDefault(u => u.nickname == toUser);
 
                 if (sender == null || receiver == null || sender.userID == receiver.userID)
-                {
                     return false;
-                }
 
                 var existingRel = db.Friendship
                     .FirstOrDefault(f =>
@@ -445,9 +468,7 @@ namespace TrucoServer
                         (f.userID1 == receiver.userID && f.userID2 == sender.userID));
 
                 if (existingRel != null)
-                {
-                    return false; 
-                }
+                    return false;
 
                 db.Friendship.Add(new Friendship
                 {
@@ -503,6 +524,53 @@ namespace TrucoServer
                 db.SaveChanges();
 
                 return true;
+            }
+        }
+
+        public async Task<List<UserProfileData>> GetAcceptedFriendsDataAsync(string username)
+        {
+            using (var db = new baseDatosPruebaEntities())
+            {
+                var user = await db.User.FirstOrDefaultAsync(u => u.nickname == username);
+                if (user == null) return new List<UserProfileData>();
+
+                var friends1 = db.Friendship
+                    .Where(f => f.userID1 == user.userID && f.status == "Accepted")
+                    .Select(f => f.User2.nickname);
+
+                var friends2 = db.Friendship
+                    .Where(f => f.userID2 == user.userID && f.status == "Accepted")
+                    .Select(f => f.User.nickname);
+
+                var allFriends = await friends1.Union(friends2).ToListAsync();
+
+                var result = allFriends
+                    .Select(n => GetUserProfileData(n, db))
+                    .Where(p => p != null)
+                    .ToList();
+
+                return result;
+            }
+        }
+
+        public async Task<List<UserProfileData>> GetPendingFriendRequestsDataAsync(string username)
+        {
+            using (var db = new baseDatosPruebaEntities())
+            {
+                var user = await db.User.FirstOrDefaultAsync(u => u.nickname == username);
+                if (user == null) return new List<UserProfileData>();
+
+                var pending = await db.Friendship
+                    .Where(f => f.userID2 == user.userID && f.status == "Pending")
+                    .Select(f => f.User.nickname)
+                    .ToListAsync();
+
+                var result = pending
+                    .Select(n => GetUserProfileData(n, db))
+                    .Where(p => p != null)
+                    .ToList();
+
+                return result;
             }
         }
     }
