@@ -92,6 +92,7 @@
     <Compile Include="DealtCard.cs">
       <DependentUpon>baseDatosTruco.tt</DependentUpon>
     </Compile>
+    <Compile Include="FriendData.cs" />
     <Compile Include="Friendship.cs">
       <DependentUpon>baseDatosTruco.tt</DependentUpon>
     </Compile>

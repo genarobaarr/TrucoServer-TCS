@@ -367,19 +367,143 @@ namespace TrucoServer
 
     public partial class TrucoServer : ITrucoFriendService
     {
+        private FriendData GetFriendData(string nickname, baseDatosPruebaEntities db)
+        {
+            var user = db.User
+                         .Include(u => u.UserProfile)
+                         .AsNoTracking()
+                         .FirstOrDefault(u => u.nickname == nickname);
+
+            if (user == null) return null;
+
+            return new FriendData
+            {
+                Username = user.nickname,
+                AvatarId = user.UserProfile?.avatarID ?? "avatar_default"
+            };
+        }
+        public List<FriendData> GetFriends(string username)
+        {
+            using (var db = new baseDatosPruebaEntities())
+            {
+                var user = db.User.FirstOrDefault(u => u.nickname == username);
+                if (user == null) return new List<FriendData>();
+
+                var friends1 = db.Friendship
+                    .Where(f => f.userID1 == user.userID && f.status == "Accepted")
+                    .Select(f => f.User2.nickname);
+
+                var friends2 = db.Friendship
+                    .Where(f => f.userID2 == user.userID && f.status == "Accepted")
+                    .Select(f => f.User.nickname);
+                var allFriendsNicknames = friends1.Union(friends2).ToList();
+                var friendsData = allFriendsNicknames
+                    .Select(n => GetFriendData(n, db))
+                    .Where(fd => fd != null)
+                    .ToList();
+
+                return friendsData;
+            }
+        }
+
+        public List<FriendData> GetPendingFriendRequests(string username)
+        {
+            using (var db = new baseDatosPruebaEntities())
+            {
+                var user = db.User.FirstOrDefault(u => u.nickname == username);
+                if (user == null) return new List<FriendData>();
+
+                var pendingRequests = db.Friendship
+                    .Where(f => f.userID2 == user.userID && f.status == "Pending")
+                    .Select(f => f.User.nickname)
+                    .ToList();
+
+                var requestsData = pendingRequests
+                    .Select(n => GetFriendData(n, db))
+                    .Where(fd => fd != null)
+                    .ToList();
+
+                return requestsData;
+            }
+        }
+
         public bool SendFriendRequest(string fromUser, string toUser)
         {
-            throw new NotImplementedException();
+            using (var db = new baseDatosPruebaEntities())
+            {
+                var sender = db.User.FirstOrDefault(u => u.nickname == fromUser);
+                var receiver = db.User.FirstOrDefault(u => u.nickname == toUser);
+
+                if (sender == null || receiver == null || sender.userID == receiver.userID)
+                {
+                    return false;
+                }
+
+                var existingRel = db.Friendship
+                    .FirstOrDefault(f =>
+                        (f.userID1 == sender.userID && f.userID2 == receiver.userID) ||
+                        (f.userID1 == receiver.userID && f.userID2 == sender.userID));
+
+                if (existingRel != null)
+                {
+                    return false; 
+                }
+
+                db.Friendship.Add(new Friendship
+                {
+                    userID1 = sender.userID,
+                    userID2 = receiver.userID,
+                    status = "Pending",
+                    requestDate = DateTime.Now
+                });
+                db.SaveChanges();
+
+                return true;
+            }
         }
 
-        public void AcceptFriendRequest(string fromUser, string toUser)
+        public bool AcceptFriendRequest(string fromUser, string toUser)
         {
-            throw new NotImplementedException();
+            using (var db = new baseDatosPruebaEntities())
+            {
+                var requester = db.User.FirstOrDefault(u => u.nickname == fromUser);
+                var acceptor = db.User.FirstOrDefault(u => u.nickname == toUser);
+
+                if (requester == null || acceptor == null) return false;
+
+                var request = db.Friendship.FirstOrDefault(f =>
+                    f.userID1 == requester.userID &&
+                    f.userID2 == acceptor.userID &&
+                    f.status == "Pending");
+
+                if (request == null) return false;
+
+                request.status = "Accepted";
+                db.SaveChanges();
+
+                return true;
+            }
         }
 
-        public List<string> GetFriends(string username)
+        public bool RemoveFriendOrRequest(string user1, string user2)
         {
-            throw new NotImplementedException();
+            using (var db = new baseDatosPruebaEntities())
+            {
+                var u1 = db.User.FirstOrDefault(u => u.nickname == user1);
+                var u2 = db.User.FirstOrDefault(u => u.nickname == user2);
+
+                if (u1 == null || u2 == null) return false;
+
+                var relationships = db.Friendship.Where(f =>
+                    (f.userID1 == u1.userID && f.userID2 == u2.userID) ||
+                    (f.userID1 == u2.userID && f.userID2 == u1.userID)).ToList();
+
+                if (!relationships.Any()) return false;
+                db.Friendship.RemoveRange(relationships);
+                db.SaveChanges();
+
+                return true;
+            }
         }
     }
 

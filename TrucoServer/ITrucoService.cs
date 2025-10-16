@@ -53,11 +53,17 @@ namespace TrucoServer
         [OperationContract]
         bool SendFriendRequest(string fromUser, string toUser);
 
-        [OperationContract(IsOneWay = true)]
-        void AcceptFriendRequest(string fromUser, string toUser);
+        [OperationContract]
+        bool AcceptFriendRequest(string fromUser, string toUser);
 
         [OperationContract]
-        List<string> GetFriends(string username);
+        bool RemoveFriendOrRequest(string user1, string user2);
+
+        [OperationContract]
+        List<FriendData> GetFriends(string username);
+
+        [OperationContract]
+        List<FriendData> GetPendingFriendRequests(string username);
     }
 
     [ServiceContract(CallbackContract = typeof(ITrucoCallback))]
