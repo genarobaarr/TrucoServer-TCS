@@ -66,11 +66,13 @@ namespace TrucoServer
         {
             try
             {
+                LanguageManager.SetLanguage(languageCode);
+
                 MailAddress fromAddress = new MailAddress("trucoargentinotcs@gmail.com", "Truco Argentino");
                 MailAddress toAddress = new MailAddress(email);
                 const string fromPassword = "obbw ipgm klkt tdxa";
-                string subject = "Código de verificación";
-                string body = $"Tu código de verificación es: {code}";
+                string subject = Lang.EmailVerificationSubject;
+                string body = string.Format(Lang.EmailVerificationBody, code).Replace("\\n", Environment.NewLine);
 
                 SmtpClient smtp = new SmtpClient
                 {
@@ -120,7 +122,7 @@ namespace TrucoServer
                     UserProfile profile = new UserProfile
                     {
                         userID = user.userID,
-                        avatarID = "avatar_default",
+                        avatarID = "avatar_aaa_default",
                         socialLinksJson = Encoding.UTF8.GetBytes("{}")
                     };
                     context.UserProfile.Add(profile);
@@ -151,7 +153,7 @@ namespace TrucoServer
                 {
                     Username = user.nickname,
                     Email = user.email,
-                    AvatarId = user.UserProfile?.avatarID ?? "avatar_default",
+                    AvatarId = user.UserProfile?.avatarID ?? "avatar_aaa_default",
                     NameChangeCount = user.nameChangeCount,
                     FacebookHandle = links?.facebook ?? "",
                     XHandle = links?.x ?? "",
@@ -185,7 +187,7 @@ namespace TrucoServer
                         context.UserProfile.Add(user.UserProfile);
                     }
 
-                    user.UserProfile.avatarID = profile.AvatarId ?? "avatar_default";
+                    user.UserProfile.avatarID = profile.AvatarId ?? "avatar_aaa_default";
                     string json = JsonConvert.SerializeObject(new
                     {
                         facebook = profile.FacebookHandle ?? "",
@@ -250,7 +252,7 @@ namespace TrucoServer
                 {
                     Username = user.nickname,
                     Email = user.email,
-                    AvatarId = user.UserProfile?.avatarID ?? "avatar_default",
+                    AvatarId = user.UserProfile?.avatarID ?? "avatar_aaa_default",
                     NameChangeCount = user.nameChangeCount,
                     FacebookHandle = links?.facebook ?? "",
                     XHandle = links?.x ?? "",
