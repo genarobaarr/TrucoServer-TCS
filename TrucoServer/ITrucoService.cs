@@ -29,6 +29,9 @@ namespace TrucoServer
         Task<bool> UpdateUserAvatarAsync(string username, string newAvatarId);
 
         [OperationContract]
+        Task<UserProfileData> GetUserProfileByEmailAsync(string email);
+
+        [OperationContract]
         List<string> GetOnlinePlayers();
 
         [OperationContract]

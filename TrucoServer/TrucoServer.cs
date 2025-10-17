@@ -231,6 +231,35 @@ namespace TrucoServer
             }
         }
 
+        public async Task<UserProfileData> GetUserProfileByEmailAsync(string email)
+        {
+            using (var context = new baseDatosPruebaEntities())
+            {
+                var user = await context.User
+                                       .Include(u => u.UserProfile)
+                                       .FirstOrDefaultAsync(u => u.email == email);
+
+                if (user == null) return null;
+
+                string json = user.UserProfile?.socialLinksJson != null
+                    ? Encoding.UTF8.GetString(user.UserProfile.socialLinksJson)
+                    : "{}";
+                dynamic links = JsonConvert.DeserializeObject(json);
+
+                return new UserProfileData
+                {
+                    Username = user.nickname,
+                    Email = user.email,
+                    AvatarId = user.UserProfile?.avatarID ?? "avatar_default",
+                    NameChangeCount = user.nameChangeCount,
+                    FacebookHandle = links?.facebook ?? "",
+                    XHandle = links?.x ?? "",
+                    InstagramHandle = links?.instagram ?? ""
+                };
+            }
+        }
+
+
         private void SendLoginNotificationEmail(string email, string nickname, string languageCode)
         {
             try
