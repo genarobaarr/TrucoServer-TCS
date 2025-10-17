@@ -340,25 +340,38 @@ namespace TrucoServer
             {
                 using (var context = new baseDatosPruebaEntities())
                 {
-                    User fromUser = context.User.SingleOrDefault(u => u.nickname == fromUsername);
-                    User toUser = context.User.SingleOrDefault(u => u.nickname == toUsername);
-                    if (fromUser == null || toUser == null) return false;
+                    string fromLower = fromUsername.ToLower();
+                    string toLower = toUsername.ToLower();
+
+                    User fromUser = context.User.SingleOrDefault(u => u.nickname.ToLower() == fromLower);
+                    User toUser = context.User.SingleOrDefault(u => u.nickname.ToLower() == toLower);
+
+                    if (fromUser == null || toUser == null || fromUser.userID == toUser.userID)
+                        return false;
+
+                    int idA = fromUser.userID;
+                    int idB = toUser.userID;
 
                     Friendship existing = context.Friendship.SingleOrDefault(f =>
-                        (f.userID == fromUser.userID && f.friendID == toUser.userID) ||
-                        (f.userID == toUser.userID && f.friendID == fromUser.userID));
+                        (f.userID == idA && f.friendID == idB) ||
+                        (f.userID == idB && f.friendID == idA));
 
-                    if (existing != null) return false;
+                    if (existing != null)
+                        return false;
 
                     Friendship friendship = new Friendship
                     {
-                        userID = fromUser.userID,
-                        friendID = toUser.userID,
+                        userID = idA,
+                        friendID = idB,
                         status = "Pending"
                     };
 
                     context.Friendship.Add(friendship);
                     context.SaveChanges();
+
+                    var toUserCallback = GetUserCallback(toUsername);
+                    toUserCallback?.OnFriendRequestReceived(fromUsername);
+
                     return true;
                 }
             }
@@ -409,57 +422,55 @@ namespace TrucoServer
 
         public List<FriendData> GetFriends(string username)
         {
-            using (var db = new baseDatosPruebaEntities())
+            using (var context = new baseDatosPruebaEntities())
             {
-                User user = db.User.FirstOrDefault(u => u.nickname == username);
+                var user = context.User.SingleOrDefault(u => u.nickname.ToLower() == username.ToLower());
                 if (user == null) return new List<FriendData>();
 
-                var friendships = db.Friendship
-                    .Where(f => (f.userID == user.userID || f.friendID == user.userID) && f.status == "Accepted")
+                int currentUserId = user.userID;
+
+                var friendsData = context.Friendship
+                    .Where(f => (f.userID == currentUserId || f.friendID == currentUserId) && f.status == "Accepted")
+                    .Select(f => new
+                    {
+                        FriendId = f.userID == currentUserId ? f.friendID : f.userID
+                    })
+                    .Join(context.User.Include("UserProfile"),
+                          f => f.FriendId,
+                          u => u.userID,
+                          (f, u) => new FriendData
+                          {
+                              Username = u.nickname,
+                              AvatarId = u.UserProfile.avatarID
+                          })
                     .ToList();
 
-                List<FriendData> friends = new List<FriendData>();
-                foreach (var fship in friendships)
-                {
-                    User friend = fship.userID == user.userID ? fship.Friend : fship.User;
-                    if (friend == null || friend.UserProfile == null || friend.userID == user.userID) continue;
-
-                    friends.Add(new FriendData
-                    {
-                        Username = friend.nickname,
-                        AvatarId = friend.UserProfile.avatarID ?? "avatar_default"
-                    });
-                }
-
-                return friends;
+                return friendsData;
             }
         }
 
         public List<FriendData> GetPendingFriendRequests(string username)
         {
-            using (var db = new baseDatosPruebaEntities())
+            using (var context = new baseDatosPruebaEntities())
             {
-                User user = db.User.FirstOrDefault(u => u.nickname == username);
+                var user = context.User.SingleOrDefault(u => u.nickname.ToLower() == username.ToLower());
                 if (user == null) return new List<FriendData>();
 
-                var pendingRequests = db.Friendship
-                    .Where(f => f.friendID == user.userID && f.status == "Pending")
+                int currentUserId = user.userID;
+
+                var pendingRequests = context.Friendship
+                    .Where(f => f.friendID == currentUserId && f.status == "Pending")
+                    .Join(context.User.Include("UserProfile"),
+                          f => f.userID,
+                          u => u.userID,
+                          (f, u) => new FriendData
+                          {
+                              Username = u.nickname,
+                              AvatarId = u.UserProfile.avatarID
+                          })
                     .ToList();
 
-                List<FriendData> pending = new List<FriendData>();
-                foreach (var fship in pendingRequests)
-                {
-                    User requester = fship.User; 
-                    if (requester == null || requester.UserProfile == null) continue;
-
-                    pending.Add(new FriendData
-                    {
-                        Username = requester.nickname,
-                        AvatarId = requester.UserProfile.avatarID ?? "avatar_default"
-                    });
-                }
-
-                return pending;
+                return pendingRequests;
             }
         }
 
