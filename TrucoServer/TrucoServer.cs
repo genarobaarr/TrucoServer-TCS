@@ -485,7 +485,20 @@ namespace TrucoServer
         }
         public List<PlayerStats> GetGlobalRanking()
         {
-            throw new NotImplementedException();
+            using (var context = new baseDatosPruebaEntities())
+            {
+                var topPlayers = context.User
+                    .OrderByDescending(u => u.wins)
+                    .Take(10)
+                    .Select(u => new PlayerStats
+                    {
+                        PlayerName = u.nickname,
+                        Wins = u.wins,
+                    })
+                    .ToList();
+
+                return topPlayers;
+            }
         }
         public List<MatchResult> GetLastMatches(string username)
         {
