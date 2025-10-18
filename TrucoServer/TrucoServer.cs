@@ -336,50 +336,42 @@ namespace TrucoServer
             onlineUsers.TryRemove(username, out _);
         }
 
-        public bool SendFriendRequest(string fromUsername, string toUsername)
+        public bool SendFriendRequest(string fromUser, string toUser)
         {
-            try
+            using (var db = new baseDatosPruebaEntities())
             {
-                using (var context = new baseDatosPruebaEntities())
+                User requester = db.User.FirstOrDefault(u => u.nickname == fromUser);
+                User target = db.User.FirstOrDefault(u => u.nickname == toUser);
+
+                if (requester == null || target == null)
                 {
-                    string fromLower = fromUsername.ToLower();
-                    string toLower = toUsername.ToLower();
-
-                    User fromUser = context.User.SingleOrDefault(u => u.nickname.ToLower() == fromLower);
-                    User toUser = context.User.SingleOrDefault(u => u.nickname.ToLower() == toLower);
-
-                    if (fromUser == null || toUser == null || fromUser.userID == toUser.userID)
-                        return false;
-
-                    int idA = fromUser.userID;
-                    int idB = toUser.userID;
-
-                    Friendship existing = context.Friendship.SingleOrDefault(f =>
-                        (f.userID == idA && f.friendID == idB) ||
-                        (f.userID == idB && f.friendID == idA));
-
-                    if (existing != null)
-                        return false;
-
-                    Friendship friendship = new Friendship
-                    {
-                        userID = idA,
-                        friendID = idB,
-                        status = "Pending"
-                    };
-
-                    context.Friendship.Add(friendship);
-                    context.SaveChanges();
-
-                    var toUserCallback = GetUserCallback(toUsername);
-                    toUserCallback?.OnFriendRequestReceived(fromUsername);
-
-                    return true;
+                    return false;
                 }
-            }
-            catch
-            {
-                return false;
+
+                int requesterId = requester.userID;
+                int targetId = target.userID;
+
+                bool friendshipExists = db.Friendship.Any(f =>
+                    (f.userID == requesterId && f.friendID == targetId) ||
+                    (f.userID == targetId && f.friendID == requesterId));
+
+                if (friendshipExists)
+                {
+                    return false;
+                }
+                Friendship newRequest = new Friendship
+                {
+                    userID = requesterId,
+                    friendID = targetId,
+                    status = "Pending"
+                };
+                db.Friendship.Add(newRequest);
+                db.SaveChanges();
+
+                var targetUserCallback = GetUserCallback(toUser);
+                targetUserCallback?.OnFriendRequestReceived(fromUser);
+
+                return true;
             }
         }
 
@@ -398,7 +390,20 @@ namespace TrucoServer
                 if (request == null) return false;
 
                 request.status = "Accepted";
+
+                Friendship reciprocalFriendship = new Friendship
+                {
+                    userID = acceptor.userID, 
+                    friendID = requester.userID, 
+                    status = "Accepted"
+                };
+                db.Friendship.Add(reciprocalFriendship);
+
                 db.SaveChanges();
+
+                var fromUserCallback = GetUserCallback(fromUser);
+                fromUserCallback?.OnFriendRequestAccepted(toUser);
+
                 return true;
             }
         }
@@ -433,14 +438,12 @@ namespace TrucoServer
 
                 var friendsData = context.Friendship
                     .Where(f => (f.userID == currentUserId || f.friendID == currentUserId) && f.status == "Accepted")
-                    .Select(f => new
-                    {
-                        FriendId = f.userID == currentUserId ? f.friendID : f.userID
-                    })
+                    .Select(f => f.userID == currentUserId ? f.friendID : f.userID)
+                    .Distinct()
                     .Join(context.User.Include("UserProfile"),
-                          f => f.FriendId,
+                          friendId => friendId, 
                           u => u.userID,
-                          (f, u) => new FriendData
+                          (friendId, u) => new FriendData
                           {
                               Username = u.nickname,
                               AvatarId = u.UserProfile.avatarID

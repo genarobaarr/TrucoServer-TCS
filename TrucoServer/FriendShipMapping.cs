@@ -16,9 +16,9 @@ namespace TrucoServer
     public class FriendShipMapping
     {
         [Column("userID1")]
-        public int userID1 { get; set; }
+        public int userID { get; set; }
 
         [Column("userID2")]
-        public int userID2 { get; set; }
+        public int friendID { get; set; }
     }
 }
