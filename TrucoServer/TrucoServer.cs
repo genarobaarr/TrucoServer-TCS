@@ -26,7 +26,9 @@ namespace TrucoServer
             {
                 var commObj = (ICommunicationObject)callback;
                 if (commObj.State == CommunicationState.Opened)
+                {
                     return callback;
+                }
                 commObj.Abort();
                 onlineUsers.TryRemove(username, out _);
             }
@@ -95,6 +97,7 @@ namespace TrucoServer
             }
             catch
             {
+
             }
         }
 
@@ -105,7 +108,9 @@ namespace TrucoServer
                 using (var context = new baseDatosPruebaEntities())
                 {
                     if (context.User.Any(u => u.email == email || u.nickname == username))
+                    {
                         return false;
+                    }
 
                     User user = new User
                     {
@@ -142,7 +147,10 @@ namespace TrucoServer
             using (var context = new baseDatosPruebaEntities())
             {
                 User user = context.User.Include(u => u.UserProfile).FirstOrDefault(u => u.nickname == username);
-                if (user == null) return null;
+                if (user == null)
+                {
+                    return null;
+                }
 
                 string json = user.UserProfile?.socialLinksJson != null
                     ? Encoding.UTF8.GetString(user.UserProfile.socialLinksJson)
@@ -164,19 +172,31 @@ namespace TrucoServer
 
         public bool SaveUserProfile(UserProfileData profile)
         {
-            if (profile == null || string.IsNullOrWhiteSpace(profile.Email)) return false;
+            if (profile == null || string.IsNullOrWhiteSpace(profile.Email))
+            {
+                return false;
+            }
 
             try
             {
                 using (var context = new baseDatosPruebaEntities())
                 {
                     User user = context.User.Include(u => u.UserProfile).SingleOrDefault(u => u.email == profile.Email);
-                    if (user == null) return false;
+                    if (user == null)
+                    {
+                        return false;
+                    }
 
                     if (user.nickname != profile.Username)
                     {
-                        if (user.nameChangeCount >= MAX_CHANGES) return false;
-                        if (context.User.Any(u => u.nickname == profile.Username && u.userID != user.userID)) return false;
+                        if (user.nameChangeCount >= MAX_CHANGES)
+                        {
+                            return false;
+                        }
+                        if (context.User.Any(u => u.nickname == profile.Username && u.userID != user.userID))
+                        {
+                            return false;
+                        }
                         user.nickname = profile.Username;
                         user.nameChangeCount++;
                     }
@@ -213,7 +233,10 @@ namespace TrucoServer
                 using (var context = new baseDatosPruebaEntities())
                 {
                     User user = context.User.FirstOrDefault(u => u.nickname == username);
-                    if (user == null) return Task.FromResult(false);
+                    if (user == null)
+                    {
+                        return Task.FromResult(false);
+                    }
 
                     UserProfile profile = context.UserProfile.FirstOrDefault(p => p.userID == user.userID);
                     if (profile == null)
@@ -237,15 +260,14 @@ namespace TrucoServer
         {
             using (var context = new baseDatosPruebaEntities())
             {
-                var user = await context.User
-                                       .Include(u => u.UserProfile)
-                                       .FirstOrDefaultAsync(u => u.email == email);
+                var user = await context.User.Include(u => u.UserProfile).FirstOrDefaultAsync(u => u.email == email);
 
-                if (user == null) return null;
+                if (user == null)
+                {
+                    return null;
+                }
 
-                string json = user.UserProfile?.socialLinksJson != null
-                    ? Encoding.UTF8.GetString(user.UserProfile.socialLinksJson)
-                    : "{}";
+                string json = user.UserProfile?.socialLinksJson != null ? Encoding.UTF8.GetString(user.UserProfile.socialLinksJson) : "{}";
                 dynamic links = JsonConvert.DeserializeObject(json);
 
                 return new UserProfileData
@@ -318,12 +340,18 @@ namespace TrucoServer
 
         public bool PasswordReset(string email, string code, string newPassword)
         {
-            if (!ConfirmEmailVerification(email, code)) return false;
+            if (!ConfirmEmailVerification(email, code))
+            {
+                return false;
+            }
 
             using (var context = new baseDatosPruebaEntities())
             {
                 User user = context.User.FirstOrDefault(u => u.email == email);
-                if (user == null) return false;
+                if (user == null)
+                {
+                    return false;
+                }
 
                 user.passwordHash = PasswordHasher.Hash(newPassword);
                 context.SaveChanges();
@@ -381,13 +409,19 @@ namespace TrucoServer
             {
                 User requester = db.User.FirstOrDefault(u => u.nickname == fromUser);
                 User acceptor = db.User.FirstOrDefault(u => u.nickname == toUser);
-                if (requester == null || acceptor == null) return false;
+                if (requester == null || acceptor == null)
+                {
+                    return false;
+                }
 
                 Friendship request = db.Friendship.FirstOrDefault(f =>
                     f.userID == requester.userID &&
                     f.friendID == acceptor.userID &&
                     f.status == "Pending");
-                if (request == null) return false;
+                if (request == null)
+                {
+                    return false;
+                }
 
                 request.status = "Accepted";
 
@@ -414,12 +448,18 @@ namespace TrucoServer
             {
                 User u1 = db.User.FirstOrDefault(u => u.nickname == user1);
                 User u2 = db.User.FirstOrDefault(u => u.nickname == user2);
-                if (u1 == null || u2 == null) return false;
+                if (u1 == null || u2 == null)
+                {
+                    return false;
+                }
 
                 List<Friendship> toRemove = db.Friendship.Where(f =>
                     (f.userID == u1.userID && f.friendID == u2.userID) ||
                     (f.userID == u2.userID && f.friendID == u1.userID)).ToList();
-                if (!toRemove.Any()) return false;
+                if (!toRemove.Any())
+                {
+                    return false;
+                }
 
                 db.Friendship.RemoveRange(toRemove);
                 db.SaveChanges();
@@ -432,7 +472,10 @@ namespace TrucoServer
             using (var context = new baseDatosPruebaEntities())
             {
                 var user = context.User.SingleOrDefault(u => u.nickname.ToLower() == username.ToLower());
-                if (user == null) return new List<FriendData>();
+                if (user == null)
+                {
+                    return new List<FriendData>();
+                }
 
                 int currentUserId = user.userID;
 
@@ -459,7 +502,10 @@ namespace TrucoServer
             using (var context = new baseDatosPruebaEntities())
             {
                 var user = context.User.SingleOrDefault(u => u.nickname.ToLower() == username.ToLower());
-                if (user == null) return new List<FriendData>();
+                if (user == null)
+                {
+                    return new List<FriendData>();
+                }
 
                 int currentUserId = user.userID;
 
