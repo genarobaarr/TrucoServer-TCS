@@ -14,13 +14,10 @@ public static class PasswordHasher
         {
             byte[] hash = pbkdf2.GetBytes(32);
             byte[] salt = pbkdf2.Salt;
-
-            // Combina el salt y el hash para almacenarlos juntos
             byte[] hashBytes = new byte[48];
             Buffer.BlockCopy(salt, 0, hashBytes, 0, 16);
             Buffer.BlockCopy(hash, 0, hashBytes, 16, 32);
 
-            // Convierte a cadena Base64
             return Convert.ToBase64String(hashBytes);
         }
     }
@@ -28,12 +25,8 @@ public static class PasswordHasher
     public static bool Verify(string password, string storedHash)
     {
         byte[] hashBytes = Convert.FromBase64String(storedHash);
-
-        // Extrae el salt (los primeros 16 bytes)
         byte[] salt = new byte[16];
         Buffer.BlockCopy(hashBytes, 0, salt, 0, 16);
-
-        // Extrae el hash original (los 32 bytes siguientes)
         byte[] storedPasswordHash = new byte[32];
         Buffer.BlockCopy(hashBytes, 16, storedPasswordHash, 0, 32);
 
@@ -41,7 +34,6 @@ public static class PasswordHasher
         {
             byte[] newHash = pbkdf2.GetBytes(32);
 
-            // Compara byte a byte
             return newHash.SequenceEqual(storedPasswordHash);
         }
     }
