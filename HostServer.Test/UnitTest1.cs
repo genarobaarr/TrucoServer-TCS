@@ -10,7 +10,7 @@ namespace HostServer.Test
         public void ObtenerMensajeServidorTrue()
         {
             string esperado = "Servidor iniciado en net.tcp://localhost:8091/TrucoServiceBase  http://localhost:8080/TrucoServiceBase";
-            string resultado = Program.ObtenerMensajeServidor();
+            string resultado = Program.GetServerMessage();
             Assert.AreEqual(esperado, resultado);
         }
     }
