@@ -7,11 +7,19 @@ namespace HostServer.Test
     public class HostServerTests
     {
         [TestMethod]
-        public void ObtenerMensajeServidorTrue()
+        public void GetServerMessageTrue()
         {
-            string esperado = "Servidor iniciado en net.tcp://localhost:8091/TrucoServiceBase  http://localhost:8080/TrucoServiceBase";
-            string resultado = Program.GetServerMessage();
-            Assert.AreEqual(esperado, resultado);
+            string expected = "Servidor iniciado en net.tcp://localhost:8091/TrucoServiceBase  http://localhost:8080/TrucoServiceBase";
+            string result = Program.GetServerMessage();
+            Assert.AreEqual(expected, result);
+        }
+
+        [TestMethod]
+        public void GetServerMessageFalse()
+        {
+            string unexpected = "Servidor iniciado en net.tcp://localhost:8091/TrucoServiceBase";
+            string result = Program.GetServerMessage();
+            Assert.AreNotEqual(unexpected, result,  "El mensaje no debería coincidir");
         }
     }
 }
