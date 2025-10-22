@@ -100,7 +100,6 @@ namespace TrucoServer
 
             }
         }
-
         public bool Register(string username, string password, string email)
         {
             try
@@ -142,6 +141,33 @@ namespace TrucoServer
             }
         }
 
+        public bool UsernameExists(string username)
+        {
+            if (string.IsNullOrWhiteSpace(username))
+            { 
+                return false; 
+            }
+                
+
+            using (var context = new baseDatosPruebaEntities())
+            {
+                return context.User.Any(u => u.nickname == username);
+            }
+        }
+
+        public bool EmailExists(string email)
+        {
+            if (string.IsNullOrWhiteSpace(email))
+            {
+                return false;
+            }
+
+            using (var context = new baseDatosPruebaEntities())
+            {
+                return context.User.Any(u => u.email == email);
+            }
+        }
+
         public UserProfileData GetUserProfile(string username)
         {
             using (var context = new baseDatosPruebaEntities())
@@ -169,7 +195,6 @@ namespace TrucoServer
                 };
             }
         }
-
         public bool SaveUserProfile(UserProfileData profile)
         {
             if (profile == null || string.IsNullOrWhiteSpace(profile.Email))
@@ -357,11 +382,6 @@ namespace TrucoServer
                 context.SaveChanges();
                 return true;
             }
-        }
-
-        public void Logout(string username)
-        {
-            onlineUsers.TryRemove(username, out _);
         }
 
         public bool SendFriendRequest(string fromUser, string toUser)

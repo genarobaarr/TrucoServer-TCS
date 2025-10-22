@@ -20,10 +20,13 @@ namespace TrucoServer
         bool Register(string username, string password, string email);
 
         [OperationContract]
-        bool Login(string username, string password, string languageCode);
+        bool UsernameExists(string username);
 
-        [OperationContract(IsOneWay = true)]
-        void Logout(string username);
+        [OperationContract]
+        bool EmailExists(string email);
+
+        [OperationContract]
+        bool Login(string username, string password, string languageCode);
 
         [OperationContract]
         Task<bool> UpdateUserAvatarAsync(string username, string newAvatarId);
