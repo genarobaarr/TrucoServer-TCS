@@ -24,28 +24,28 @@ namespace TrucoServer.Tests
         }
 
         [TestMethod]
-        public void MatchResult_Player1_BeTest()
+        public void MatchResultPlayer1BeTest()
         {
             var match = GetSampleMatchResult();
             Assert.AreEqual("test", match.Player1);
         }
 
         [TestMethod]
-        public void MatchResult_Player2_BeTest2()
+        public void MatchResultPlayer2BeTest2()
         {
             var match = GetSampleMatchResult();
             Assert.AreEqual("test2", match.Player2);
         }
 
         [TestMethod]
-        public void MatchResult_Winner_BeTest2()
+        public void MatchResultWinnerBeTest2()
         {
             var match = GetSampleMatchResult();
             Assert.AreEqual("test2", match.Winner);
         }
 
         [TestMethod]
-        public void MatchResult_Date_Be20251022()
+        public void MatchResultDateBe20251022()
         {
             var match = GetSampleMatchResult();
             Assert.AreEqual("2025-10-22", match.Date);

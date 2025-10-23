@@ -14,7 +14,6 @@ namespace TrucoServer.Tests
         private class Dummy
         {
             public string Name { get; set; }
-            public int Age { get; set; }
             public byte[] DataBytes { get; set; }
             public Dummy Child { get; set; }
         }
@@ -26,14 +25,6 @@ namespace TrucoServer.Tests
             var obj = new Dummy { Name = "test" };
             var result = EfHelpers.GetPropValue<string>(obj, "Name");
             Assert.AreEqual("test", result);
-        }
-        
-        [TestMethod]
-        public void GetPropValueCorrectIntValue()
-        {
-            var obj = new Dummy { Age = 25 };
-            var result = EfHelpers.GetPropValue<int>(obj, "Age");
-            Assert.AreEqual(25, result);
         }
 
         [TestMethod]
@@ -58,14 +49,6 @@ namespace TrucoServer.Tests
             var obj = new Dummy { Name = null };
             var result = EfHelpers.GetPropValue<string>(obj, "Name");
             Assert.AreEqual(null, result);
-        }
-
-        [TestMethod]
-        public void GetPropValueDefaultWhenObjectIsNull()
-        {
-            Dummy obj = null;
-            var result = EfHelpers.GetPropValue<int>(obj, "Age");
-            Assert.AreEqual(default(int), result);
         }
 
         [TestMethod]

@@ -22,7 +22,7 @@ namespace TrucoServer.Tests
         }
 
         [TestMethod]
-        public void PlayerStatsSerialization_PlayerName_Match()
+        public void PlayerStatsSerializationPlayerNameMatch()
         {
             var original = GetSamplePlayerStatsS();
             string json = JsonConvert.SerializeObject(original);
@@ -31,7 +31,7 @@ namespace TrucoServer.Tests
         }
 
         [TestMethod]
-        public void PlayerStatsSerialization_Wins_Match()
+        public void PlayerStatsSerializationWinsMatch()
         {
             var original = GetSamplePlayerStatsS();
             string json = JsonConvert.SerializeObject(original);
@@ -40,7 +40,7 @@ namespace TrucoServer.Tests
         }
 
         [TestMethod]
-        public void PlayerStatsSerialization_Losses_Match()
+        public void PlayerStatsSerializationLossesMatch()
         {
             var original = GetSamplePlayerStatsS();
             string json = JsonConvert.SerializeObject(original);

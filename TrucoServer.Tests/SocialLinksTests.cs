@@ -21,21 +21,21 @@ namespace TrucoServer.Tests
         }
 
         [TestMethod]
-        public void SocialLinks_Facebook_BeTestFB()
+        public void SocialLinksFacebookBeTestFB()
         {
             var obj = GetSampleSocialLinks();
             Assert.AreEqual("testFB", obj.FacebookHandle);
         }
 
         [TestMethod]
-        public void SocialLinks_X_BeTestX()
+        public void SocialLinksXBeTestX()
         {
             var obj = GetSampleSocialLinks();
             Assert.AreEqual("testX", obj.XHandle);
         }
 
         [TestMethod]
-        public void SocialLinks_Instagram_BeTestIG()
+        public void SocialLinksInstagramBeTestIG()
         {
             var obj = GetSampleSocialLinks();
             Assert.AreEqual("testIG", obj.InstagramHandle);

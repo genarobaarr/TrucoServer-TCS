@@ -27,7 +27,7 @@ namespace TrucoServer.Tests
         }
 
         [TestMethod]
-        public void FriendData_AvatarId_BeAvatarAaaDefault()
+        public void FriendDataAvatarIdBeAvatarAaaDefault()
         {
             var friend = GetSampleFriendData();
             Assert.AreEqual("avatar_aaa_default", friend.AvatarId);

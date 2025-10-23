@@ -147,7 +147,6 @@ namespace TrucoServer
             { 
                 return false; 
             }
-                
 
             using (var context = new baseDatosPruebaEntities())
             {

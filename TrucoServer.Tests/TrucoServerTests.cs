@@ -18,7 +18,7 @@ namespace TrucoServer.Tests
         }
         //Para el email
         [TestMethod]
-        public void RequestEmailVerification_ReturnTrue()
+        public void RequestEmailVerificationReturnTrue()
         {
             var result = server.RequestEmailVerification("test@example.com", "en");
             Assert.IsTrue(result);
@@ -31,7 +31,7 @@ namespace TrucoServer.Tests
         }
         */
         [TestMethod]
-        public void ConfirmEmailVerification_WithWrongCode_ReturnFalse()
+        public void ConfirmEmailVerificationWithWrongCodeReturnFalse()
         {
             server.RequestEmailVerification("test@example.com", "en");
             var result = server.ConfirmEmailVerification("test@example.com", "000000");
@@ -39,28 +39,28 @@ namespace TrucoServer.Tests
         }
         //Validar usuario y email
         [TestMethod]
-        public void UsernameExists_ReturnFalse()
+        public void UsernameExistsReturnFalse()
         {
             var result = server.UsernameExists("");
             Assert.IsFalse(result);
         }
 
         [TestMethod]
-        public void EmailExists_ReturnFalse()
+        public void EmailExistsReturnFalse()
         {
             var result = server.EmailExists("");
             Assert.IsFalse(result);
         }
         //Guardar perfil de usuario
         [TestMethod]
-        public void SaveNullUserProfile_ReturnFalse()
+        public void SaveNullUserProfileReturnFalse()
         {
             var result = server.SaveUserProfile(null);
             Assert.IsFalse(result);
         }
 
         [TestMethod]
-        public void SaveUserProfile_EmptyEmail_ReturnFalse()
+        public void SaveUserProfileEmptyEmailReturnFalse()
         {
             var profile = new UserProfileData { Email = "" };
             var result = server.SaveUserProfile(profile);

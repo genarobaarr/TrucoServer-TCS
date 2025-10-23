@@ -35,7 +35,7 @@ namespace TrucoServer.Tests
         }
 
         [TestMethod]
-        public void MatchResultSerialization_Player1_Match()
+        public void MatchResultSerializationPlayer1Match()
         {
             var original = GetSampleMatchResultS();
             var copy = SerializeAndDeserialize(original);
@@ -43,7 +43,7 @@ namespace TrucoServer.Tests
         }
 
         [TestMethod]
-        public void MatchResultSerialization_Player2_Match()
+        public void MatchResultSerializationPlayer2Match()
         {
             var original = GetSampleMatchResultS();
             var copy = SerializeAndDeserialize(original);
@@ -51,7 +51,7 @@ namespace TrucoServer.Tests
         }
 
         [TestMethod]
-        public void MatchResultSerialization_Winner_Match()
+        public void MatchResultSerializationWinnerMatch()
         {
             var original = GetSampleMatchResultS();
             var copy = SerializeAndDeserialize(original);
@@ -59,7 +59,7 @@ namespace TrucoServer.Tests
         }
 
         [TestMethod]
-        public void MatchResultSerialization_Date_Match()
+        public void MatchResultSerializationDateMatch()
         {
             var original = GetSampleMatchResultS();
             var copy = SerializeAndDeserialize(original);

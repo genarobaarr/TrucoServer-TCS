@@ -33,7 +33,7 @@ namespace TrucoServer.Tests
         }
 
         [TestMethod]
-        public void FriendDataSerialization_Username_Match()
+        public void FriendDataSerializationUsernameMatch()
         {
             var original = GetSampleFriendDataS();
             var copy = SerializeAndDeserialize(original);
@@ -41,7 +41,7 @@ namespace TrucoServer.Tests
         }
 
         [TestMethod]
-        public void FriendDataSerialization_AvatarId_Match()
+        public void FriendDataSerializationAvatarIdMatch()
         {
             var original = GetSampleFriendDataS();
             var copy = SerializeAndDeserialize(original);
