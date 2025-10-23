@@ -6,6 +6,8 @@ using System.Text;
 using System.Threading.Tasks;
 using TrucoServer;
 
+//Cada vez que se quiera testear el server se debe descomentar este codigo y comentar el que esta abajo
+/*
 namespace HostServer
 {
     public class Program
@@ -33,22 +35,23 @@ namespace HostServer
     }
 }
 
-/*
- * Así se encontraba antes el server
+*/
+// Así se encontraba antes el server
+// Cada vez que se quiera correr el server se debe descomentar este codigo y comentar el que esta arriba
 namespace HostServer
-{
-    internal class Program // Solamente para prueba se hace public
     {
-        static void Main(string[] args)
+        internal class Program // Solamente para prueba se hace public
         {
-            using (ServiceHost host = new ServiceHost(typeof(TrucoServer.TrucoServer)))
+            static void Main(string[] args)
             {
-                host.Open();
+                using (ServiceHost host = new ServiceHost(typeof(TrucoServer.TrucoServer)))
+                {
+                    host.Open();
 
-                Console.WriteLine("Servidor iniciado en net.tcp://localhost:8091/TrucoServiceBase  http://localhost:8080/TrucoServiceBase");
-                Console.ReadLine();
+                    Console.WriteLine("Servidor iniciado en net.tcp://localhost:8091/TrucoServiceBase  http://localhost:8080/TrucoServiceBase");
+                    Console.ReadLine();
+                }
             }
         }
     }
-}
-*/
+
