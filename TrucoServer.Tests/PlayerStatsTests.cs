@@ -10,18 +10,35 @@ namespace TrucoServer.Tests
     [TestClass]
     public class PlayerStatsTests
     {
-        [TestMethod]
-        public void CreatePlayerStatsTest()
+        private PlayerStats GetSamplePlayerStats()
         {
-            var stats = new PlayerStats
+            return new PlayerStats
             {
                 PlayerName = "test",
-                Wins = 5,
-                Losses = 2
+                Wins = 10,
+                Losses = 3
             };
+        }
+
+        [TestMethod]
+        public void PlayerStats_PlayerName_BeTest()
+        {
+            var stats = GetSamplePlayerStats();
             Assert.AreEqual("test", stats.PlayerName);
-            Assert.AreEqual(5, stats.Wins);
-            Assert.AreEqual(2, stats.Losses);
+        }
+
+        [TestMethod]
+        public void PlayerStats_Wins_Be10()
+        {
+            var stats = GetSamplePlayerStats();
+            Assert.AreEqual(10, stats.Wins);
+        }
+
+        [TestMethod]
+        public void PlayerStats_Losses_Be3()
+        {
+            var stats = GetSamplePlayerStats();
+            Assert.AreEqual(3, stats.Losses);
         }
     }
 }

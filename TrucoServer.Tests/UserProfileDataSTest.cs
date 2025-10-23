@@ -10,29 +10,50 @@ using System.Threading.Tasks;
 namespace TrucoServer.Tests
 {
     [TestClass]
-    public class UserProfileDataSTest
+    public class UserProfileDataSTests
     {
-        [TestMethod]
-        public void UserProfileDataSerializationTest()
+        private UserProfileData GetSampleUserProfile()
         {
-            var original = new UserProfileData
+            return new UserProfileData
             {
                 Username = "TestUser",
                 Email = "test@example.com",
                 AvatarId = "avatar_aaa_default"
             };
-            var serializer = new DataContractSerializer(typeof(UserProfileData));
-            UserProfileData copia;
+        }
 
+        private UserProfileData SerializeAndDeserialize(UserProfileData original)
+        {
+            var serializer = new DataContractSerializer(typeof(UserProfileData));
             using (var ms = new MemoryStream())
             {
                 serializer.WriteObject(ms, original);
-                ms.Position = 0; 
-                copia = (UserProfileData)serializer.ReadObject(ms);
+                ms.Position = 0;
+                return (UserProfileData)serializer.ReadObject(ms);
             }
+        }
 
+        [TestMethod]
+        public void UserProfileDataSerialization_Username_Match()
+        {
+            var original = GetSampleUserProfile();
+            var copia = SerializeAndDeserialize(original);
             Assert.AreEqual(original.Username, copia.Username);
+        }
+
+        [TestMethod]
+        public void UserProfileDataSerialization_Email_Match()
+        {
+            var original = GetSampleUserProfile();
+            var copia = SerializeAndDeserialize(original);
             Assert.AreEqual(original.Email, copia.Email);
+        }
+
+        [TestMethod]
+        public void UserProfileDataSerialization_AvatarId_Match()
+        {
+            var original = GetSampleUserProfile();
+            var copia = SerializeAndDeserialize(original);
             Assert.AreEqual(original.AvatarId, copia.AvatarId);
         }
     }

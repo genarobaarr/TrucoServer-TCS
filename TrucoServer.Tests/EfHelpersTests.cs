@@ -80,6 +80,17 @@ namespace TrucoServer.Tests
         }
 
         [TestMethod]
+        public void GetNavigationChildObjectNull()
+        {
+            var child = new Dummy { Name = "Child" };
+            var parent = new Dummy { Child = child };
+
+            var result = EfHelpers.GetNavigation(parent, "Child") as Dummy;
+
+            Assert.IsNotNull(result);
+        }
+
+        [TestMethod]
         public void GetNavigationNullWhenPropertyNotFound()
         {
             var obj = new Dummy { Name = "test" };

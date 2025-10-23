@@ -15,8 +15,15 @@ namespace TrucoServer.Tests
         {
             string password = "chimalhuacanGOAT!";
             string hashed = PasswordHasher.Hash(password);
-            Assert.IsNotNull(hashed, "El hash no debe ser nulo");
             Assert.AreNotEqual(password, hashed, "El hash no debe coincidir con la contraseña original");
+        }
+
+        [TestMethod]
+        public void HashReturnNullFromPassword()
+        {
+            string password = "chimalhuacanGOAT!";
+            string hashed = PasswordHasher.Hash(password);
+            Assert.IsNotNull(hashed, "El hash no debe ser nulo");
         }
 
         [TestMethod]

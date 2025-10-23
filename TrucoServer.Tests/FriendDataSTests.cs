@@ -12,26 +12,40 @@ namespace TrucoServer.Tests
     [TestClass]
     public class FriendDataSTests
     {
-        [TestMethod]
-        public void FriendDataSerializationTests()
+        private FriendData GetSampleFriendDataS()
         {
-            var original = new FriendData
+            return new FriendData
             {
                 Username = "test",
                 AvatarId = "avatar_aaa_default"
             };
+        }
 
+        private FriendData SerializeAndDeserialize(FriendData original)
+        {
             var serializer = new DataContractSerializer(typeof(FriendData));
-            using (var memoryStream = new MemoryStream())
+            using (var ms = new MemoryStream())
             {
-                serializer.WriteObject(memoryStream, original);
-                memoryStream.Position = 0;
-
-                var deserialized = (FriendData)serializer.ReadObject(memoryStream);
-
-                Assert.AreEqual(original.Username, deserialized.Username);
-                Assert.AreEqual(original.AvatarId, deserialized.AvatarId);
+                serializer.WriteObject(ms, original);
+                ms.Position = 0;
+                return (FriendData)serializer.ReadObject(ms);
             }
+        }
+
+        [TestMethod]
+        public void FriendDataSerialization_Username_Match()
+        {
+            var original = GetSampleFriendDataS();
+            var copy = SerializeAndDeserialize(original);
+            Assert.AreEqual(original.Username, copy.Username);
+        }
+
+        [TestMethod]
+        public void FriendDataSerialization_AvatarId_Match()
+        {
+            var original = GetSampleFriendDataS();
+            var copy = SerializeAndDeserialize(original);
+            Assert.AreEqual(original.AvatarId, copy.AvatarId);
         }
     }
 }

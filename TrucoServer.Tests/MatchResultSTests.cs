@@ -12,30 +12,58 @@ namespace TrucoServer.Tests
     [TestClass]
     public class MatchResultSTests
     {
-        [TestMethod]
-        public void MatchResultSerializationTests()
+        private MatchResult GetSampleMatchResultS()
         {
-            var original = new MatchResult
+            return new MatchResult
             {
                 Player1 = "test",
                 Player2 = "test2",
                 Winner = "test2",
                 Date = "2025-10-22"
             };
+        }
 
+        private MatchResult SerializeAndDeserialize(MatchResult original)
+        {
             var serializer = new DataContractSerializer(typeof(MatchResult));
-            using (var memoryStream = new MemoryStream())
+            using (var ms = new MemoryStream())
             {
-                serializer.WriteObject(memoryStream, original);
-                memoryStream.Position = 0;
-
-                var deserialized = (MatchResult)serializer.ReadObject(memoryStream);
-
-                Assert.AreEqual(original.Player1, deserialized.Player1);
-                Assert.AreEqual(original.Player2, deserialized.Player2);
-                Assert.AreEqual(original.Winner, deserialized.Winner);
-                Assert.AreEqual(original.Date, deserialized.Date);
+                serializer.WriteObject(ms, original);
+                ms.Position = 0;
+                return (MatchResult)serializer.ReadObject(ms);
             }
+        }
+
+        [TestMethod]
+        public void MatchResultSerialization_Player1_Match()
+        {
+            var original = GetSampleMatchResultS();
+            var copy = SerializeAndDeserialize(original);
+            Assert.AreEqual(original.Player1, copy.Player1);
+        }
+
+        [TestMethod]
+        public void MatchResultSerialization_Player2_Match()
+        {
+            var original = GetSampleMatchResultS();
+            var copy = SerializeAndDeserialize(original);
+            Assert.AreEqual(original.Player2, copy.Player2);
+        }
+
+        [TestMethod]
+        public void MatchResultSerialization_Winner_Match()
+        {
+            var original = GetSampleMatchResultS();
+            var copy = SerializeAndDeserialize(original);
+            Assert.AreEqual(original.Winner, copy.Winner);
+        }
+
+        [TestMethod]
+        public void MatchResultSerialization_Date_Match()
+        {
+            var original = GetSampleMatchResultS();
+            var copy = SerializeAndDeserialize(original);
+            Assert.AreEqual(original.Date, copy.Date);
         }
     }
 }

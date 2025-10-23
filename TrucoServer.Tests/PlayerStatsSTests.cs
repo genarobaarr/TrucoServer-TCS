@@ -11,21 +11,41 @@ namespace TrucoServer.Tests
     [TestClass]
     public class PlayerStatsSTests
     {
-        [TestMethod]
-        public void PlayerStatsSerializationTests()
+        private PlayerStats GetSamplePlayerStatsS()
         {
-            var original = new PlayerStats
+            return new PlayerStats
             {
                 PlayerName = "test",
                 Wins = 10,
                 Losses = 3
             };
-            string json = JsonConvert.SerializeObject(original);
-            var copia = JsonConvert.DeserializeObject<PlayerStats>(json);
+        }
 
-            Assert.AreEqual(original.PlayerName, copia.PlayerName);
-            Assert.AreEqual(original.Wins, copia.Wins);
-            Assert.AreEqual(original.Losses, copia.Losses);
+        [TestMethod]
+        public void PlayerStatsSerialization_PlayerName_Match()
+        {
+            var original = GetSamplePlayerStatsS();
+            string json = JsonConvert.SerializeObject(original);
+            var copy = JsonConvert.DeserializeObject<PlayerStats>(json);
+            Assert.AreEqual(original.PlayerName, copy.PlayerName);
+        }
+
+        [TestMethod]
+        public void PlayerStatsSerialization_Wins_Match()
+        {
+            var original = GetSamplePlayerStatsS();
+            string json = JsonConvert.SerializeObject(original);
+            var copy = JsonConvert.DeserializeObject<PlayerStats>(json);
+            Assert.AreEqual(original.Wins, copy.Wins);
+        }
+
+        [TestMethod]
+        public void PlayerStatsSerialization_Losses_Match()
+        {
+            var original = GetSamplePlayerStatsS();
+            string json = JsonConvert.SerializeObject(original);
+            var copy = JsonConvert.DeserializeObject<PlayerStats>(json);
+            Assert.AreEqual(original.Losses, copy.Losses);
         }
     }
 }

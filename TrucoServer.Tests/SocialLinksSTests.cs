@@ -11,21 +11,40 @@ namespace TrucoServer.Tests
     [TestClass]
     public class SocialLinksSTests
     {
-        [TestMethod]
-        public void SocialLinksSerializationTest()
+        private SocialLinks GetSampleSocialLinksS()
         {
-            var original = new SocialLinks
+            return new SocialLinks
             {
                 FacebookHandle = "testFB",
                 XHandle = "testX",
                 InstagramHandle = "testIG"
             };
+        }
 
+        [TestMethod]
+        public void SocialLinksSerialization_Facebook_Match()
+        {
+            var original = GetSampleSocialLinksS();
             string json = JsonConvert.SerializeObject(original);
             var copy = JsonConvert.DeserializeObject<SocialLinks>(json);
-
             Assert.AreEqual(original.FacebookHandle, copy.FacebookHandle);
+        }
+
+        [TestMethod]
+        public void SocialLinksSerialization_X_Match()
+        {
+            var original = GetSampleSocialLinksS();
+            string json = JsonConvert.SerializeObject(original);
+            var copy = JsonConvert.DeserializeObject<SocialLinks>(json);
             Assert.AreEqual(original.XHandle, copy.XHandle);
+        }
+
+        [TestMethod]
+        public void SocialLinksSerialization_Instagram_Match()
+        {
+            var original = GetSampleSocialLinksS();
+            string json = JsonConvert.SerializeObject(original);
+            var copy = JsonConvert.DeserializeObject<SocialLinks>(json);
             Assert.AreEqual(original.InstagramHandle, copy.InstagramHandle);
         }
     }

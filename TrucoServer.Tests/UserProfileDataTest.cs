@@ -10,8 +10,7 @@ namespace TrucoServer.Tests
     [TestClass]
     public class UserProfileDataTest
     {
-        [TestMethod]
-        public void CreateUserProfileDataTest()
+        private UserProfileData GetSampleUserProfile()
         {
             var emblemLayer = new EmblemLayer
             {
@@ -25,7 +24,7 @@ namespace TrucoServer.Tests
                 ZIndex = 5
             };
 
-            var userProfile = new UserProfileData
+            return new UserProfileData
             {
                 Username = "Rafica",
                 Email = "mail@example.com",
@@ -37,13 +36,50 @@ namespace TrucoServer.Tests
                 EmblemLayers = new List<EmblemLayer> { emblemLayer },
                 SocialLinksJson = new byte[] { 0x01, 0x02 }
             };
-            var firstLayer = userProfile.EmblemLayers[0];
+        }
 
+        [TestMethod]
+        public void UserProfileData_Username_Rafica()
+        {
+            var userProfile = GetSampleUserProfile();
             Assert.AreEqual("Rafica", userProfile.Username);
+        }
+
+        [TestMethod]
+        public void UserProfileData_Email_MailExample()
+        {
+            var userProfile = GetSampleUserProfile();
             Assert.AreEqual("mail@example.com", userProfile.Email);
+        }
+
+        [TestMethod]
+        public void EmblemLayer_ShapeId_Be1()
+        {
+            var userProfile = GetSampleUserProfile();
+            var firstLayer = userProfile.EmblemLayers[0];
             Assert.AreEqual(1, firstLayer.ShapeId);
+        }
+
+        [TestMethod]
+        public void EmblemLayer_ColorHex_BeRed()
+        {
+            var userProfile = GetSampleUserProfile();
+            var firstLayer = userProfile.EmblemLayers[0];
             Assert.AreEqual("#FF0000", firstLayer.ColorHex);
+        }
+
+        [TestMethod]
+        public void EmblemLayer_ZIndex_Be5()
+        {
+            var userProfile = GetSampleUserProfile();
+            var firstLayer = userProfile.EmblemLayers[0];
             Assert.AreEqual(5, firstLayer.ZIndex);
+        }
+
+        [TestMethod]
+        public void UserProfileData_SocialLinksJsonLength_Be2()
+        {
+            var userProfile = GetSampleUserProfile();
             Assert.AreEqual(2, userProfile.SocialLinksJson.Length);
         }
     }
