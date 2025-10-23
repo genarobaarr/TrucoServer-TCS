@@ -75,10 +75,12 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="EfHelpersTests.cs" />
     <Compile Include="FriendDataSTests.cs" />
     <Compile Include="FriendDataTests.cs" />
     <Compile Include="MatchResultSTests.cs" />
     <Compile Include="MatchResultTests.cs" />
+    <Compile Include="PasswordHasherTests.cs" />
     <Compile Include="PlayerStatsSTests.cs" />
     <Compile Include="PlayerStatsTests.cs" />
     <Compile Include="SocialLinksSTests.cs" />

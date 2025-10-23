@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace TrucoServer
 {
-    static class EfHelpers
+    public class EfHelpers //El static se cambia a pblic para poder probarlo
     {
         public static T GetPropValue<T>(object o, params string[] names)
         {
