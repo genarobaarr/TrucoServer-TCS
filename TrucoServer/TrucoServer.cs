@@ -20,6 +20,8 @@ namespace TrucoServer
         private static ConcurrentDictionary<string, ITrucoCallback> onlineUsers = new ConcurrentDictionary<string, ITrucoCallback>();
         private const int MAX_CHANGES = 2;
 
+        private readonly ConcurrentDictionary<string, List<ITrucoCallback>> matchCallbacks = new ConcurrentDictionary<string, List<ITrucoCallback>>();
+
         private static ITrucoCallback GetUserCallback(string username)
         {
             if (onlineUsers.TryGetValue(username, out ITrucoCallback callback))
@@ -543,8 +545,7 @@ namespace TrucoServer
                 return pendingRequests;
             }
         }
-
-        public string CreateMatch(string hostPlayer)
+                public string CreateMatch(string hostPlayer)
         {
             throw new NotImplementedException();
         }
@@ -552,9 +553,67 @@ namespace TrucoServer
         {
             throw new NotImplementedException();
         }
+        public void JoinMatchChat(string matchCode, string player)
+        {
+            var callback = OperationContext.Current.GetCallbackChannel<ITrucoCallback>();
+
+            lock (matchCallbacks)
+            {
+                if (!matchCallbacks.ContainsKey(matchCode))
+                {
+                    matchCallbacks[matchCode] = new List<ITrucoCallback>();
+                }
+
+                matchCallbacks[matchCode].Add(callback);
+            }
+
+            foreach (var cb in matchCallbacks[matchCode])
+            {
+                try
+                {
+                    cb.OnPlayerJoined(matchCode, player);
+                }
+                catch
+                {
+                    
+                }
+            }
+
+            Console.WriteLine($"{player} se unió a {matchCode}");
+        }
+
         public void LeaveMatch(string matchCode, string player)
         {
             throw new NotImplementedException();
+        }
+
+        public void LeaveMatchChat(string matchCode, string player)
+        {
+            var callback = OperationContext.Current.GetCallbackChannel<ITrucoCallback>();
+
+            lock (matchCallbacks)
+            {
+                if (matchCallbacks.ContainsKey(matchCode))
+                {
+                    matchCallbacks[matchCode].Remove(callback);
+                }
+            }
+
+            if (matchCallbacks.ContainsKey(matchCode))
+            {
+                foreach (var cb in matchCallbacks[matchCode])
+                {
+                    try
+                    {
+                        cb.OnPlayerLeft(matchCode, player);
+                    }
+                    catch 
+                    { 
+
+                    }
+                }
+            }
+            Console.WriteLine($"{player} salió de {matchCode}");
         }
         public void PlayCard(string matchCode, string player, string card)
         {
@@ -562,8 +621,29 @@ namespace TrucoServer
         }
         public void SendChatMessage(string matchCode, string player, string message)
         {
-            throw new NotImplementedException();
+            if (!matchCallbacks.ContainsKey(matchCode))
+            {
+                return;
+            }
+
+            foreach (var cb in matchCallbacks[matchCode])
+            {
+                try
+                {
+                    if (cb != OperationContext.Current.GetCallbackChannel<ITrucoCallback>())
+                    {
+                        cb.OnChatMessage(matchCode, player, message);
+                    }
+                }
+                catch
+                {
+                    
+                }
+            }
+
+            Console.WriteLine($"[{matchCode}] {player}: {message}");
         }
+
         public List<PlayerStats> GetGlobalRanking()
         {
             using (var context = new baseDatosPruebaEntities())
