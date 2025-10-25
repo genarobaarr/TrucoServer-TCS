@@ -40,15 +40,15 @@ namespace TrucoServer
                     }
                     catch (FileNotFoundException)
                     {
-                        throw new FileNotFoundException($"FATAL: El archivo de configuración '{filePath}' no se encuentra en el directorio de ejecución (bin/Debug).");
+                        throw new FileNotFoundException($"El archivo de configuración '{filePath}' no se encuentra en el directorio de ejecución (bin/Debug).");
                     }
                     catch (JsonException ex)
                     {
-                        throw new InvalidOperationException($"FATAL: Error al parsear el archivo JSON. Asegúrate de que el formato sea correcto. Detalle: {ex.Message}");
+                        throw new InvalidOperationException($"Error al parsear el archivo JSON {ex.Message}");
                     }
                     catch (Exception ex)
                     {
-                        throw new InvalidOperationException($"FATAL: Error al cargar la configuración: {ex.Message}");
+                        throw new InvalidOperationException($"Error al cargar la configuración: {ex.Message}");
                     }
                 }
                 return emailSettings;

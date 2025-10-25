@@ -75,7 +75,9 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ConfigurationReader.cs" />
     <Compile Include="EfHelpersTests.cs" />
+    <Compile Include="EmailSettingsTests.cs" />
     <Compile Include="FriendDataSTests.cs" />
     <Compile Include="FriendDataTests.cs" />
     <Compile Include="MatchResultSTests.cs" />

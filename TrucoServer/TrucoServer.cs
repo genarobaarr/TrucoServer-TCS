@@ -610,14 +610,17 @@ namespace TrucoServer
                 return pendingRequests;
             }
         }
+
         public string CreateMatch(string hostPlayer)
         {
             throw new NotImplementedException();
         }
+
         public bool JoinMatch(string matchCode, string player)
         {
             throw new NotImplementedException();
         }
+
         public void JoinMatchChat(string matchCode, string player)
         {
             try
@@ -657,7 +660,6 @@ namespace TrucoServer
             }
         }
             
-
         public void LeaveMatch(string matchCode, string player)
         {
             throw new NotImplementedException();
@@ -707,6 +709,7 @@ namespace TrucoServer
         {
             throw new NotImplementedException();
         }
+
         public void SendChatMessage(string matchCode, string player, string message)
         {
             try
@@ -742,7 +745,6 @@ namespace TrucoServer
                 LogError(ex, nameof(SendChatMessage));
             }
         }
-            
 
         public List<PlayerStats> GetGlobalRanking()
         {
@@ -761,14 +763,15 @@ namespace TrucoServer
                 return topPlayers;
             }
         }
+
         public List<MatchResult> GetLastMatches(string username)
         {
             throw new NotImplementedException();
         }
+
         public List<string> GetOnlinePlayers()
         {
             throw new NotImplementedException();
         }
-
     }
 }
