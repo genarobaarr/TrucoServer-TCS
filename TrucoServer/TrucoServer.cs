@@ -3,6 +3,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Data.Entity;
+using System.Data.Entity.Infrastructure;
 using System.Linq;
 using System.Net;
 using System.Net.Mail;
@@ -22,17 +23,37 @@ namespace TrucoServer
 
         private readonly ConcurrentDictionary<string, List<ITrucoCallback>> matchCallbacks = new ConcurrentDictionary<string, List<ITrucoCallback>>();
 
+        private void LogError(Exception ex, string methodName)
+        {
+            // Aquí se hará la lógica del log4net
+            // Ejemplo con log4net
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.WriteLine($"[ERROR en {methodName}] {ex.GetType().Name}: {ex.Message}");
+            Console.ResetColor();
+        }
+
         private static ITrucoCallback GetUserCallback(string username)
         {
-            if (onlineUsers.TryGetValue(username, out ITrucoCallback callback))
+            try
             {
-                var commObj = (ICommunicationObject)callback;
-                if (commObj.State == CommunicationState.Opened)
+                if (onlineUsers.TryGetValue(username, out ITrucoCallback callback))
                 {
-                    return callback;
+                    var communicationObject = (ICommunicationObject)callback;
+                    if (communicationObject.State == CommunicationState.Opened)
+                    {
+                        return callback;
+                    }
+                    communicationObject.Abort();
+                    onlineUsers.TryRemove(username, out _);
                 }
-                commObj.Abort();
-                onlineUsers.TryRemove(username, out _);
+            }
+            catch (CommunicationException ex)
+            {
+                Console.WriteLine($"Comunicación interrumpida para {username}: {ex.Message}");    
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error al obtener callback de {username}: {ex.Message}");
             }
             return null;
         }
@@ -47,10 +68,23 @@ namespace TrucoServer
                 Console.WriteLine($"Código enviado a {email}: {code}");
                 return true;
             }
-            catch
+            catch (ArgumentNullException ex)
             {
-                return false;
+                LogError(ex, nameof(RequestEmailVerification));
             }
+            catch (InvalidOperationException ex)
+            {
+                LogError(ex, nameof(RequestEmailVerification));
+            }
+            catch (SmtpException ex)
+            {
+                LogError(ex, nameof(RequestEmailVerification));
+            }
+            catch (Exception ex)
+            {
+                LogError(ex, nameof(RequestEmailVerification));
+            }
+            return false;
         }
 
         public bool ConfirmEmailVerification(string email, string code)
@@ -97,9 +131,21 @@ namespace TrucoServer
                     smtp.Send(message);
                 }
             }
-            catch
+            catch (SmtpFailedRecipientException ex)
             {
-
+                LogError(ex, nameof(SendVerificationEmail));
+            }
+            catch (SmtpException ex)
+            {
+                LogError(ex, nameof(SendVerificationEmail));
+            }
+            catch (FormatException ex)
+            {
+                LogError(ex, nameof(SendVerificationEmail));
+            }
+            catch (Exception ex)
+            {
+                LogError(ex, nameof(SendVerificationEmail));
             }
         }
         public bool Register(string username, string password, string email)
@@ -137,10 +183,19 @@ namespace TrucoServer
                     return true;
                 }
             }
-            catch
+            catch (DbUpdateException ex)
             {
-                return false;
+                LogError(ex, nameof(Register));
             }
+            catch (ArgumentException ex)
+            {
+                LogError(ex, nameof(Register));
+            }
+            catch (Exception ex)
+            {
+                LogError(ex, nameof(Register));
+            }
+            return false;
         }
 
         public bool UsernameExists(string username)
@@ -341,8 +396,13 @@ namespace TrucoServer
                     smtp.Send(message);
                 }
             }
-            catch
+            catch (SmtpException ex)
             {
+                LogError(ex, nameof(SendLoginNotificationEmail));
+            }
+            catch (Exception ex)
+            {
+                LogError(ex, nameof(SendLoginNotificationEmail));
             }
         }
 
@@ -545,7 +605,7 @@ namespace TrucoServer
                 return pendingRequests;
             }
         }
-                public string CreateMatch(string hostPlayer)
+        public string CreateMatch(string hostPlayer)
         {
             throw new NotImplementedException();
         }
@@ -555,32 +615,43 @@ namespace TrucoServer
         }
         public void JoinMatchChat(string matchCode, string player)
         {
-            var callback = OperationContext.Current.GetCallbackChannel<ITrucoCallback>();
-
-            lock (matchCallbacks)
+            try
             {
-                if (!matchCallbacks.ContainsKey(matchCode))
+                var callback = OperationContext.Current.GetCallbackChannel<ITrucoCallback>();
+
+                lock (matchCallbacks)
                 {
-                    matchCallbacks[matchCode] = new List<ITrucoCallback>();
+                    if (!matchCallbacks.ContainsKey(matchCode))
+                    {
+                        matchCallbacks[matchCode] = new List<ITrucoCallback>();
+                    }
+
+                    matchCallbacks[matchCode].Add(callback);
                 }
 
-                matchCallbacks[matchCode].Add(callback);
+                foreach (var callbackInstance in matchCallbacks[matchCode])
+                {
+                    try
+                    {
+                        callbackInstance.OnPlayerJoined(matchCode, player);
+                    }
+                    catch (CommunicationException ex)
+                    {
+                        LogError(ex, nameof(JoinMatchChat));
+                    }
+                    catch (Exception ex)
+                    {
+                        LogError(ex, nameof(JoinMatchChat));
+                    }
+                }
+                Console.WriteLine($"{player} se unió a {matchCode}");
             }
-
-            foreach (var cb in matchCallbacks[matchCode])
+            catch (Exception ex)
             {
-                try
-                {
-                    cb.OnPlayerJoined(matchCode, player);
-                }
-                catch
-                {
-                    
-                }
+                LogError(ex, nameof(JoinMatchChat));
             }
-
-            Console.WriteLine($"{player} se unió a {matchCode}");
         }
+            
 
         public void LeaveMatch(string matchCode, string player)
         {
@@ -589,60 +660,84 @@ namespace TrucoServer
 
         public void LeaveMatchChat(string matchCode, string player)
         {
-            var callback = OperationContext.Current.GetCallbackChannel<ITrucoCallback>();
-
-            lock (matchCallbacks)
+            try
             {
+                var callback = OperationContext.Current.GetCallbackChannel<ITrucoCallback>();
+
+                lock (matchCallbacks)
+                {
+                    if (matchCallbacks.ContainsKey(matchCode))
+                    {
+                        matchCallbacks[matchCode].Remove(callback);
+                    }
+                }
+
                 if (matchCallbacks.ContainsKey(matchCode))
                 {
-                    matchCallbacks[matchCode].Remove(callback);
-                }
-            }
-
-            if (matchCallbacks.ContainsKey(matchCode))
-            {
-                foreach (var cb in matchCallbacks[matchCode])
-                {
-                    try
+                    foreach (var callbackInstance in matchCallbacks[matchCode])
                     {
-                        cb.OnPlayerLeft(matchCode, player);
-                    }
-                    catch 
-                    { 
-
+                        try
+                        {
+                            callbackInstance.OnPlayerLeft(matchCode, player);
+                        }
+                        catch (CommunicationException ex)
+                        {
+                            LogError(ex, nameof(LeaveMatchChat));
+                        }
+                        catch (Exception ex)
+                        {
+                            LogError(ex, nameof(LeaveMatchChat));
+                        }
                     }
                 }
+                Console.WriteLine($"{player} salió de {matchCode}");
             }
-            Console.WriteLine($"{player} salió de {matchCode}");
+            catch (Exception ex)
+            {
+                LogError(ex, nameof(LeaveMatchChat));
+            }
         }
+            
         public void PlayCard(string matchCode, string player, string card)
         {
             throw new NotImplementedException();
         }
         public void SendChatMessage(string matchCode, string player, string message)
         {
-            if (!matchCallbacks.ContainsKey(matchCode))
+            try
             {
-                return;
-            }
-
-            foreach (var cb in matchCallbacks[matchCode])
-            {
-                try
+                if (!matchCallbacks.ContainsKey(matchCode))
                 {
-                    if (cb != OperationContext.Current.GetCallbackChannel<ITrucoCallback>())
+                    return;
+                }
+
+                foreach (var callbackInstance in matchCallbacks[matchCode])
+                {
+                    try
                     {
-                        cb.OnChatMessage(matchCode, player, message);
+                        if (callbackInstance != OperationContext.Current.GetCallbackChannel<ITrucoCallback>())
+                        {
+                            callbackInstance.OnChatMessage(matchCode, player, message);
+                        }
                     }
-                }
-                catch
-                {
-                    
+                    catch (CommunicationException ex)
+                    {
+                        LogError(ex, nameof(SendChatMessage));
+                    }
+                    catch (Exception ex)
+                    {
+                        LogError(ex, nameof(SendChatMessage));
+                    }
+
+                    Console.WriteLine($"[{matchCode}] {player}: {message}");
                 }
             }
-
-            Console.WriteLine($"[{matchCode}] {player}: {message}");
+            catch (Exception ex)
+            {
+                LogError(ex, nameof(SendChatMessage));
+            }
         }
+            
 
         public List<PlayerStats> GetGlobalRanking()
         {
