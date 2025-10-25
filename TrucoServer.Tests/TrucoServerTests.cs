@@ -18,20 +18,20 @@ namespace TrucoServer.Tests
         }
         //Para el email
         [TestMethod]
-        public void RequestEmailVerificationReturnTrue()
+        public void TestRequestEmailVerificationReturnTrue()
         {
             var result = server.RequestEmailVerification("test@example.com", "en");
             Assert.IsTrue(result);
         }
 
         /*[TestMethod]
-        public void ConfirmEmailVerification_WithCorrectCode_ReturnTrue()
+        public void TestConfirmEmailVerificationWithCorrectCodeReturnTrue()
         {
         
         }
         */
         [TestMethod]
-        public void ConfirmEmailVerificationWithWrongCodeReturnFalse()
+        public void TestConfirmEmailVerificationWithWrongCodeReturnFalse()
         {
             server.RequestEmailVerification("test@example.com", "en");
             var result = server.ConfirmEmailVerification("test@example.com", "000000");
@@ -39,28 +39,28 @@ namespace TrucoServer.Tests
         }
         //Validar usuario y email
         [TestMethod]
-        public void UsernameExistsReturnFalse()
+        public void TestUsernameExistsReturnFalse()
         {
             var result = server.UsernameExists("");
             Assert.IsFalse(result);
         }
 
         [TestMethod]
-        public void EmailExistsReturnFalse()
+        public void TestEmailExistsReturnFalse()
         {
             var result = server.EmailExists("");
             Assert.IsFalse(result);
         }
         //Guardar perfil de usuario
         [TestMethod]
-        public void SaveNullUserProfileReturnFalse()
+        public void TestSaveNullUserProfileReturnFalse()
         {
             var result = server.SaveUserProfile(null);
             Assert.IsFalse(result);
         }
 
         [TestMethod]
-        public void SaveUserProfileEmptyEmailReturnFalse()
+        public void TestSaveUserProfileEmptyEmailReturnFalse()
         {
             var profile = new UserProfileData { Email = "" };
             var result = server.SaveUserProfile(profile);

@@ -39,21 +39,21 @@ namespace TrucoServer.Tests
         }
 
         [TestMethod]
-        public void UserProfileDataUsernameRafica()
+        public void TestUserProfileDataUsernameBeRafica()
         {
             var userProfile = GetSampleUserProfile();
             Assert.AreEqual("Rafica", userProfile.Username);
         }
 
         [TestMethod]
-        public void UserProfileDataEmailMailExample()
+        public void TestUserProfileDataEmailBeMailExample()
         {
             var userProfile = GetSampleUserProfile();
             Assert.AreEqual("mail@example.com", userProfile.Email);
         }
 
         [TestMethod]
-        public void EmblemLayerShapeIdBe1()
+        public void TestEmblemLayerShapeIdBe1()
         {
             var userProfile = GetSampleUserProfile();
             var firstLayer = userProfile.EmblemLayers[0];
@@ -61,7 +61,7 @@ namespace TrucoServer.Tests
         }
 
         [TestMethod]
-        public void EmblemLayerColorHexBeRed()
+        public void TestEmblemLayerColorHexBeRed()
         {
             var userProfile = GetSampleUserProfile();
             var firstLayer = userProfile.EmblemLayers[0];
@@ -69,7 +69,7 @@ namespace TrucoServer.Tests
         }
 
         [TestMethod]
-        public void EmblemLayerZIndexBe5()
+        public void TestEmblemLayerZIndexBe5()
         {
             var userProfile = GetSampleUserProfile();
             var firstLayer = userProfile.EmblemLayers[0];
@@ -77,7 +77,7 @@ namespace TrucoServer.Tests
         }
 
         [TestMethod]
-        public void UserProfileDataSocialLinksJsonLengthBe2()
+        public void TestUserProfileDataSocialLinksJsonLengthBe2()
         {
             var userProfile = GetSampleUserProfile();
             Assert.AreEqual(2, userProfile.SocialLinksJson.Length);

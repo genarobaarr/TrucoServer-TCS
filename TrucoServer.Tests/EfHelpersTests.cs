@@ -20,7 +20,7 @@ namespace TrucoServer.Tests
         /*
          // Mientras efhelpers sea static no se puede testear este metodo
         [TestMethod]
-        public void GetPropValueCorrectStringValue()
+        public void TestGetPropValueCorrectStringValue()
         {
             var obj = new Dummy { Name = "test" };
             var result = EfHelpers.GetPropValue<string>(obj, "Name");
@@ -28,7 +28,7 @@ namespace TrucoServer.Tests
         }
 
         [TestMethod]
-        public void GetPropValueHandleByteArrayString()
+        public void TestGetPropValueHandleByteArrayString()
         {
             var obj = new Dummy { DataBytes = Encoding.UTF8.GetBytes("TestData") };
             var result = EfHelpers.GetPropValue<string>(obj, "DataBytes");
@@ -36,7 +36,7 @@ namespace TrucoServer.Tests
         }
 
         [TestMethod]
-        public void GetPropValueDefaultPropertyNotExist()
+        public void TestGetPropValueDefaultPropertyNotExist()
         {
             var obj = new Dummy { Name = "test" };
             var result = EfHelpers.GetPropValue<string>(obj, "InvalidProp");
@@ -44,7 +44,7 @@ namespace TrucoServer.Tests
         }
 
         [TestMethod]
-        public void GetPropValueDefaultWhenValueIsNull()
+        public void TestGetPropValueDefaultWhenValueIsNull()
         {
             var obj = new Dummy { Name = null };
             var result = EfHelpers.GetPropValue<string>(obj, "Name");
@@ -52,7 +52,7 @@ namespace TrucoServer.Tests
         }
 
         [TestMethod]
-        public void GetNavigationChildObject()
+        public void TestGetNavigationChildObject()
         {
             var child = new Dummy { Name = "Child" };
             var parent = new Dummy { Child = child };
@@ -64,7 +64,7 @@ namespace TrucoServer.Tests
         }
 
         [TestMethod]
-        public void GetNavigationChildObjectNull()
+        public void TestGetNavigationChildObjectNull()
         {
             var child = new Dummy { Name = "Child" };
             var parent = new Dummy { Child = child };
@@ -75,7 +75,7 @@ namespace TrucoServer.Tests
         }
 
         [TestMethod]
-        public void GetNavigationNullWhenPropertyNotFound()
+        public void TestGetNavigationNullWhenPropertyNotFound()
         {
             var obj = new Dummy { Name = "test" };
             var result = EfHelpers.GetNavigation(obj, "InvalidProp");
@@ -83,7 +83,7 @@ namespace TrucoServer.Tests
         }
 
         [TestMethod]
-        public void GetNavigationNullWhenEntityIsNull()
+        public void TestGetNavigationNullWhenEntityIsNull()
         {
             Dummy obj = null;
             var result = EfHelpers.GetNavigation(obj, "Child");

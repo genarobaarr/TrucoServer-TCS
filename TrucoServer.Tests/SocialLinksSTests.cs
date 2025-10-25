@@ -22,7 +22,7 @@ namespace TrucoServer.Tests
         }
 
         [TestMethod]
-        public void SocialLinksSerializationFacebookMatch()
+        public void TestSocialLinksSerializationFacebookMatch()
         {
             var original = GetSampleSocialLinksS();
             string json = JsonConvert.SerializeObject(original);
@@ -31,7 +31,7 @@ namespace TrucoServer.Tests
         }
 
         [TestMethod]
-        public void SocialLinksSerializationXMatch()
+        public void TestSocialLinksSerializationXMatch()
         {
             var original = GetSampleSocialLinksS();
             string json = JsonConvert.SerializeObject(original);
@@ -40,7 +40,7 @@ namespace TrucoServer.Tests
         }
 
         [TestMethod]
-        public void SocialLinksSerializationInstagramMatch()
+        public void TestSocialLinksSerializationInstagramMatch()
         {
             var original = GetSampleSocialLinksS();
             string json = JsonConvert.SerializeObject(original);

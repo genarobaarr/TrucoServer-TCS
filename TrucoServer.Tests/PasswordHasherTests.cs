@@ -11,7 +11,7 @@ namespace TrucoServer.Tests
     public class PasswordHasherTests
     {
         [TestMethod]
-        public void HashReturnDifferentFromPassword()
+        public void TestHashReturnDifferentFromPassword()
         {
             string password = "chimalhuacanGOAT!";
             string hashed = PasswordHasher.Hash(password);
@@ -19,7 +19,7 @@ namespace TrucoServer.Tests
         }
 
         [TestMethod]
-        public void HashReturnNullFromPassword()
+        public void TestHashReturnNullFromPassword()
         {
             string password = "chimalhuacanGOAT!";
             string hashed = PasswordHasher.Hash(password);
@@ -27,7 +27,7 @@ namespace TrucoServer.Tests
         }
 
         [TestMethod]
-        public void VerifyReturnTrueForCorrectPassword()
+        public void TestVerifyReturnTrueForCorrectPassword()
         {
             string password = "chimalhuacanGOAT!";
             string hash = PasswordHasher.Hash(password);
@@ -36,7 +36,7 @@ namespace TrucoServer.Tests
         }
 
         [TestMethod]
-        public void VerifyReturnFalseForIncorrectPassword()
+        public void TestVerifyReturnFalseForIncorrectPassword()
         {
             string password = "chimalhuacanGOAT!";
             string hash = PasswordHasher.Hash(password);
@@ -46,7 +46,7 @@ namespace TrucoServer.Tests
         }
 
         [TestMethod]
-        public void HashProduceDifferentHashesForSamePassword()
+        public void TestHashProduceDifferentHashesForSamePassword()
         {
             string password = "chimalhuacanGOAT!";
 
@@ -56,7 +56,7 @@ namespace TrucoServer.Tests
         }
 
         [TestMethod]
-        public void VerifyReturnFalseForMalformedHash()
+        public void TestVerifyReturnFalseForMalformedHash()
         {
             string password = "chimalhuacanGOAT!";
             string malformedHash = "ABC123";

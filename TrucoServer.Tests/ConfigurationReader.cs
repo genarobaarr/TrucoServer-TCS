@@ -33,7 +33,6 @@ namespace TrucoServer.Tests
         [TestCleanup]
         public void TestCleanup()
         {
-            // Resetear el campo estático privado 'emailSettings' usando Reflection
             Type type = typeof(ConfigurationReader);
             FieldInfo field = type.GetField("emailSettings", BindingFlags.NonPublic | BindingFlags.Static);
             field?.SetValue(null, null);

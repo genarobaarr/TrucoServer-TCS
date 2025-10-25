@@ -20,14 +20,14 @@ namespace TrucoServer.Tests
         }
 
         [TestMethod]
-        public void FriendData_Username_BeTest()
+        public void TestFriendDataUsernameBeSame()
         {
             var friend = GetSampleFriendData();
             Assert.AreEqual("test", friend.Username);
         }
 
         [TestMethod]
-        public void FriendDataAvatarIdBeAvatarAaaDefault()
+        public void TestFriendDataAvatarIdBeAvatarAaaDefaultTrue()
         {
             var friend = GetSampleFriendData();
             Assert.AreEqual("avatar_aaa_default", friend.AvatarId);

@@ -21,21 +21,21 @@ namespace TrucoServer.Tests
         }
 
         [TestMethod]
-        public void PlayerStatsPlayerNameBeTest()
+        public void TestPlayerStatsPlayerNameBeTest()
         {
             var stats = GetSamplePlayerStats();
             Assert.AreEqual("test", stats.PlayerName);
         }
 
         [TestMethod]
-        public void PlayerStatsWinsBe10()
+        public void TestPlayerStatsWinsBe10()
         {
             var stats = GetSamplePlayerStats();
             Assert.AreEqual(10, stats.Wins);
         }
 
         [TestMethod]
-        public void PlayerStatsLossesBe3()
+        public void TestPlayerStatsLossesBe3()
         {
             var stats = GetSamplePlayerStats();
             Assert.AreEqual(3, stats.Losses);

@@ -34,7 +34,7 @@ namespace TrucoServer.Tests
         }
 
         [TestMethod]
-        public void UserProfileDataSerializationUsernameMatch()
+        public void TestUserProfileDataSerializationUsernameMatch()
         {
             var original = GetSampleUserProfile();
             var copia = SerializeAndDeserialize(original);
@@ -42,7 +42,7 @@ namespace TrucoServer.Tests
         }
 
         [TestMethod]
-        public void UserProfileDataSerializationEmailMatch()
+        public void TestUserProfileDataSerializationEmailMatch()
         {
             var original = GetSampleUserProfile();
             var copia = SerializeAndDeserialize(original);
@@ -50,7 +50,7 @@ namespace TrucoServer.Tests
         }
 
         [TestMethod]
-        public void UserProfileDataSerializationAvatarIdMatch()
+        public void TestUserProfileDataSerializationAvatarIdMatch()
         {
             var original = GetSampleUserProfile();
             var copia = SerializeAndDeserialize(original);
