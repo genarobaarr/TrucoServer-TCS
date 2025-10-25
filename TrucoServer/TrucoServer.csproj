@@ -50,6 +50,7 @@
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.ComponentModel.DataAnnotations" />
+    <Reference Include="System.Configuration" />
     <Reference Include="System.Core" />
     <Reference Include="System.Runtime.Serialization" />
     <Reference Include="System.Security" />
@@ -89,10 +90,12 @@
     <Compile Include="Card.cs">
       <DependentUpon>baseDatosTruco.tt</DependentUpon>
     </Compile>
+    <Compile Include="ConfigurationReader.cs" />
     <Compile Include="DealtCard.cs">
       <DependentUpon>baseDatosTruco.tt</DependentUpon>
     </Compile>
     <Compile Include="EfHelpers.cs" />
+    <Compile Include="EmailSettings.cs" />
     <Compile Include="FriendData.cs" />
     <Compile Include="Friendship.cs">
       <DependentUpon>baseDatosTruco.tt</DependentUpon>
@@ -147,6 +150,9 @@
       <Generator>EntityModelCodeGenerator</Generator>
       <LastGenOutput>baseDatosTruco.Designer.cs</LastGenOutput>
     </EntityDeploy>
+    <Content Include="appSettings.private.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <None Include="baseDatosTruco.edmx.diagram">
       <DependentUpon>baseDatosTruco.edmx</DependentUpon>
     </None>

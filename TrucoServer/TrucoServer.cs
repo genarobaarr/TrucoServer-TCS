@@ -106,17 +106,20 @@ namespace TrucoServer
             {
                 LanguageManager.SetLanguage(languageCode);
 
-                MailAddress fromAddress = new MailAddress("trucoargentinotcs@gmail.com", "Truco Argentino");
+                var settings = ConfigurationReader.EmailSettings;
+                MailAddress fromAddress = new MailAddress(settings.FromAddress, settings.FromDisplayName);
                 MailAddress toAddress = new MailAddress(email);
-                const string fromPassword = "obbw ipgm klkt tdxa";
+
+                string fromPassword = settings.FromPassword;
+
                 string subject = Lang.EmailVerificationSubject;
                 string body = string.Format(Lang.EmailVerificationBody, code).Replace("\\n", Environment.NewLine);
 
                 SmtpClient smtp = new SmtpClient
                 {
-                    Host = "smtp.gmail.com",
-                    Port = 587,
-                    EnableSsl = true,
+                    Host = settings.SmtpHost,
+                    Port = settings.SmtpPort,
+                    EnableSsl = settings.EnableSsl,
                     DeliveryMethod = SmtpDeliveryMethod.Network,
                     UseDefaultCredentials = false,
                     Credentials = new NetworkCredential(fromAddress.Address, fromPassword)
@@ -148,6 +151,7 @@ namespace TrucoServer
                 LogError(ex, nameof(SendVerificationEmail));
             }
         }
+
         public bool Register(string username, string password, string email)
         {
             try
@@ -371,22 +375,23 @@ namespace TrucoServer
             {
                 LanguageManager.SetLanguage(languageCode);
 
-                MailAddress fromAddress = new MailAddress("trucoargentinotcs@gmail.com", "Truco Argentino");
+                var settings = ConfigurationReader.EmailSettings;
+                MailAddress fromAddress = new MailAddress(settings.FromAddress, settings.FromDisplayName);
                 MailAddress toAddress = new MailAddress(email);
-                const string fromPassword = "obbw ipgm klkt tdxa";
+                string fromPassword = settings.FromPassword;
+
                 string subject = Lang.EmailLoginNotificationSubject;
                 string body = string.Format(Lang.EmailLoginNotificactionBody, nickname, DateTime.Now).Replace("\\n", Environment.NewLine);
 
                 SmtpClient smtp = new SmtpClient
                 {
-                    Host = "smtp.gmail.com",
-                    Port = 587,
-                    EnableSsl = true,
+                    Host = settings.SmtpHost,
+                    Port = settings.SmtpPort,
+                    EnableSsl = settings.EnableSsl,
                     DeliveryMethod = SmtpDeliveryMethod.Network,
                     UseDefaultCredentials = false,
                     Credentials = new NetworkCredential(fromAddress.Address, fromPassword)
                 };
-
                 using (MailMessage message = new MailMessage(fromAddress, toAddress)
                 {
                     Subject = subject,
