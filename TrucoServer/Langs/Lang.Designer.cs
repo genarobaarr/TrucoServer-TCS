@@ -79,6 +79,24 @@ namespace TrucoServer.Langs {
         }
         
         /// <summary>
+        ///   Busca una cadena traducida similar a Hello {0},\n\nThis is a confirmation message letting you know that your Truco Argentino password has been successfully changed.\nThis change was made: {1} (Server time).\n\nThank you for helping us keep your account secure. The Lotso Studios team..
+        /// </summary>
+        public static string EmailPasswordNotificationBody {
+            get {
+                return ResourceManager.GetString("EmailPasswordNotificationBody", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a Password successfully changed for your Truco Argentino account.
+        /// </summary>
+        public static string EmailPasswordNotificationSubject {
+            get {
+                return ResourceManager.GetString("EmailPasswordNotificationSubject", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Busca una cadena traducida similar a Your verification code is: {0}\n\nDo not share this code with anyone else.
         /// </summary>
         public static string EmailVerificationBody {

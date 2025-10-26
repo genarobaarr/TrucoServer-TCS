@@ -129,4 +129,10 @@
   <data name="EmailVerificationBody" xml:space="preserve">
     <value>Your verification code is: {0}\n\nDo not share this code with anyone else</value>
   </data>
+  <data name="EmailPasswordNotificationBody" xml:space="preserve">
+    <value>Hello {0},\n\nThis is a confirmation message letting you know that your Truco Argentino password has been successfully changed.\nThis change was made: {1} (Server time).\n\nThank you for helping us keep your account secure. The Lotso Studios team.</value>
+  </data>
+  <data name="EmailPasswordNotificationSubject" xml:space="preserve">
+    <value>Password successfully changed for your Truco Argentino account</value>
+  </data>
 </root>

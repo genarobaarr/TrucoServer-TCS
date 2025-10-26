@@ -429,7 +429,7 @@ namespace TrucoServer
             }
         }
 
-        public bool PasswordReset(string email, string code, string newPassword)
+        public bool PasswordReset(string email, string code, string newPassword, string languageCode)
         {
             if (!ConfirmEmailVerification(email, code))
             {
@@ -446,7 +446,69 @@ namespace TrucoServer
 
                 user.passwordHash = PasswordHasher.Hash(newPassword);
                 context.SaveChanges();
+
+                Task.Run(() => SendPasswordNotificationEmail(user.email, user.nickname, languageCode));
                 return true;
+            }
+        }
+
+        public bool PasswordChange(string email, string newPassword, string languageCode)
+        {
+            using (var context = new baseDatosPruebaEntities())
+            {
+                User user = context.User.FirstOrDefault(u => u.email == email);
+                if (user == null)
+                {
+                    return false;
+                }
+
+                user.passwordHash = PasswordHasher.Hash(newPassword);
+                context.SaveChanges();
+
+                Task.Run(() => SendPasswordNotificationEmail(user.email, user.nickname, languageCode));
+                return true;
+            }
+        }
+
+        private void SendPasswordNotificationEmail(string email, string nickname, string languageCode)
+        {
+            try
+            {
+                LanguageManager.SetLanguage(languageCode);
+
+                var settings = ConfigurationReader.EmailSettings;
+                MailAddress fromAddress = new MailAddress(settings.FromAddress, settings.FromDisplayName);
+                MailAddress toAddress = new MailAddress(email);
+                string fromPassword = settings.FromPassword;
+
+                string subject = Lang.EmailPasswordNotificationSubject;
+                string body = string.Format(Lang.EmailPasswordNotificationBody, nickname, DateTime.Now).Replace("\\n", Environment.NewLine);
+
+                SmtpClient smtp = new SmtpClient
+                {
+                    Host = settings.SmtpHost,
+                    Port = settings.SmtpPort,
+                    EnableSsl = settings.EnableSsl,
+                    DeliveryMethod = SmtpDeliveryMethod.Network,
+                    UseDefaultCredentials = false,
+                    Credentials = new NetworkCredential(fromAddress.Address, fromPassword)
+                };
+                using (MailMessage message = new MailMessage(fromAddress, toAddress)
+                {
+                    Subject = subject,
+                    Body = body
+                })
+                {
+                    smtp.Send(message);
+                }
+            }
+            catch (SmtpException ex)
+            {
+                LogError(ex, nameof(SendPasswordNotificationEmail));
+            }
+            catch (Exception ex)
+            {
+                LogError(ex, nameof(SendPasswordNotificationEmail));
             }
         }
 

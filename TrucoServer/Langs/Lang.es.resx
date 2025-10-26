@@ -129,4 +129,10 @@
   <data name="EmailVerificationBody" xml:space="preserve">
     <value>Tu código de verificación es: {0}\n\nNo compartas este código con nadie más</value>
   </data>
+  <data name="EmailPasswordNotificationBody" xml:space="preserve">
+    <value>Hola {0},\n\nEste es un mensaje de confirmación para informarte que tu contraseña de Truco Argentino ha sido cambiada exitosamente.\nEste cambio se realizó: {1} (Tiempo del servidor).\n\nGracias por ayudarnos a mantener tu cuenta segura. El equipo de Lotso Studios.</value>
+  </data>
+  <data name="EmailPasswordNotificationSubject" xml:space="preserve">
+    <value>Contraseña cambiada exitosamente para en tu cuenta de Truco Argentino</value>
+  </data>
 </root>

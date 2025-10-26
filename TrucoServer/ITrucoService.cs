@@ -50,7 +50,10 @@ namespace TrucoServer
         bool SaveUserProfile(UserProfileData profile);
 
         [OperationContract]
-        bool PasswordReset(string email, string code, string newPassword);
+        bool PasswordReset(string email, string code, string newPassword, string languageCode);
+
+        [OperationContract]
+        bool PasswordChange(string email, string newPassword, string languageCode);
     }
 
     [ServiceContract(CallbackContract = typeof(ITrucoCallback))]
