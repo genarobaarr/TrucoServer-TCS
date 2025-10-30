@@ -17,9 +17,9 @@ namespace TrucoServer
         public string AvatarId { get; set; }
 
         /*
-        // Podríamos mostrar si el amigo está online
-        [DataMember]
-        public bool IsOnline { get; set; }
+        * Podríamos mostrar si el amigo está online
+        * [DataMember]
+        * public bool IsOnline { get; set; }
         */
     }
 }

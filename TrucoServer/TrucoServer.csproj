@@ -90,6 +90,7 @@
     <Compile Include="Card.cs">
       <DependentUpon>baseDatosTruco.tt</DependentUpon>
     </Compile>
+    <Compile Include="ConfigurationFIleWrapper.cs" />
     <Compile Include="ConfigurationReader.cs" />
     <Compile Include="DealtCard.cs">
       <DependentUpon>baseDatosTruco.tt</DependentUpon>

@@ -6,17 +6,21 @@ using System.Text;
 using System.Threading.Tasks;
 public static class PasswordHasher
 {
-    private const int Iterations = 10000;
+    private const int ITERATIONS = 10000;
+    private const int SALT_SIZE = 16;
+    private const int HASH_SIZE = 32;
+    private const int INITIAL_OFFSET = 0;
+    private const int TOTAL_HASH_SIZE = SALT_SIZE + HASH_SIZE;
 
     public static string Hash(string password)
     {
-        using (var pbkdf2 = new Rfc2898DeriveBytes(password, 16, Iterations, HashAlgorithmName.SHA256))
+        using (var pbkdf2 = new Rfc2898DeriveBytes(password, SALT_SIZE, ITERATIONS, HashAlgorithmName.SHA256))
         {
-            byte[] hash = pbkdf2.GetBytes(32);
+            byte[] hash = pbkdf2.GetBytes(HASH_SIZE);
             byte[] salt = pbkdf2.Salt;
-            byte[] hashBytes = new byte[48];
-            Buffer.BlockCopy(salt, 0, hashBytes, 0, 16);
-            Buffer.BlockCopy(hash, 0, hashBytes, 16, 32);
+            byte[] hashBytes = new byte[TOTAL_HASH_SIZE];
+            Buffer.BlockCopy(salt, INITIAL_OFFSET, hashBytes, INITIAL_OFFSET, SALT_SIZE);
+            Buffer.BlockCopy(hash, INITIAL_OFFSET, hashBytes, SALT_SIZE, HASH_SIZE);
 
             return Convert.ToBase64String(hashBytes);
         }
@@ -25,14 +29,14 @@ public static class PasswordHasher
     public static bool Verify(string password, string storedHash)
     {
         byte[] hashBytes = Convert.FromBase64String(storedHash);
-        byte[] salt = new byte[16];
-        Buffer.BlockCopy(hashBytes, 0, salt, 0, 16);
-        byte[] storedPasswordHash = new byte[32];
-        Buffer.BlockCopy(hashBytes, 16, storedPasswordHash, 0, 32);
+        byte[] salt = new byte[SALT_SIZE];
+        Buffer.BlockCopy(hashBytes, INITIAL_OFFSET, salt, INITIAL_OFFSET, SALT_SIZE);
+        byte[] storedPasswordHash = new byte[HASH_SIZE];
+        Buffer.BlockCopy(hashBytes, SALT_SIZE, storedPasswordHash, INITIAL_OFFSET, HASH_SIZE);
 
-        using (var pbkdf2 = new Rfc2898DeriveBytes(password, salt, Iterations, HashAlgorithmName.SHA256))
+        using (var pbkdf2 = new Rfc2898DeriveBytes(password, salt, ITERATIONS, HashAlgorithmName.SHA256))
         {
-            byte[] newHash = pbkdf2.GetBytes(32);
+            byte[] newHash = pbkdf2.GetBytes(HASH_SIZE);
 
             return newHash.SequenceEqual(storedPasswordHash);
         }
