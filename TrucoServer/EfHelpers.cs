@@ -9,37 +9,38 @@ namespace TrucoServer
 {
     static class EfHelpers //El static se cambia a public para poder probarlo y viceversa para correr el server
     {
-        public static T GetPropValue<T>(object o, params string[] names)
+        private const BindingFlags ReflectionFlags = BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase;
+        public static T GetPropValue<T>(object entity, params string[] names)
         {
-            if (o == null)
+            if (entity == null)
             {
-                return default(T);
+                return default;
             }
 
-            var t = o.GetType();
+            var type = entity.GetType();
             foreach (var name in names)
             {
-                var p = t.GetProperty(name, BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase);
-                if (p != null)
+                var property = type.GetProperty(name, ReflectionFlags);
+                if (property != null)
                 {
-                    var val = p.GetValue(o);
-                    if (val == null)
+                    var value = property.GetValue(entity);
+                    if (value == null)
                     {
-                        return default(T);
+                        return default;
                     }
 
                     try
                     {
                         if (typeof(T) == typeof(string))
                         {
-                            if (val is byte[] b)
+                            if (value is byte[] bytes)
                             {
-                                return (T)(object)Encoding.UTF8.GetString(b);
+                                return (T)(object)Encoding.UTF8.GetString(bytes);
                             }
-                            return (T)(object)val.ToString();
+                            return (T)(object)value.ToString();
                         }
 
-                        return (T)Convert.ChangeType(val, typeof(T));
+                        return (T)Convert.ChangeType(value, typeof(T));
                     }
                     catch
                     {
@@ -47,7 +48,7 @@ namespace TrucoServer
                     }
                 }
             }
-            return default(T);
+            return default;
         }
 
         public static object GetNavigation(object entity, params string[] navNames)
@@ -57,14 +58,14 @@ namespace TrucoServer
                 return null;
             }
 
-            var t = entity.GetType();
+            var type = entity.GetType();
 
-            foreach (var n in navNames)
+            foreach (var name in navNames)
             {
-                var prop = t.GetProperty(n, BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase);
-                if (prop != null)
+                var property = type.GetProperty(name, ReflectionFlags);
+                if (property != null)
                 {
-                    return prop.GetValue(entity);
+                    return property.GetValue(entity);
                 }
             }
             return null;
