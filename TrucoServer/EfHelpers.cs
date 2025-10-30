@@ -9,7 +9,7 @@ namespace TrucoServer
 {
     static class EfHelpers //El static se cambia a public para poder probarlo y viceversa para correr el server
     {
-        private const BindingFlags ReflectionFlags = BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase;
+        private const BindingFlags REFLECTIONFLAGS = BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase;
         public static T GetPropValue<T>(object entity, params string[] names)
         {
             if (entity == null)
@@ -20,7 +20,7 @@ namespace TrucoServer
             var type = entity.GetType();
             foreach (var name in names)
             {
-                var property = type.GetProperty(name, ReflectionFlags);
+                var property = type.GetProperty(name, REFLECTIONFLAGS);
                 if (property != null)
                 {
                     var value = property.GetValue(entity);
@@ -62,7 +62,7 @@ namespace TrucoServer
 
             foreach (var name in navNames)
             {
-                var property = type.GetProperty(name, ReflectionFlags);
+                var property = type.GetProperty(name, REFLECTIONFLAGS);
                 if (property != null)
                 {
                     return property.GetValue(entity);
