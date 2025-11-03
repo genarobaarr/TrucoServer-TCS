@@ -4,16 +4,7 @@
   <edmx:Runtime>
     <!-- SSDL content -->
     <edmx:StorageModels>
-    <Schema Namespace="baseDatosPruebaModel.Store" Provider="System.Data.SqlClient" ProviderManifestToken="2012" Alias="Self" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator" xmlns:customannotation="http://schemas.microsoft.com/ado/2013/11/edm/customannotation" xmlns="http://schemas.microsoft.com/ado/2009/11/edm/ssdl">
-        <EntityType Name="AuthToken">
-          <Key>
-            <PropertyRef Name="tokenID" />
-          </Key>
-          <Property Name="tokenID" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
-          <Property Name="userID" Type="int" Nullable="false" />
-          <Property Name="refreshHash" Type="varchar" MaxLength="100" Nullable="false" />
-          <Property Name="expiresAt" Type="date" Nullable="false" />
-        </EntityType>
+      <Schema Namespace="baseDatosTrucoModel.Store" Provider="System.Data.SqlClient" ProviderManifestToken="2012" Alias="Self" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator" xmlns:customannotation="http://schemas.microsoft.com/ado/2013/11/edm/customannotation" xmlns="http://schemas.microsoft.com/ado/2009/11/edm/ssdl">
         <EntityType Name="Ban">
           <Key>
             <PropertyRef Name="banID" />
@@ -76,6 +67,8 @@
           <Property Name="ownerID" Type="int" Nullable="false" />
           <Property Name="versionID" Type="int" Nullable="false" />
           <Property Name="maxPlayers" Type="int" Nullable="false" />
+          <Property Name="status" Type="varchar" MaxLength="20" Nullable="false" />
+          <Property Name="createdAt" Type="datetime" Nullable="false" />
         </EntityType>
         <EntityType Name="LobbyMember">
           <Key>
@@ -94,8 +87,8 @@
           <Property Name="lobbyID" Type="int" Nullable="false" />
           <Property Name="versionID" Type="int" Nullable="false" />
           <Property Name="status" Type="varchar" MaxLength="20" Nullable="false" />
-          <Property Name="startedAt" Type="date" Nullable="false" />
-          <Property Name="endedAt" Type="date" Nullable="false" />
+          <Property Name="startedAt" Type="datetime" />
+          <Property Name="endedAt" Type="datetime" />
         </EntityType>
         <EntityType Name="MatchPlayer">
           <Key>
@@ -123,8 +116,9 @@
           <Property Name="userID" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
           <Property Name="email" Type="varchar" MaxLength="50" Nullable="false" />
           <Property Name="passwordHash" Type="varchar" MaxLength="64" Nullable="false" />
-          <Property Name="nickname" Type="varchar" MaxLength="50" Nullable="false" />
+          <Property Name="username" Type="varchar" MaxLength="50" Nullable="false" />
           <Property Name="wins" Type="int" Nullable="false" />
+          <Property Name="losses" Type="int" Nullable="false" />
           <Property Name="nameChangeCount" Type="int" Nullable="false" />
         </EntityType>
         <EntityType Name="UserProfile">
@@ -142,20 +136,10 @@
           <Property Name="versionID" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
           <Property Name="configuration" Type="varchar" MaxLength="50" Nullable="false" />
         </EntityType>
-        <Association Name="FK_AuthToken_User">
-          <End Role="User" Type="Self.User" Multiplicity="1" />
-          <End Role="AuthToken" Type="Self.AuthToken" Multiplicity="*" />
-          <ReferentialConstraint>
-            <Principal Role="User">
-              <PropertyRef Name="userID" />
-            </Principal>
-            <Dependent Role="AuthToken">
-              <PropertyRef Name="userID" />
-            </Dependent>
-          </ReferentialConstraint>
-        </Association>
         <Association Name="FK_Ban_User">
-          <End Role="User" Type="Self.User" Multiplicity="1" />
+          <End Role="User" Type="Self.User" Multiplicity="1">
+            <OnDelete Action="Cascade" />
+          </End>
           <End Role="Ban" Type="Self.Ban" Multiplicity="*" />
           <ReferentialConstraint>
             <Principal Role="User">
@@ -179,7 +163,9 @@
           </ReferentialConstraint>
         </Association>
         <Association Name="FK_DealtCard_Player">
-          <End Role="User" Type="Self.User" Multiplicity="1" />
+          <End Role="User" Type="Self.User" Multiplicity="1">
+            <OnDelete Action="Cascade" />
+          </End>
           <End Role="DealtCard" Type="Self.DealtCard" Multiplicity="*" />
           <ReferentialConstraint>
             <Principal Role="User">
@@ -191,7 +177,9 @@
           </ReferentialConstraint>
         </Association>
         <Association Name="FK_DealtCard_Round">
-          <End Role="Round" Type="Self.Round" Multiplicity="1" />
+          <End Role="Round" Type="Self.Round" Multiplicity="1">
+            <OnDelete Action="Cascade" />
+          </End>
           <End Role="DealtCard" Type="Self.DealtCard" Multiplicity="*" />
           <ReferentialConstraint>
             <Principal Role="Round">
@@ -215,7 +203,9 @@
           </ReferentialConstraint>
         </Association>
         <Association Name="FK_Friendship_User">
-          <End Role="User" Type="Self.User" Multiplicity="1" />
+          <End Role="User" Type="Self.User" Multiplicity="1">
+            <OnDelete Action="Cascade" />
+          </End>
           <End Role="Friendship" Type="Self.Friendship" Multiplicity="*" />
           <ReferentialConstraint>
             <Principal Role="User">
@@ -227,7 +217,9 @@
           </ReferentialConstraint>
         </Association>
         <Association Name="FK_Invitation_Sender">
-          <End Role="User" Type="Self.User" Multiplicity="1" />
+          <End Role="User" Type="Self.User" Multiplicity="1">
+            <OnDelete Action="Cascade" />
+          </End>
           <End Role="Invitation" Type="Self.Invitation" Multiplicity="*" />
           <ReferentialConstraint>
             <Principal Role="User">
@@ -263,7 +255,9 @@
           </ReferentialConstraint>
         </Association>
         <Association Name="FK_LobbyMember_Lobby">
-          <End Role="Lobby" Type="Self.Lobby" Multiplicity="1" />
+          <End Role="Lobby" Type="Self.Lobby" Multiplicity="1">
+            <OnDelete Action="Cascade" />
+          </End>
           <End Role="LobbyMember" Type="Self.LobbyMember" Multiplicity="*" />
           <ReferentialConstraint>
             <Principal Role="Lobby">
@@ -275,7 +269,9 @@
           </ReferentialConstraint>
         </Association>
         <Association Name="FK_LobbyMember_User">
-          <End Role="User" Type="Self.User" Multiplicity="1" />
+          <End Role="User" Type="Self.User" Multiplicity="1">
+            <OnDelete Action="Cascade" />
+          </End>
           <End Role="LobbyMember" Type="Self.LobbyMember" Multiplicity="*" />
           <ReferentialConstraint>
             <Principal Role="User">
@@ -287,7 +283,9 @@
           </ReferentialConstraint>
         </Association>
         <Association Name="FK_Match_Lobby">
-          <End Role="Lobby" Type="Self.Lobby" Multiplicity="1" />
+          <End Role="Lobby" Type="Self.Lobby" Multiplicity="1">
+            <OnDelete Action="Cascade" />
+          </End>
           <End Role="Match" Type="Self.Match" Multiplicity="*" />
           <ReferentialConstraint>
             <Principal Role="Lobby">
@@ -311,7 +309,9 @@
           </ReferentialConstraint>
         </Association>
         <Association Name="FK_MatchPlayer_Match">
-          <End Role="Match" Type="Self.Match" Multiplicity="1" />
+          <End Role="Match" Type="Self.Match" Multiplicity="1">
+            <OnDelete Action="Cascade" />
+          </End>
           <End Role="MatchPlayer" Type="Self.MatchPlayer" Multiplicity="*" />
           <ReferentialConstraint>
             <Principal Role="Match">
@@ -335,7 +335,9 @@
           </ReferentialConstraint>
         </Association>
         <Association Name="FK_Round_Match">
-          <End Role="Match" Type="Self.Match" Multiplicity="1" />
+          <End Role="Match" Type="Self.Match" Multiplicity="1">
+            <OnDelete Action="Cascade" />
+          </End>
           <End Role="Round" Type="Self.Round" Multiplicity="*" />
           <ReferentialConstraint>
             <Principal Role="Match">
@@ -358,8 +360,7 @@
             </Dependent>
           </ReferentialConstraint>
         </Association>
-        <EntityContainer Name="baseDatosPruebaModelStoreContainer">
-          <EntitySet Name="AuthToken" EntityType="Self.AuthToken" Schema="dbo" store:Type="Tables" />
+        <EntityContainer Name="baseDatosTrucoModelStoreContainer">
           <EntitySet Name="Ban" EntityType="Self.Ban" Schema="dbo" store:Type="Tables" />
           <EntitySet Name="BannedWord" EntityType="Self.BannedWord" Schema="dbo" store:Type="Tables" />
           <EntitySet Name="Card" EntityType="Self.Card" Schema="dbo" store:Type="Tables" />
@@ -374,10 +375,6 @@
           <EntitySet Name="User" EntityType="Self.User" Schema="dbo" store:Type="Tables" />
           <EntitySet Name="UserProfile" EntityType="Self.UserProfile" Schema="dbo" store:Type="Tables" />
           <EntitySet Name="Versions" EntityType="Self.Versions" Schema="dbo" store:Type="Tables" />
-          <AssociationSet Name="FK_AuthToken_User" Association="Self.FK_AuthToken_User">
-            <End Role="User" EntitySet="User" />
-            <End Role="AuthToken" EntitySet="AuthToken" />
-          </AssociationSet>
           <AssociationSet Name="FK_Ban_User" Association="Self.FK_Ban_User">
             <End Role="User" EntitySet="User" />
             <End Role="Ban" EntitySet="Ban" />
@@ -447,20 +444,11 @@
             <End Role="UserProfile" EntitySet="UserProfile" />
           </AssociationSet>
         </EntityContainer>
-      </Schema></edmx:StorageModels>
+      </Schema>
+    </edmx:StorageModels>
     <!-- CSDL content -->
     <edmx:ConceptualModels>
-      <Schema Namespace="baseDatosPruebaModel" Alias="Self" annotation:UseStrongSpatialTypes="false" xmlns:annotation="http://schemas.microsoft.com/ado/2009/02/edm/annotation" xmlns:customannotation="http://schemas.microsoft.com/ado/2013/11/edm/customannotation" xmlns="http://schemas.microsoft.com/ado/2009/11/edm">
-        <EntityType Name="AuthToken">
-          <Key>
-            <PropertyRef Name="tokenID" />
-          </Key>
-          <Property Name="tokenID" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
-          <Property Name="userID" Type="Int32" Nullable="false" />
-          <Property Name="refreshHash" Type="String" MaxLength="100" FixedLength="false" Unicode="false" Nullable="false" />
-          <Property Name="expiresAt" Type="DateTime" Nullable="false" Precision="0" />
-          <NavigationProperty Name="User" Relationship="Self.FK_AuthToken_User" FromRole="AuthToken" ToRole="User" />
-        </EntityType>
+      <Schema Namespace="baseDatosTrucoModel" Alias="Self" annotation:UseStrongSpatialTypes="false" xmlns:annotation="http://schemas.microsoft.com/ado/2009/02/edm/annotation" xmlns:customannotation="http://schemas.microsoft.com/ado/2013/11/edm/customannotation" xmlns="http://schemas.microsoft.com/ado/2009/11/edm">
         <EntityType Name="Ban">
           <Key>
             <PropertyRef Name="banID" />
@@ -531,6 +519,8 @@
           <Property Name="ownerID" Type="Int32" Nullable="false" />
           <Property Name="versionID" Type="Int32" Nullable="false" />
           <Property Name="maxPlayers" Type="Int32" Nullable="false" />
+          <Property Name="status" Type="String" MaxLength="20" FixedLength="false" Unicode="false" Nullable="false" />
+          <Property Name="createdAt" Type="DateTime" Nullable="false" Precision="3" />
           <NavigationProperty Name="User" Relationship="Self.FK_Lobby_User" FromRole="Lobby" ToRole="User" />
           <NavigationProperty Name="Versions" Relationship="Self.FK_Lobby_Version" FromRole="Lobby" ToRole="Versions" />
           <NavigationProperty Name="LobbyMember" Relationship="Self.FK_LobbyMember_Lobby" FromRole="Lobby" ToRole="LobbyMember" />
@@ -555,8 +545,8 @@
           <Property Name="lobbyID" Type="Int32" Nullable="false" />
           <Property Name="versionID" Type="Int32" Nullable="false" />
           <Property Name="status" Type="String" MaxLength="20" FixedLength="false" Unicode="false" Nullable="false" />
-          <Property Name="startedAt" Type="DateTime" Nullable="false" Precision="0" />
-          <Property Name="endedAt" Type="DateTime" Nullable="false" Precision="0" />
+          <Property Name="startedAt" Type="DateTime" Precision="3" />
+          <Property Name="endedAt" Type="DateTime" Precision="3" />
           <NavigationProperty Name="Lobby" Relationship="Self.FK_Match_Lobby" FromRole="Match" ToRole="Lobby" />
           <NavigationProperty Name="Versions" Relationship="Self.FK_Match_Version" FromRole="Match" ToRole="Versions" />
           <NavigationProperty Name="MatchPlayer" Relationship="Self.FK_MatchPlayer_Match" FromRole="Match" ToRole="MatchPlayer" />
@@ -592,10 +582,10 @@
           <Property Name="userID" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
           <Property Name="email" Type="String" MaxLength="50" FixedLength="false" Unicode="false" Nullable="false" />
           <Property Name="passwordHash" Type="String" MaxLength="64" FixedLength="false" Unicode="false" Nullable="false" />
-          <Property Name="nickname" Type="String" MaxLength="50" FixedLength="false" Unicode="false" Nullable="false" />
+          <Property Name="username" Type="String" MaxLength="50" FixedLength="false" Unicode="false" Nullable="false" />
           <Property Name="wins" Type="Int32" Nullable="false" />
+          <Property Name="losses" Type="Int32" Nullable="false" />
           <Property Name="nameChangeCount" Type="Int32" Nullable="false" />
-          <NavigationProperty Name="AuthToken" Relationship="Self.FK_AuthToken_User" FromRole="User" ToRole="AuthToken" />
           <NavigationProperty Name="Ban" Relationship="Self.FK_Ban_User" FromRole="User" ToRole="Ban" />
           <NavigationProperty Name="DealtCard" Relationship="Self.FK_DealtCard_Player" FromRole="User" ToRole="DealtCard" />
           <NavigationProperty Name="Friendship" Relationship="Self.FK_Friendship_Friend" FromRole="User" ToRole="Friendship" />
@@ -624,20 +614,10 @@
           <NavigationProperty Name="Lobby" Relationship="Self.FK_Lobby_Version" FromRole="Versions" ToRole="Lobby" />
           <NavigationProperty Name="Match" Relationship="Self.FK_Match_Version" FromRole="Versions" ToRole="Match" />
         </EntityType>
-        <Association Name="FK_AuthToken_User">
-          <End Role="User" Type="Self.User" Multiplicity="1" />
-          <End Role="AuthToken" Type="Self.AuthToken" Multiplicity="*" />
-          <ReferentialConstraint>
-            <Principal Role="User">
-              <PropertyRef Name="userID" />
-            </Principal>
-            <Dependent Role="AuthToken">
-              <PropertyRef Name="userID" />
-            </Dependent>
-          </ReferentialConstraint>
-        </Association>
         <Association Name="FK_Ban_User">
-          <End Role="User" Type="Self.User" Multiplicity="1" />
+          <End Role="User" Type="Self.User" Multiplicity="1">
+            <OnDelete Action="Cascade" />
+          </End>
           <End Role="Ban" Type="Self.Ban" Multiplicity="*" />
           <ReferentialConstraint>
             <Principal Role="User">
@@ -661,7 +641,9 @@
           </ReferentialConstraint>
         </Association>
         <Association Name="FK_DealtCard_Player">
-          <End Role="User" Type="Self.User" Multiplicity="1" />
+          <End Role="User" Type="Self.User" Multiplicity="1">
+            <OnDelete Action="Cascade" />
+          </End>
           <End Role="DealtCard" Type="Self.DealtCard" Multiplicity="*" />
           <ReferentialConstraint>
             <Principal Role="User">
@@ -673,7 +655,9 @@
           </ReferentialConstraint>
         </Association>
         <Association Name="FK_DealtCard_Round">
-          <End Role="Round" Type="Self.Round" Multiplicity="1" />
+          <End Role="Round" Type="Self.Round" Multiplicity="1">
+            <OnDelete Action="Cascade" />
+          </End>
           <End Role="DealtCard" Type="Self.DealtCard" Multiplicity="*" />
           <ReferentialConstraint>
             <Principal Role="Round">
@@ -697,7 +681,9 @@
           </ReferentialConstraint>
         </Association>
         <Association Name="FK_Friendship_User">
-          <End Role="User" Type="Self.User" Multiplicity="1" />
+          <End Role="User" Type="Self.User" Multiplicity="1">
+            <OnDelete Action="Cascade" />
+          </End>
           <End Role="Friendship" Type="Self.Friendship" Multiplicity="*" />
           <ReferentialConstraint>
             <Principal Role="User">
@@ -709,7 +695,9 @@
           </ReferentialConstraint>
         </Association>
         <Association Name="FK_Invitation_Sender">
-          <End Role="User" Type="Self.User" Multiplicity="1" />
+          <End Role="User" Type="Self.User" Multiplicity="1">
+            <OnDelete Action="Cascade" />
+          </End>
           <End Role="Invitation" Type="Self.Invitation" Multiplicity="*" />
           <ReferentialConstraint>
             <Principal Role="User">
@@ -745,7 +733,9 @@
           </ReferentialConstraint>
         </Association>
         <Association Name="FK_LobbyMember_Lobby">
-          <End Role="Lobby" Type="Self.Lobby" Multiplicity="1" />
+          <End Role="Lobby" Type="Self.Lobby" Multiplicity="1">
+            <OnDelete Action="Cascade" />
+          </End>
           <End Role="LobbyMember" Type="Self.LobbyMember" Multiplicity="*" />
           <ReferentialConstraint>
             <Principal Role="Lobby">
@@ -757,7 +747,9 @@
           </ReferentialConstraint>
         </Association>
         <Association Name="FK_Match_Lobby">
-          <End Role="Lobby" Type="Self.Lobby" Multiplicity="1" />
+          <End Role="Lobby" Type="Self.Lobby" Multiplicity="1">
+            <OnDelete Action="Cascade" />
+          </End>
           <End Role="Match" Type="Self.Match" Multiplicity="*" />
           <ReferentialConstraint>
             <Principal Role="Lobby">
@@ -769,7 +761,9 @@
           </ReferentialConstraint>
         </Association>
         <Association Name="FK_LobbyMember_User">
-          <End Role="User" Type="Self.User" Multiplicity="1" />
+          <End Role="User" Type="Self.User" Multiplicity="1">
+            <OnDelete Action="Cascade" />
+          </End>
           <End Role="LobbyMember" Type="Self.LobbyMember" Multiplicity="*" />
           <ReferentialConstraint>
             <Principal Role="User">
@@ -793,7 +787,9 @@
           </ReferentialConstraint>
         </Association>
         <Association Name="FK_MatchPlayer_Match">
-          <End Role="Match" Type="Self.Match" Multiplicity="1" />
+          <End Role="Match" Type="Self.Match" Multiplicity="1">
+            <OnDelete Action="Cascade" />
+          </End>
           <End Role="MatchPlayer" Type="Self.MatchPlayer" Multiplicity="*" />
           <ReferentialConstraint>
             <Principal Role="Match">
@@ -805,7 +801,9 @@
           </ReferentialConstraint>
         </Association>
         <Association Name="FK_Round_Match">
-          <End Role="Match" Type="Self.Match" Multiplicity="1" />
+          <End Role="Match" Type="Self.Match" Multiplicity="1">
+            <OnDelete Action="Cascade" />
+          </End>
           <End Role="Round" Type="Self.Round" Multiplicity="*" />
           <ReferentialConstraint>
             <Principal Role="Match">
@@ -840,8 +838,7 @@
             </Dependent>
           </ReferentialConstraint>
         </Association>
-        <EntityContainer Name="baseDatosPruebaEntities" annotation:LazyLoadingEnabled="true">
-          <EntitySet Name="AuthToken" EntityType="Self.AuthToken" />
+        <EntityContainer Name="baseDatosTrucoEntities" annotation:LazyLoadingEnabled="true">
           <EntitySet Name="Ban" EntityType="Self.Ban" />
           <EntitySet Name="BannedWord" EntityType="Self.BannedWord" />
           <EntitySet Name="Card" EntityType="Self.Card" />
@@ -856,10 +853,6 @@
           <EntitySet Name="User" EntityType="Self.User" />
           <EntitySet Name="UserProfile" EntityType="Self.UserProfile" />
           <EntitySet Name="Versions" EntityType="Self.Versions" />
-          <AssociationSet Name="FK_AuthToken_User" Association="Self.FK_AuthToken_User">
-            <End Role="User" EntitySet="User" />
-            <End Role="AuthToken" EntitySet="AuthToken" />
-          </AssociationSet>
           <AssociationSet Name="FK_Ban_User" Association="Self.FK_Ban_User">
             <End Role="User" EntitySet="User" />
             <End Role="Ban" EntitySet="Ban" />
@@ -934,19 +927,9 @@
     <!-- C-S mapping content -->
     <edmx:Mappings>
       <Mapping Space="C-S" xmlns="http://schemas.microsoft.com/ado/2009/11/mapping/cs">
-        <EntityContainerMapping StorageEntityContainer="baseDatosPruebaModelStoreContainer" CdmEntityContainer="baseDatosPruebaEntities">
-          <EntitySetMapping Name="AuthToken">
-            <EntityTypeMapping TypeName="baseDatosPruebaModel.AuthToken">
-              <MappingFragment StoreEntitySet="AuthToken">
-                <ScalarProperty Name="tokenID" ColumnName="tokenID" />
-                <ScalarProperty Name="userID" ColumnName="userID" />
-                <ScalarProperty Name="refreshHash" ColumnName="refreshHash" />
-                <ScalarProperty Name="expiresAt" ColumnName="expiresAt" />
-              </MappingFragment>
-            </EntityTypeMapping>
-          </EntitySetMapping>
+        <EntityContainerMapping StorageEntityContainer="baseDatosTrucoModelStoreContainer" CdmEntityContainer="baseDatosTrucoEntities">
           <EntitySetMapping Name="Ban">
-            <EntityTypeMapping TypeName="baseDatosPruebaModel.Ban">
+            <EntityTypeMapping TypeName="baseDatosTrucoModel.Ban">
               <MappingFragment StoreEntitySet="Ban">
                 <ScalarProperty Name="banID" ColumnName="banID" />
                 <ScalarProperty Name="userID" ColumnName="userID" />
@@ -956,7 +939,7 @@
             </EntityTypeMapping>
           </EntitySetMapping>
           <EntitySetMapping Name="BannedWord">
-            <EntityTypeMapping TypeName="baseDatosPruebaModel.BannedWord">
+            <EntityTypeMapping TypeName="baseDatosTrucoModel.BannedWord">
               <MappingFragment StoreEntitySet="BannedWord">
                 <ScalarProperty Name="wordID" ColumnName="wordID" />
                 <ScalarProperty Name="word" ColumnName="word" />
@@ -964,7 +947,7 @@
             </EntityTypeMapping>
           </EntitySetMapping>
           <EntitySetMapping Name="Card">
-            <EntityTypeMapping TypeName="baseDatosPruebaModel.Card">
+            <EntityTypeMapping TypeName="baseDatosTrucoModel.Card">
               <MappingFragment StoreEntitySet="Card">
                 <ScalarProperty Name="cardID" ColumnName="cardID" />
                 <ScalarProperty Name="suit" ColumnName="suit" />
@@ -974,7 +957,7 @@
             </EntityTypeMapping>
           </EntitySetMapping>
           <EntitySetMapping Name="DealtCard">
-            <EntityTypeMapping TypeName="baseDatosPruebaModel.DealtCard">
+            <EntityTypeMapping TypeName="baseDatosTrucoModel.DealtCard">
               <MappingFragment StoreEntitySet="DealtCard">
                 <ScalarProperty Name="dealID" ColumnName="dealID" />
                 <ScalarProperty Name="roundID" ColumnName="roundID" />
@@ -984,7 +967,7 @@
             </EntityTypeMapping>
           </EntitySetMapping>
           <EntitySetMapping Name="Friendship">
-            <EntityTypeMapping TypeName="baseDatosPruebaModel.Friendship">
+            <EntityTypeMapping TypeName="baseDatosTrucoModel.Friendship">
               <MappingFragment StoreEntitySet="Friendship">
                 <ScalarProperty Name="friendshipID" ColumnName="friendshipID" />
                 <ScalarProperty Name="userID" ColumnName="userID" />
@@ -994,7 +977,7 @@
             </EntityTypeMapping>
           </EntitySetMapping>
           <EntitySetMapping Name="Invitation">
-            <EntityTypeMapping TypeName="baseDatosPruebaModel.Invitation">
+            <EntityTypeMapping TypeName="baseDatosTrucoModel.Invitation">
               <MappingFragment StoreEntitySet="Invitation">
                 <ScalarProperty Name="invitationID" ColumnName="invitationID" />
                 <ScalarProperty Name="senderID" ColumnName="senderID" />
@@ -1006,17 +989,19 @@
             </EntityTypeMapping>
           </EntitySetMapping>
           <EntitySetMapping Name="Lobby">
-            <EntityTypeMapping TypeName="baseDatosPruebaModel.Lobby">
+            <EntityTypeMapping TypeName="baseDatosTrucoModel.Lobby">
               <MappingFragment StoreEntitySet="Lobby">
                 <ScalarProperty Name="lobbyID" ColumnName="lobbyID" />
                 <ScalarProperty Name="ownerID" ColumnName="ownerID" />
                 <ScalarProperty Name="versionID" ColumnName="versionID" />
                 <ScalarProperty Name="maxPlayers" ColumnName="maxPlayers" />
+                <ScalarProperty Name="status" ColumnName="status" />
+                <ScalarProperty Name="createdAt" ColumnName="createdAt" />
               </MappingFragment>
             </EntityTypeMapping>
           </EntitySetMapping>
           <EntitySetMapping Name="LobbyMember">
-            <EntityTypeMapping TypeName="baseDatosPruebaModel.LobbyMember">
+            <EntityTypeMapping TypeName="baseDatosTrucoModel.LobbyMember">
               <MappingFragment StoreEntitySet="LobbyMember">
                 <ScalarProperty Name="lobbyID" ColumnName="lobbyID" />
                 <ScalarProperty Name="userID" ColumnName="userID" />
@@ -1025,7 +1010,7 @@
             </EntityTypeMapping>
           </EntitySetMapping>
           <EntitySetMapping Name="Match">
-            <EntityTypeMapping TypeName="baseDatosPruebaModel.Match">
+            <EntityTypeMapping TypeName="baseDatosTrucoModel.Match">
               <MappingFragment StoreEntitySet="Match">
                 <ScalarProperty Name="matchID" ColumnName="matchID" />
                 <ScalarProperty Name="lobbyID" ColumnName="lobbyID" />
@@ -1037,7 +1022,7 @@
             </EntityTypeMapping>
           </EntitySetMapping>
           <EntitySetMapping Name="MatchPlayer">
-            <EntityTypeMapping TypeName="baseDatosPruebaModel.MatchPlayer">
+            <EntityTypeMapping TypeName="baseDatosTrucoModel.MatchPlayer">
               <MappingFragment StoreEntitySet="MatchPlayer">
                 <ScalarProperty Name="matchID" ColumnName="matchID" />
                 <ScalarProperty Name="userID" ColumnName="userID" />
@@ -1047,7 +1032,7 @@
             </EntityTypeMapping>
           </EntitySetMapping>
           <EntitySetMapping Name="Round">
-            <EntityTypeMapping TypeName="baseDatosPruebaModel.Round">
+            <EntityTypeMapping TypeName="baseDatosTrucoModel.Round">
               <MappingFragment StoreEntitySet="Round">
                 <ScalarProperty Name="roundID" ColumnName="roundID" />
                 <ScalarProperty Name="matchID" ColumnName="matchID" />
@@ -1057,19 +1042,20 @@
             </EntityTypeMapping>
           </EntitySetMapping>
           <EntitySetMapping Name="User">
-            <EntityTypeMapping TypeName="baseDatosPruebaModel.User">
+            <EntityTypeMapping TypeName="baseDatosTrucoModel.User">
               <MappingFragment StoreEntitySet="User">
                 <ScalarProperty Name="userID" ColumnName="userID" />
                 <ScalarProperty Name="email" ColumnName="email" />
                 <ScalarProperty Name="passwordHash" ColumnName="passwordHash" />
-                <ScalarProperty Name="nickname" ColumnName="nickname" />
+                <ScalarProperty Name="username" ColumnName="username" />
                 <ScalarProperty Name="wins" ColumnName="wins" />
+                <ScalarProperty Name="losses" ColumnName="losses" />
                 <ScalarProperty Name="nameChangeCount" ColumnName="nameChangeCount" />
               </MappingFragment>
             </EntityTypeMapping>
           </EntitySetMapping>
           <EntitySetMapping Name="UserProfile">
-            <EntityTypeMapping TypeName="baseDatosPruebaModel.UserProfile">
+            <EntityTypeMapping TypeName="baseDatosTrucoModel.UserProfile">
               <MappingFragment StoreEntitySet="UserProfile">
                 <ScalarProperty Name="userID" ColumnName="userID" />
                 <ScalarProperty Name="socialLinksJson" ColumnName="socialLinksJson" />
@@ -1078,7 +1064,7 @@
             </EntityTypeMapping>
           </EntitySetMapping>
           <EntitySetMapping Name="Versions">
-            <EntityTypeMapping TypeName="baseDatosPruebaModel.Versions">
+            <EntityTypeMapping TypeName="baseDatosTrucoModel.Versions">
               <MappingFragment StoreEntitySet="Versions">
                 <ScalarProperty Name="versionID" ColumnName="versionID" />
                 <ScalarProperty Name="configuration" ColumnName="configuration" />

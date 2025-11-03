@@ -4,40 +4,38 @@
   <edmx:Designer xmlns="http://schemas.microsoft.com/ado/2009/11/edmx">
     <!-- Diagram content (shape and connector positions) -->
     <edmx:Diagrams>
-      <Diagram DiagramId="804bd8a779e141e396da36816fd4cbb3" Name="Diagram1">
-        <EntityTypeShape EntityType="baseDatosPruebaModel.AuthToken" Width="1.5" PointX="3" PointY="7.875" IsExpanded="true" />
-        <EntityTypeShape EntityType="baseDatosPruebaModel.Ban" Width="1.5" PointX="3" PointY="10.625" IsExpanded="true" />
-        <EntityTypeShape EntityType="baseDatosPruebaModel.BannedWord" Width="1.5" PointX="0.75" PointY="0.75" IsExpanded="true" />
-        <EntityTypeShape EntityType="baseDatosPruebaModel.Card" Width="1.5" PointX="0.75" PointY="9.25" IsExpanded="true" />
-        <EntityTypeShape EntityType="baseDatosPruebaModel.DealtCard" Width="1.5" PointX="3" PointY="13.375" IsExpanded="true" />
-        <EntityTypeShape EntityType="baseDatosPruebaModel.Friendship" Width="1.5" PointX="3" PointY="16.5" IsExpanded="true" />
-        <EntityTypeShape EntityType="baseDatosPruebaModel.Invitation" Width="1.5" PointX="3" PointY="19.375" IsExpanded="true" />
-        <EntityTypeShape EntityType="baseDatosPruebaModel.Lobby" Width="1.5" PointX="6" PointY="13.25" IsExpanded="true" />
-        <EntityTypeShape EntityType="baseDatosPruebaModel.LobbyMember" Width="1.5" PointX="8.25" PointY="13.625" IsExpanded="true" />
-        <EntityTypeShape EntityType="baseDatosPruebaModel.Match" Width="1.5" PointX="11.25" PointY="13.125" IsExpanded="true" />
-        <EntityTypeShape EntityType="baseDatosPruebaModel.MatchPlayer" Width="1.5" PointX="13.5" PointY="13.5" IsExpanded="true" />
-        <EntityTypeShape EntityType="baseDatosPruebaModel.Round" Width="1.5" PointX="13.5" PointY="16.375" IsExpanded="true" />
-        <EntityTypeShape EntityType="baseDatosPruebaModel.User" Width="1.5" PointX="0.75" PointY="12.5" IsExpanded="true" />
-        <EntityTypeShape EntityType="baseDatosPruebaModel.UserProfile" Width="1.5" PointX="3" PointY="25.875" IsExpanded="true" />
-        <EntityTypeShape EntityType="baseDatosPruebaModel.Versions" Width="1.5" PointX="3.75" PointY="4.625" IsExpanded="true" />
-        <AssociationConnector Association="baseDatosPruebaModel.FK_AuthToken_User" ManuallyRouted="false" />
-        <AssociationConnector Association="baseDatosPruebaModel.FK_Ban_User" ManuallyRouted="false" />
-        <AssociationConnector Association="baseDatosPruebaModel.FK_DealtCard_Card" ManuallyRouted="false" />
-        <AssociationConnector Association="baseDatosPruebaModel.FK_DealtCard_Player" ManuallyRouted="false" />
-        <AssociationConnector Association="baseDatosPruebaModel.FK_DealtCard_Round" ManuallyRouted="false" />
-        <AssociationConnector Association="baseDatosPruebaModel.FK_Friendship_Friend" ManuallyRouted="false" />
-        <AssociationConnector Association="baseDatosPruebaModel.FK_Friendship_User" ManuallyRouted="false" />
-        <AssociationConnector Association="baseDatosPruebaModel.FK_Invitation_Sender" ManuallyRouted="false" />
-        <AssociationConnector Association="baseDatosPruebaModel.FK_Lobby_User" ManuallyRouted="false" />
-        <AssociationConnector Association="baseDatosPruebaModel.FK_Lobby_Version" ManuallyRouted="false" />
-        <AssociationConnector Association="baseDatosPruebaModel.FK_LobbyMember_Lobby" ManuallyRouted="false" />
-        <AssociationConnector Association="baseDatosPruebaModel.FK_Match_Lobby" ManuallyRouted="false" />
-        <AssociationConnector Association="baseDatosPruebaModel.FK_LobbyMember_User" ManuallyRouted="false" />
-        <AssociationConnector Association="baseDatosPruebaModel.FK_Match_Version" ManuallyRouted="false" />
-        <AssociationConnector Association="baseDatosPruebaModel.FK_MatchPlayer_Match" ManuallyRouted="false" />
-        <AssociationConnector Association="baseDatosPruebaModel.FK_Round_Match" ManuallyRouted="false" />
-        <AssociationConnector Association="baseDatosPruebaModel.FK_MatchPlayer_User" ManuallyRouted="false" />
-        <AssociationConnector Association="baseDatosPruebaModel.FK_UserProfile_User" ManuallyRouted="false" />
+      <Diagram DiagramId="fba58a03636e4655b58c87c857a77055" Name="Diagram1">
+        <EntityTypeShape EntityType="baseDatosTrucoModel.Ban" Width="1.5" PointX="3" PointY="7.75" IsExpanded="true" />
+        <EntityTypeShape EntityType="baseDatosTrucoModel.BannedWord" Width="1.5" PointX="0.75" PointY="0.75" IsExpanded="true" />
+        <EntityTypeShape EntityType="baseDatosTrucoModel.Card" Width="1.5" PointX="3.75" PointY="20.125" IsExpanded="true" />
+        <EntityTypeShape EntityType="baseDatosTrucoModel.DealtCard" Width="1.5" PointX="6" PointY="11.875" IsExpanded="true" />
+        <EntityTypeShape EntityType="baseDatosTrucoModel.Friendship" Width="1.5" PointX="3" PointY="13.625" IsExpanded="true" />
+        <EntityTypeShape EntityType="baseDatosTrucoModel.Invitation" Width="1.5" PointX="3" PointY="16.5" IsExpanded="true" />
+        <EntityTypeShape EntityType="baseDatosTrucoModel.Lobby" Width="1.5" PointX="6" PointY="7.625" IsExpanded="true" />
+        <EntityTypeShape EntityType="baseDatosTrucoModel.LobbyMember" Width="1.5" PointX="8.25" PointY="10.375" IsExpanded="true" />
+        <EntityTypeShape EntityType="baseDatosTrucoModel.Match" Width="1.5" PointX="8.25" PointY="6.625" IsExpanded="true" />
+        <EntityTypeShape EntityType="baseDatosTrucoModel.MatchPlayer" Width="1.5" PointX="10.5" PointY="6.75" IsExpanded="true" />
+        <EntityTypeShape EntityType="baseDatosTrucoModel.Round" Width="1.5" PointX="10.5" PointY="9.875" IsExpanded="true" />
+        <EntityTypeShape EntityType="baseDatosTrucoModel.User" Width="1.5" PointX="0.75" PointY="11" IsExpanded="true" />
+        <EntityTypeShape EntityType="baseDatosTrucoModel.UserProfile" Width="1.5" PointX="3" PointY="23.375" IsExpanded="true" />
+        <EntityTypeShape EntityType="baseDatosTrucoModel.Versions" Width="1.5" PointX="3.75" PointY="5.125" IsExpanded="true" />
+        <AssociationConnector Association="baseDatosTrucoModel.FK_Ban_User" ManuallyRouted="false" />
+        <AssociationConnector Association="baseDatosTrucoModel.FK_DealtCard_Card" ManuallyRouted="false" />
+        <AssociationConnector Association="baseDatosTrucoModel.FK_DealtCard_Player" ManuallyRouted="false" />
+        <AssociationConnector Association="baseDatosTrucoModel.FK_DealtCard_Round" ManuallyRouted="false" />
+        <AssociationConnector Association="baseDatosTrucoModel.FK_Friendship_Friend" ManuallyRouted="false" />
+        <AssociationConnector Association="baseDatosTrucoModel.FK_Friendship_User" ManuallyRouted="false" />
+        <AssociationConnector Association="baseDatosTrucoModel.FK_Invitation_Sender" ManuallyRouted="false" />
+        <AssociationConnector Association="baseDatosTrucoModel.FK_Lobby_User" ManuallyRouted="false" />
+        <AssociationConnector Association="baseDatosTrucoModel.FK_Lobby_Version" ManuallyRouted="false" />
+        <AssociationConnector Association="baseDatosTrucoModel.FK_LobbyMember_Lobby" ManuallyRouted="false" />
+        <AssociationConnector Association="baseDatosTrucoModel.FK_Match_Lobby" ManuallyRouted="false" />
+        <AssociationConnector Association="baseDatosTrucoModel.FK_LobbyMember_User" ManuallyRouted="false" />
+        <AssociationConnector Association="baseDatosTrucoModel.FK_Match_Version" ManuallyRouted="false" />
+        <AssociationConnector Association="baseDatosTrucoModel.FK_MatchPlayer_Match" ManuallyRouted="false" />
+        <AssociationConnector Association="baseDatosTrucoModel.FK_Round_Match" ManuallyRouted="false" />
+        <AssociationConnector Association="baseDatosTrucoModel.FK_MatchPlayer_User" ManuallyRouted="false" />
+        <AssociationConnector Association="baseDatosTrucoModel.FK_UserProfile_User" ManuallyRouted="false" />
       </Diagram>
     </edmx:Diagrams>
   </edmx:Designer>

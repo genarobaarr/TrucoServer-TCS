@@ -25,6 +25,8 @@ namespace TrucoServer
         public int ownerID { get; set; }
         public int versionID { get; set; }
         public int maxPlayers { get; set; }
+        public string status { get; set; }
+        public System.DateTime createdAt { get; set; }
     
         public virtual User User { get; set; }
         public virtual Versions Versions { get; set; }

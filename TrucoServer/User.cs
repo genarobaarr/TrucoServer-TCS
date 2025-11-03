@@ -17,7 +17,6 @@ namespace TrucoServer
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2214:DoNotCallOverridableMethodsInConstructors")]
         public User()
         {
-            this.AuthToken = new HashSet<AuthToken>();
             this.Ban = new HashSet<Ban>();
             this.DealtCard = new HashSet<DealtCard>();
             this.Friendship = new HashSet<Friendship>();
@@ -31,12 +30,11 @@ namespace TrucoServer
         public int userID { get; set; }
         public string email { get; set; }
         public string passwordHash { get; set; }
-        public string nickname { get; set; }
+        public string username { get; set; }
         public int wins { get; set; }
+        public int losses { get; set; }
         public int nameChangeCount { get; set; }
     
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
-        public virtual ICollection<AuthToken> AuthToken { get; set; }
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
         public virtual ICollection<Ban> Ban { get; set; }
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]

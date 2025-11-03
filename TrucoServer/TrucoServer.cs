@@ -152,20 +152,20 @@ namespace TrucoServer
             }
         }
 
-        public bool Register(string username, string password, string email)
+        public bool Register(string newUsername, string password, string email)
         {
             try
             {
-                using (var context = new baseDatosPruebaEntities())
+                using (var context = new baseDatosTrucoEntities())
                 {
-                    if (context.User.Any(u => u.email == email || u.nickname == username))
+                    if (context.User.Any(u => u.email == email || u.username == newUsername))
                     {
                         return false;
                     }
 
                     User user = new User
                     {
-                        nickname = username,
+                        username = newUsername,
                         passwordHash = PasswordHasher.Hash(password),
                         email = email,
                         wins = 0,
@@ -209,9 +209,9 @@ namespace TrucoServer
                 return false; 
             }
 
-            using (var context = new baseDatosPruebaEntities())
+            using (var context = new baseDatosTrucoEntities())
             {
-                return context.User.Any(u => u.nickname == username);
+                return context.User.Any(u => u.username == username);
             }
         }
 
@@ -222,7 +222,7 @@ namespace TrucoServer
                 return false;
             }
 
-            using (var context = new baseDatosPruebaEntities())
+            using (var context = new baseDatosTrucoEntities())
             {
                 return context.User.Any(u => u.email == email);
             }
@@ -230,9 +230,9 @@ namespace TrucoServer
 
         public UserProfileData GetUserProfile(string username)
         {
-            using (var context = new baseDatosPruebaEntities())
+            using (var context = new baseDatosTrucoEntities())
             {
-                User user = context.User.Include(u => u.UserProfile).FirstOrDefault(u => u.nickname == username);
+                User user = context.User.Include(u => u.UserProfile).FirstOrDefault(u => u.username == username);
                 if (user == null)
                 {
                     return null;
@@ -245,7 +245,7 @@ namespace TrucoServer
 
                 return new UserProfileData
                 {
-                    Username = user.nickname,
+                    Username = user.username,
                     Email = user.email,
                     AvatarId = user.UserProfile?.avatarID ?? "avatar_aaa_default",
                     NameChangeCount = user.nameChangeCount,
@@ -264,7 +264,7 @@ namespace TrucoServer
 
             try
             {
-                using (var context = new baseDatosPruebaEntities())
+                using (var context = new baseDatosTrucoEntities())
                 {
                     User user = context.User.Include(u => u.UserProfile).SingleOrDefault(u => u.email == profile.Email);
                     if (user == null)
@@ -272,17 +272,17 @@ namespace TrucoServer
                         return false;
                     }
 
-                    if (user.nickname != profile.Username)
+                    if (user.username != profile.Username)
                     {
                         if (user.nameChangeCount >= MAX_CHANGES)
                         {
                             return false;
                         }
-                        if (context.User.Any(u => u.nickname == profile.Username && u.userID != user.userID))
+                        if (context.User.Any(u => u.username == profile.Username && u.userID != user.userID))
                         {
                             return false;
                         }
-                        user.nickname = profile.Username;
+                        user.username = profile.Username;
                         user.nameChangeCount++;
                     }
 
@@ -315,9 +315,9 @@ namespace TrucoServer
         {
             try
             {
-                using (var context = new baseDatosPruebaEntities())
+                using (var context = new baseDatosTrucoEntities())
                 {
-                    User user = context.User.FirstOrDefault(u => u.nickname == username);
+                    User user = context.User.FirstOrDefault(u => u.username == username);
                     if (user == null)
                     {
                         return Task.FromResult(false);
@@ -343,7 +343,7 @@ namespace TrucoServer
 
         public async Task<UserProfileData> GetUserProfileByEmailAsync(string email)
         {
-            using (var context = new baseDatosPruebaEntities())
+            using (var context = new baseDatosTrucoEntities())
             {
                 var user = await context.User.Include(u => u.UserProfile).FirstOrDefaultAsync(u => u.email == email);
 
@@ -357,7 +357,7 @@ namespace TrucoServer
 
                 return new UserProfileData
                 {
-                    Username = user.nickname,
+                    Username = user.username,
                     Email = user.email,
                     AvatarId = user.UserProfile?.avatarID ?? "avatar_aaa_default",
                     NameChangeCount = user.nameChangeCount,
@@ -369,7 +369,7 @@ namespace TrucoServer
         }
 
 
-        private void SendLoginNotificationEmail(string email, string nickname, string languageCode)
+        private void SendLoginNotificationEmail(string email, string username, string languageCode)
         {
             try
             {
@@ -381,7 +381,7 @@ namespace TrucoServer
                 string fromPassword = settings.FromPassword;
 
                 string subject = Lang.EmailLoginNotificationSubject;
-                string body = string.Format(Lang.EmailLoginNotificactionBody, nickname, DateTime.Now).Replace("\\n", Environment.NewLine);
+                string body = string.Format(Lang.EmailLoginNotificactionBody, username, DateTime.Now).Replace("\\n", Environment.NewLine);
 
                 SmtpClient smtp = new SmtpClient
                 {
@@ -413,15 +413,15 @@ namespace TrucoServer
 
         public bool Login(string username, string password, string languageCode)
         {
-            using (var context = new baseDatosPruebaEntities())
+            using (var context = new baseDatosTrucoEntities())
             {
-                User user = context.User.FirstOrDefault(u => u.email == username || u.nickname == username);
+                User user = context.User.FirstOrDefault(u => u.email == username || u.username == username);
                 if (user != null && PasswordHasher.Verify(password, user.passwordHash))
                 {
                     ITrucoCallback callback = OperationContext.Current.GetCallbackChannel<ITrucoCallback>();
-                    onlineUsers.TryAdd(user.nickname, callback);
+                    onlineUsers.TryAdd(user.username, callback);
 
-                    Task.Run(() => SendLoginNotificationEmail(user.email, user.nickname, languageCode));
+                    Task.Run(() => SendLoginNotificationEmail(user.email, user.username, languageCode));
 
                     return true;
                 }
@@ -436,7 +436,7 @@ namespace TrucoServer
                 return false;
             }
 
-            using (var context = new baseDatosPruebaEntities())
+            using (var context = new baseDatosTrucoEntities())
             {
                 User user = context.User.FirstOrDefault(u => u.email == email);
                 if (user == null)
@@ -447,14 +447,14 @@ namespace TrucoServer
                 user.passwordHash = PasswordHasher.Hash(newPassword);
                 context.SaveChanges();
 
-                Task.Run(() => SendPasswordNotificationEmail(user.email, user.nickname, languageCode));
+                Task.Run(() => SendPasswordNotificationEmail(user.email, user.username, languageCode));
                 return true;
             }
         }
 
         public bool PasswordChange(string email, string newPassword, string languageCode)
         {
-            using (var context = new baseDatosPruebaEntities())
+            using (var context = new baseDatosTrucoEntities())
             {
                 User user = context.User.FirstOrDefault(u => u.email == email);
                 if (user == null)
@@ -465,12 +465,12 @@ namespace TrucoServer
                 user.passwordHash = PasswordHasher.Hash(newPassword);
                 context.SaveChanges();
 
-                Task.Run(() => SendPasswordNotificationEmail(user.email, user.nickname, languageCode));
+                Task.Run(() => SendPasswordNotificationEmail(user.email, user.username, languageCode));
                 return true;
             }
         }
 
-        private void SendPasswordNotificationEmail(string email, string nickname, string languageCode)
+        private void SendPasswordNotificationEmail(string email, string username, string languageCode)
         {
             try
             {
@@ -482,7 +482,7 @@ namespace TrucoServer
                 string fromPassword = settings.FromPassword;
 
                 string subject = Lang.EmailPasswordNotificationSubject;
-                string body = string.Format(Lang.EmailPasswordNotificationBody, nickname, DateTime.Now).Replace("\\n", Environment.NewLine);
+                string body = string.Format(Lang.EmailPasswordNotificationBody, username, DateTime.Now).Replace("\\n", Environment.NewLine);
 
                 SmtpClient smtp = new SmtpClient
                 {
@@ -514,10 +514,10 @@ namespace TrucoServer
 
         public bool SendFriendRequest(string fromUser, string toUser)
         {
-            using (var db = new baseDatosPruebaEntities())
+            using (var db = new baseDatosTrucoEntities())
             {
-                User requester = db.User.FirstOrDefault(u => u.nickname == fromUser);
-                User target = db.User.FirstOrDefault(u => u.nickname == toUser);
+                User requester = db.User.FirstOrDefault(u => u.username == fromUser);
+                User target = db.User.FirstOrDefault(u => u.username == toUser);
 
                 if (requester == null || target == null)
                 {
@@ -553,10 +553,10 @@ namespace TrucoServer
 
         public bool AcceptFriendRequest(string fromUser, string toUser)
         {
-            using (var db = new baseDatosPruebaEntities())
+            using (var db = new baseDatosTrucoEntities())
             {
-                User requester = db.User.FirstOrDefault(u => u.nickname == fromUser);
-                User acceptor = db.User.FirstOrDefault(u => u.nickname == toUser);
+                User requester = db.User.FirstOrDefault(u => u.username == fromUser);
+                User acceptor = db.User.FirstOrDefault(u => u.username == toUser);
                 if (requester == null || acceptor == null)
                 {
                     return false;
@@ -592,10 +592,10 @@ namespace TrucoServer
 
         public bool RemoveFriendOrRequest(string user1, string user2)
         {
-            using (var db = new baseDatosPruebaEntities())
+            using (var db = new baseDatosTrucoEntities())
             {
-                User u1 = db.User.FirstOrDefault(u => u.nickname == user1);
-                User u2 = db.User.FirstOrDefault(u => u.nickname == user2);
+                User u1 = db.User.FirstOrDefault(u => u.username == user1);
+                User u2 = db.User.FirstOrDefault(u => u.username == user2);
                 if (u1 == null || u2 == null)
                 {
                     return false;
@@ -617,9 +617,9 @@ namespace TrucoServer
 
         public List<FriendData> GetFriends(string username)
         {
-            using (var context = new baseDatosPruebaEntities())
+            using (var context = new baseDatosTrucoEntities())
             {
-                var user = context.User.SingleOrDefault(u => u.nickname.ToLower() == username.ToLower());
+                var user = context.User.SingleOrDefault(u => u.username.ToLower() == username.ToLower());
                 if (user == null)
                 {
                     return new List<FriendData>();
@@ -636,7 +636,7 @@ namespace TrucoServer
                           u => u.userID,
                           (friendId, u) => new FriendData
                           {
-                              Username = u.nickname,
+                              Username = u.username,
                               AvatarId = u.UserProfile.avatarID
                           })
                     .ToList();
@@ -647,9 +647,9 @@ namespace TrucoServer
 
         public List<FriendData> GetPendingFriendRequests(string username)
         {
-            using (var context = new baseDatosPruebaEntities())
+            using (var context = new baseDatosTrucoEntities())
             {
-                var user = context.User.SingleOrDefault(u => u.nickname.ToLower() == username.ToLower());
+                var user = context.User.SingleOrDefault(u => u.username.ToLower() == username.ToLower());
                 if (user == null)
                 {
                     return new List<FriendData>();
@@ -664,7 +664,7 @@ namespace TrucoServer
                           u => u.userID,
                           (f, u) => new FriendData
                           {
-                              Username = u.nickname,
+                              Username = u.username,
                               AvatarId = u.UserProfile.avatarID
                           })
                     .ToList();
@@ -810,14 +810,14 @@ namespace TrucoServer
 
         public List<PlayerStats> GetGlobalRanking()
         {
-            using (var context = new baseDatosPruebaEntities())
+            using (var context = new baseDatosTrucoEntities())
             {
                 var topPlayers = context.User
                     .OrderByDescending(u => u.wins)
                     .Take(10)
                     .Select(u => new PlayerStats
                     {
-                        PlayerName = u.nickname,
+                        PlayerName = u.username,
                         Wins = u.wins,
                     })
                     .ToList();

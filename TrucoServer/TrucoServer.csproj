@@ -63,9 +63,6 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="AuthToken.cs">
-      <DependentUpon>baseDatosTruco.tt</DependentUpon>
-    </Compile>
     <Compile Include="Ban.cs">
       <DependentUpon>baseDatosTruco.tt</DependentUpon>
     </Compile>
@@ -146,14 +143,24 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
+    <Content Include="baseDatosTruco.Context.tt">
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <DependentUpon>baseDatosTruco.edmx</DependentUpon>
+      <LastGenOutput>baseDatosTruco.Context.cs</LastGenOutput>
+    </Content>
+    <Content Include="baseDatosTruco.tt">
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <DependentUpon>baseDatosTruco.edmx</DependentUpon>
+      <LastGenOutput>baseDatosTruco.cs</LastGenOutput>
+    </Content>
     <None Include="App.config" />
+    <Content Include="appSettings.private.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <EntityDeploy Include="baseDatosTruco.edmx">
       <Generator>EntityModelCodeGenerator</Generator>
       <LastGenOutput>baseDatosTruco.Designer.cs</LastGenOutput>
     </EntityDeploy>
-    <Content Include="appSettings.private.json">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
     <None Include="baseDatosTruco.edmx.diagram">
       <DependentUpon>baseDatosTruco.edmx</DependentUpon>
     </None>
@@ -168,18 +175,6 @@
       <Generator>PublicResXFileCodeGenerator</Generator>
       <LastGenOutput>Lang.Designer.cs</LastGenOutput>
     </EmbeddedResource>
-  </ItemGroup>
-  <ItemGroup>
-    <Content Include="baseDatosTruco.Context.tt">
-      <Generator>TextTemplatingFileGenerator</Generator>
-      <DependentUpon>baseDatosTruco.edmx</DependentUpon>
-      <LastGenOutput>baseDatosTruco.Context.cs</LastGenOutput>
-    </Content>
-    <Content Include="baseDatosTruco.tt">
-      <Generator>TextTemplatingFileGenerator</Generator>
-      <DependentUpon>baseDatosTruco.edmx</DependentUpon>
-      <LastGenOutput>baseDatosTruco.cs</LastGenOutput>
-    </Content>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">

@@ -13,10 +13,10 @@ namespace TrucoServer
     using System.Data.Entity;
     using System.Data.Entity.Infrastructure;
     
-    public partial class baseDatosPruebaEntities : DbContext
+    public partial class baseDatosTrucoEntities : DbContext
     {
-        public baseDatosPruebaEntities()
-            : base("name=baseDatosPruebaEntities")
+        public baseDatosTrucoEntities()
+            : base("name=baseDatosTrucoEntities")
         {
         }
     
@@ -25,7 +25,6 @@ namespace TrucoServer
             throw new UnintentionalCodeFirstException();
         }
     
-        public virtual DbSet<AuthToken> AuthToken { get; set; }
         public virtual DbSet<Ban> Ban { get; set; }
         public virtual DbSet<BannedWord> BannedWord { get; set; }
         public virtual DbSet<Card> Card { get; set; }

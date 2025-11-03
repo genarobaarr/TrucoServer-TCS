@@ -25,8 +25,8 @@ namespace TrucoServer
         public int lobbyID { get; set; }
         public int versionID { get; set; }
         public string status { get; set; }
-        public System.DateTime startedAt { get; set; }
-        public System.DateTime endedAt { get; set; }
+        public Nullable<System.DateTime> startedAt { get; set; }
+        public Nullable<System.DateTime> endedAt { get; set; }
     
         public virtual Lobby Lobby { get; set; }
         public virtual Versions Versions { get; set; }
