@@ -99,5 +99,11 @@ namespace TrucoServer
 
         [OperationContract(IsOneWay = true)]
         void LeaveMatchChat(string matchCode, string player);
+
+        [OperationContract(IsOneWay = true)]
+        void StartMatch(string matchCode);
+
+        [OperationContract]
+        List<PlayerInfo> GetLobbyPlayers(string matchCode);
     }
 }
