@@ -782,21 +782,45 @@ namespace TrucoServer
                 {
                     int numericCode = GenerateNumericCodeFromString(matchCode);
 
-                    var invitation = context.Invitation.FirstOrDefault(i => i.code == numericCode && i.status == "Pending");
-                    if (invitation == null)
+                    Lobby lobby = null;
+                    if (matchCodeToLobbyId.TryGetValue(matchCode, out int mappedLobbyId))
                     {
-                        return false;
+                        lobby = context.Lobby.FirstOrDefault(l => l.lobbyID == mappedLobbyId && l.status == "Open");
+                        Console.WriteLine(lobby != null
+                            ? $"[JOIN] Found lobby by mapping: {matchCode} -> {mappedLobbyId}"
+                            : $"[JOIN] Mapping existed but no open lobby found for id {mappedLobbyId}");
+                    }
+
+                    if (lobby == null)
+                    {
+                        var invitation = context.Invitation.FirstOrDefault(i => i.code == numericCode && i.status == "Pending");
+                        if (invitation == null)
+                        {
+                            Console.WriteLine($"[JOIN] Invitation not found (code {numericCode}) for matchCode {matchCode}");
+                            return false;
+                        }
+
+                        if (invitation.expiresAt != null && invitation.expiresAt.Date < DateTime.Now)
+                        {
+                            Console.WriteLine($"[JOIN] Invitation expired for code {numericCode}");
+                            return false;
+                        }
+
+                        lobby = context.Lobby.FirstOrDefault(l => l.ownerID == invitation.senderID && l.status == "Open");
+                        if (lobby == null)
+                        {
+                            Console.WriteLine($"[JOIN] Lobby not found for invitation sender {invitation.senderID}");
+                            return false;
+                        }
+
+                        matchCodeToLobbyId.TryAdd(matchCode, lobby.lobbyID);
+                        Console.WriteLine($"[JOIN] Mapped {matchCode} -> lobbyId {lobby.lobbyID}");
                     }
 
                     var playerUser = context.User.FirstOrDefault(u => u.username == player);
                     if (playerUser == null)
                     {
-                        return false;
-                    }
-
-                    var lobby = context.Lobby.FirstOrDefault(l => l.ownerID == invitation.senderID && l.status == "Open");
-                    if (lobby == null)
-                    {
+                        Console.WriteLine($"[JOIN] Player user not found: {player}");
                         return false;
                     }
 
@@ -809,6 +833,11 @@ namespace TrucoServer
                             role = "Player"
                         });
                         context.SaveChanges();
+                        Console.WriteLine($"[JOIN] Added LobbyMember user={player} to lobbyId={lobby.lobbyID}");
+                    }
+                    else
+                    {
+                        Console.WriteLine($"[JOIN] User {player} already a member of lobbyId={lobby.lobbyID}");
                     }
 
                     if (!matchCallbacks.ContainsKey(matchCode))
@@ -870,8 +899,8 @@ namespace TrucoServer
                                         break;
                                     }
                                 }
-                                catch
-                                {
+                                catch 
+                                { 
 
                                 }
                             }
@@ -884,6 +913,7 @@ namespace TrucoServer
                         if (!alreadyExists)
                         {
                             matchCallbacks[matchCode].Add(callback);
+                            Console.WriteLine($"[JOIN] Callback added for {player} on match {matchCode}");
                         }
                     }
 
@@ -903,7 +933,6 @@ namespace TrucoServer
                     }
 
                     Console.WriteLine($"[SERVER] {player} se unió al lobby {matchCode}");
-
                     return true;
                 }
             }
@@ -923,6 +952,7 @@ namespace TrucoServer
                 return false;
             }
         }
+
 
         private static string GenerateMatchCode()
         {
