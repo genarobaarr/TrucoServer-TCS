@@ -19,6 +19,8 @@ namespace TrucoServer
     {
         private static ConcurrentDictionary<string, string> verificationCodes = new ConcurrentDictionary<string, string>();
         private static ConcurrentDictionary<string, ITrucoCallback> onlineUsers = new ConcurrentDictionary<string, ITrucoCallback>();
+        private readonly ConcurrentDictionary<string, int> matchCodeToLobbyId = new ConcurrentDictionary<string, int>();
+
         private const int MAX_CHANGES = 2;
 
         private readonly ConcurrentDictionary<string, List<ITrucoCallback>> matchCallbacks = new ConcurrentDictionary<string, List<ITrucoCallback>>();
@@ -717,6 +719,19 @@ namespace TrucoServer
 
                     context.SaveChanges();
 
+                    var previousInvitations = context.Invitation.Where(i => i.senderID == host.userID && i.status == "Pending").ToList();
+                    foreach (var inv in previousInvitations)
+                    {
+                        if (inv.code != numericCode)
+                        {
+                            inv.status = "Expired";
+                            inv.expiresAt = DateTime.Now;
+                        }
+                    }
+                    context.SaveChanges();
+
+                    matchCodeToLobbyId[matchCode] = lobby.lobbyID;
+
                     matchCallbacks.TryAdd(matchCode, new List<ITrucoCallback>());
 
                     Console.WriteLine($"[SERVER] Lobby privado creado por {hostPlayer} con código {matchCode}");
@@ -793,10 +808,8 @@ namespace TrucoServer
                             userID = playerUser.userID,
                             role = "Player"
                         });
+                        context.SaveChanges();
                     }
-
-                    invitation.status = "Accepted";
-                    context.SaveChanges();
 
                     if (!matchCallbacks.ContainsKey(matchCode))
                     {
@@ -1019,6 +1032,8 @@ namespace TrucoServer
 
                         context.SaveChanges();
                         Console.WriteLine($"[SERVER] Lobby {matchCode} expiró (vacío).");
+
+                        RemoveMatchMappingIfClosed(matchCode);
                     }
                 }
             }
@@ -1036,28 +1051,43 @@ namespace TrucoServer
                 {
                     int numericCode = GenerateNumericCodeFromString(matchCode);
 
-                    var lobby = (from i in context.Invitation
-                                 join l in context.Lobby on i.senderID equals l.ownerID
-                                 where i.code == numericCode && l.status == "Open"
-                                 select l).FirstOrDefault();
+                    Lobby lobby = null;
+
+                    if (matchCodeToLobbyId.TryGetValue(matchCode, out int mappedLobbyId))
+                    {
+                        lobby = context.Lobby.FirstOrDefault(l => l.lobbyID == mappedLobbyId && l.status == "Open");
+                    }
 
                     if (lobby == null)
                     {
-                        return new List<PlayerInfo>();
+                        var invitation = context.Invitation.FirstOrDefault(i => i.code == numericCode);
+                        if (invitation == null)
+                        {
+                            return new List<PlayerInfo>();
+                        }
+
+                        lobby = context.Lobby.FirstOrDefault(l => l.ownerID == invitation.senderID && l.status == "Open");
+                        if (lobby == null)
+                        {
+                            return new List<PlayerInfo>();
+                        }
                     }
+
+                    var ownerUsername = context.User
+                        .Where(u => u.userID == lobby.ownerID)
+                        .Select(u => u.username)
+                        .FirstOrDefault();
 
                     var players = (from lm in context.LobbyMember
                                    join u in context.User on lm.userID equals u.userID
-                                   join up in context.UserProfile on u.userID equals up.userID
+                                   join up in context.UserProfile on u.userID equals up.userID into upj
+                                   from up in upj.DefaultIfEmpty()
                                    where lm.lobbyID == lobby.lobbyID
                                    select new PlayerInfo
                                    {
                                        Username = u.username,
-                                       AvatarId = up.avatarID,
-                                       OwnerUsername = context.User
-                                           .Where(x => x.userID == lobby.ownerID)
-                                           .Select(x => x.username)
-                                           .FirstOrDefault()
+                                       AvatarId = (up != null ? up.avatarID : "avatar_aaa_default"),
+                                       OwnerUsername = ownerUsername
                                    }).ToList();
 
                     return players;
@@ -1069,8 +1099,6 @@ namespace TrucoServer
                 return new List<PlayerInfo>();
             }
         }
-
-
 
         public void LeaveMatchChat(string matchCode, string player)
         {
@@ -1235,6 +1263,21 @@ namespace TrucoServer
                         return true;
                     }
                 });
+            }
+        }
+
+        private void RemoveMatchMappingIfClosed(string matchCode)
+        {
+            if (matchCodeToLobbyId.TryGetValue(matchCode, out int lobbyId))
+            {
+                using (var context = new baseDatosTrucoEntities())
+                {
+                    var lobby = context.Lobby.FirstOrDefault(l => l.lobbyID == lobbyId);
+                    if (lobby == null || lobby.status != "Open")
+                    {
+                        matchCodeToLobbyId.TryRemove(matchCode, out _);
+                    }
+                }
             }
         }
 
