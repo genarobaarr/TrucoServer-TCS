@@ -1108,18 +1108,6 @@ namespace TrucoServer
                     }
                 }
 
-                BroadcastToMatchCallbacksAsync(matchCode, cb =>
-                {
-                    try
-                    {
-                        cb.OnPlayerJoined(matchCode, player);
-                    }
-                    catch (Exception ex)
-                    {
-                        LogError(ex, nameof(JoinMatchChat));
-                    }
-                });
-
                 Console.WriteLine($"{player} se unió a {matchCode}");
             }
             catch (Exception ex)
