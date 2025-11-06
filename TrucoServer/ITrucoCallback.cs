@@ -23,7 +23,7 @@ namespace TrucoServer
         void OnChatMessage(string matchCode, string player, string message);
 
         [OperationContract(IsOneWay = true)]
-        void OnMatchStarted(string matchCode);
+        void OnMatchStarted(string matchCode, List<PlayerInfo> players);
 
         [OperationContract(IsOneWay = true)]
         void OnMatchEnded(string matchCode, string winner);

@@ -1301,11 +1301,13 @@ namespace TrucoServer
         {
             try
             {
+                var players = GetLobbyPlayers(matchCode);
+
                 BroadcastToMatchCallbacksAsync(matchCode, cb =>
                 {
                     try
                     {
-                        cb.OnMatchStarted(matchCode);
+                        cb.OnMatchStarted(matchCode, players);
                     }
                     catch (Exception ex)
                     {
