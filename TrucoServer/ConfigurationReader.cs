@@ -1,17 +1,12 @@
 ﻿using Newtonsoft.Json;
 using System;
-using System.Collections.Generic;
-using System.Configuration;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace TrucoServer
 {
     public static class ConfigurationReader
     {
-        private const string ConfigurationFileName = "appSettings.private.json";
+        private const string CONFIGURATION_FILE_NAME = "appSettings.private.json";
         private static EmailSettings emailSettings;
 
         public static EmailSettings EmailSettings
@@ -28,7 +23,7 @@ namespace TrucoServer
 
         private static void LoadConfiguration()
         {
-            string filePath = ConfigurationFileName;
+            string filePath = CONFIGURATION_FILE_NAME;
 
             try
             {

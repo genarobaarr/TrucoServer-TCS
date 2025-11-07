@@ -4,6 +4,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Data.Entity;
 using System.Data.Entity.Infrastructure;
+using System.Data.SqlClient;
 using System.Linq;
 using System.Net;
 using System.Net.Mail;
@@ -17,11 +18,10 @@ namespace TrucoServer
     [ServiceBehavior(InstanceContextMode = InstanceContextMode.Single, ConcurrencyMode = ConcurrencyMode.Multiple)]
     public partial class TrucoServer : ITrucoUserService, ITrucoFriendService, ITrucoMatchService
     {
+        private const int MAX_NAME_CHANGES = 2;
         private static readonly ConcurrentDictionary<string, string> VerificationCodes = new ConcurrentDictionary<string, string>();
         private static readonly ConcurrentDictionary<string, ITrucoCallback> OnlineUsers = new ConcurrentDictionary<string, ITrucoCallback>();
         private readonly ConcurrentDictionary<string, int> matchCodeToLobbyId = new ConcurrentDictionary<string, int>();
-        private const int MaxNameChanges = 2;
-
         private readonly ConcurrentDictionary<string, List<ITrucoCallback>> matchCallbacks = new ConcurrentDictionary<string, List<ITrucoCallback>>();
 
         private void LogError(Exception ex, string methodName)
@@ -29,7 +29,7 @@ namespace TrucoServer
             try
             {
                 Console.ForegroundColor = ConsoleColor.Red;
-                Console.WriteLine($"[ERROR en {methodName}] {ex.GetType().Name}: {ex.Message}");
+                Console.WriteLine($"[ERROR IN {methodName}] {ex.GetType().Name}: {ex.Message}");
             }
             finally
             {
@@ -62,13 +62,90 @@ namespace TrucoServer
             }
             catch (CommunicationException ex)
             {
-                Console.WriteLine($"Comunicación interrumpida para {username}: {ex.Message}");
+                Console.WriteLine($"[ERROR] Communication interrupted for {username}: {ex.Message}.");
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error al obtener callback de {username}: {ex.Message}");
+                Console.WriteLine($"[ERROR] Error getting callback from {username}: {ex.Message}.");
             }
             return null;
+        }
+
+        private void RemoveInactiveCallbacks(string matchCode)
+        {
+            if (string.IsNullOrEmpty(matchCode))
+            {
+                return;
+            }
+
+            try
+            {
+                lock (matchCallbacks)
+                {
+                    if (!matchCallbacks.TryGetValue(matchCode, out var list))
+                    {
+                        return;
+                    }
+
+                    list.RemoveAll(cb =>
+                    {
+                        try
+                        {
+                            var comm = (ICommunicationObject)cb;
+                            if (comm.State != CommunicationState.Opened)
+                            {
+                                try
+                                {
+                                    comm.Abort();
+                                }
+                                catch
+                                {
+                                    /* noop */
+                                }
+                                return true;
+                            }
+                        }
+                        catch (Exception)
+                        {
+                            return true;
+                        }
+                        return false;
+                    });
+                }
+            }
+            catch (System.Threading.SynchronizationLockException ex)
+            {
+                LogError(ex, $"{nameof(RemoveInactiveCallbacks)} - Synchronization Block Error");
+            }
+            catch (OutOfMemoryException ex)
+            {
+                LogError(ex, $"{nameof(RemoveInactiveCallbacks)} - Insufficient Memory For Operation\r\n");
+            }
+            catch (Exception ex)
+            {
+                LogError(ex, nameof(RemoveInactiveCallbacks));
+            }
+        }
+
+        private static string GenerateMatchCode()
+        {
+            const string CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+            var random = new Random();
+            return new string(Enumerable.Repeat(CHARS, 6)
+                .Select(s => s[random.Next(s.Length)]).ToArray());
+        }
+
+        private static int GenerateNumericCodeFromString(string code)
+        {
+            unchecked
+            {
+                int hash = 17;
+                foreach (char c in code)
+                {
+                    hash = hash * 31 + c;
+                }
+                return Math.Abs(hash % 999999);
+            }
         }
 
         private void BroadcastToMatchCallbacksAsync(string matchCode, Action<ITrucoCallback> invocation)
@@ -98,10 +175,7 @@ namespace TrucoServer
                             {
                                 lock (matchCallbacks)
                                 {
-                                    if (matchCallbacks.TryGetValue(matchCode, out var listLocal))
-                                    {
-                                        listLocal.Remove(cb);
-                                    }
+                                    RemoveInactiveCallbacks(matchCode);
                                 }
                                 try 
                                 { 
@@ -140,54 +214,39 @@ namespace TrucoServer
             }
         }
 
-        private void CleanupDisconnectedCallbacks(string matchCode)
+        private void SendEmail(string toEmail, string emailSubject, string emailBody)
         {
-            if (!matchCallbacks.ContainsKey(matchCode))
-                return;
-
-            lock (matchCallbacks)
+            try
             {
-                var list = matchCallbacks[matchCode];
-                list.RemoveAll(cb =>
-                {
-                    try
-                    {
-                        var comm = (ICommunicationObject)cb;
-                        if (comm.State != CommunicationState.Opened)
-                        {
-                            try 
-                            { 
-                                comm.Abort(); 
-                            } 
-                            catch 
-                            { 
-                                /* noop */ 
-                            }
+                var settings = ConfigurationReader.EmailSettings;
+                var fromAddress = new MailAddress(settings.FromAddress, settings.FromDisplayName);
+                var toAddress = new MailAddress(toEmail);
 
-                            return true;
-                        }
-                        return false;
-                    }
-                    catch
-                    {
-                        return true;
-                    }
-                });
-            }
-        }
-
-        private void RemoveMatchMappingIfClosed(string matchCode)
-        {
-            if (matchCodeToLobbyId.TryGetValue(matchCode, out int lobbyId))
-            {
-                using (var context = new baseDatosTrucoEntities())
+                using (var smtp = new SmtpClient
                 {
-                    var lobby = context.Lobby.FirstOrDefault(l => l.lobbyID == lobbyId);
-                    if (lobby == null || lobby.status != "Open")
-                    {
-                        matchCodeToLobbyId.TryRemove(matchCode, out _);
-                    }
+                    Host = settings.SmtpHost,
+                    Port = settings.SmtpPort,
+                    EnableSsl = settings.EnableSsl,
+                    DeliveryMethod = SmtpDeliveryMethod.Network,
+                    UseDefaultCredentials = false,
+                    Credentials = new NetworkCredential(fromAddress.Address, settings.FromPassword)
+                })
+                using (var message = new MailMessage(fromAddress, toAddress)
+                {
+                    Subject = emailSubject,
+                    Body = emailBody
+                })
+                {
+                    smtp.Send(message);
                 }
+            }
+            catch (SmtpException ex)
+            {
+                LogError(ex, nameof(SendEmail));
+            }
+            catch (Exception ex)
+            {
+                LogError(ex, nameof(SendEmail));
             }
         }
 
@@ -196,9 +255,15 @@ namespace TrucoServer
             try
             {
                 string code = new Random().Next(100000, 999999).ToString();
+
                 VerificationCodes[email] = code;
-                Task.Run(() => SendVerificationEmail(email, code, languageCode));
-                Console.WriteLine($"Código enviado a {email}: {code}");
+
+                LanguageManager.SetLanguage(languageCode);
+                Task.Run(() => SendEmail(email, Lang.EmailVerificationSubject, 
+                    string.Format(Lang.EmailVerificationBody, code).Replace("\\n", Environment.NewLine)));
+
+                Console.WriteLine($"[EMAIL] Code Sended To {email}: {code}");
+
                 return true;
             }
             catch (ArgumentNullException ex)
@@ -231,58 +296,6 @@ namespace TrucoServer
                 }
             }
             return false;
-        }
-
-        private void SendVerificationEmail(string email, string code, string languageCode)
-        {
-            try
-            {
-                LanguageManager.SetLanguage(languageCode);
-
-                var settings = ConfigurationReader.EmailSettings;
-                MailAddress fromAddress = new MailAddress(settings.FromAddress, settings.FromDisplayName);
-                MailAddress toAddress = new MailAddress(email);
-
-                string fromPassword = settings.FromPassword;
-
-                string subject = Lang.EmailVerificationSubject;
-                string body = string.Format(Lang.EmailVerificationBody, code).Replace("\\n", Environment.NewLine);
-
-                SmtpClient smtp = new SmtpClient
-                {
-                    Host = settings.SmtpHost,
-                    Port = settings.SmtpPort,
-                    EnableSsl = settings.EnableSsl,
-                    DeliveryMethod = SmtpDeliveryMethod.Network,
-                    UseDefaultCredentials = false,
-                    Credentials = new NetworkCredential(fromAddress.Address, fromPassword)
-                };
-
-                using (MailMessage message = new MailMessage(fromAddress, toAddress)
-                {
-                    Subject = subject,
-                    Body = body
-                })
-                {
-                    smtp.Send(message);
-                }
-            }
-            catch (SmtpFailedRecipientException ex)
-            {
-                LogError(ex, nameof(SendVerificationEmail));
-            }
-            catch (SmtpException ex)
-            {
-                LogError(ex, nameof(SendVerificationEmail));
-            }
-            catch (FormatException ex)
-            {
-                LogError(ex, nameof(SendVerificationEmail));
-            }
-            catch (Exception ex)
-            {
-                LogError(ex, nameof(SendVerificationEmail));
-            }
         }
 
         public bool Register(string newUsername, string password, string email)
@@ -361,6 +374,74 @@ namespace TrucoServer
             }
         }
 
+        public bool Login(string username, string password, string languageCode)
+        {
+            using (var context = new baseDatosTrucoEntities())
+            {
+                User user = context.User.FirstOrDefault(u => u.email == username || u.username == username);
+                if (user != null && PasswordHasher.Verify(password, user.passwordHash))
+                {
+                    ITrucoCallback callback = OperationContext.Current.GetCallbackChannel<ITrucoCallback>();
+                    OnlineUsers.TryAdd(user.username, callback);
+
+                    LanguageManager.SetLanguage(languageCode);
+                    Task.Run(() => SendEmail(user.email, Lang.EmailLoginNotificationSubject,
+                        string.Format(Lang.EmailLoginNotificactionBody, username, DateTime.Now).Replace("\\n", Environment.NewLine)));
+
+                    return true;
+                }
+                return false;
+            }
+        }
+
+        public bool PasswordChange(string email, string newPassword, string languageCode)
+        {
+            using (var context = new baseDatosTrucoEntities())
+            {
+                User user = context.User.FirstOrDefault(u => u.email == email);
+                if (user == null)
+                {
+                    return false;
+                }
+
+                user.passwordHash = PasswordHasher.Hash(newPassword);
+                context.SaveChanges();
+
+                LanguageManager.SetLanguage(languageCode);
+                Task.Run(() => SendEmail(user.email, Lang.EmailPasswordNotificationSubject,
+                    string.Format(Lang.EmailPasswordNotificationBody, user.username, DateTime.Now).Replace("\\n", Environment.NewLine)));
+
+                return true;
+            }
+        }
+
+        public bool PasswordReset(string email, string code, string newPassword, string languageCode)
+        {
+            if (!ConfirmEmailVerification(email, code))
+            {
+                return false;
+            }
+
+            using (var context = new baseDatosTrucoEntities())
+            {
+                User user = context.User.FirstOrDefault(u => u.email == email);
+
+                if (user == null)
+                {
+                    return false;
+                }
+
+                user.passwordHash = PasswordHasher.Hash(newPassword);
+                context.SaveChanges();
+
+                LanguageManager.SetLanguage(languageCode);
+                Task.Run(() => SendEmail(user.email, Lang.EmailPasswordNotificationSubject,
+                    string.Format(Lang.EmailPasswordNotificationBody, user.username, DateTime.Now).Replace("\\n", Environment.NewLine)));
+
+                return true;
+            }
+        }
+
         public UserProfileData GetUserProfile(string username)
         {
             using (var context = new baseDatosTrucoEntities())
@@ -374,6 +455,33 @@ namespace TrucoServer
                 string json = user.UserProfile?.socialLinksJson != null
                     ? Encoding.UTF8.GetString(user.UserProfile.socialLinksJson)
                     : "{}";
+                dynamic links = JsonConvert.DeserializeObject(json);
+
+                return new UserProfileData
+                {
+                    Username = user.username,
+                    Email = user.email,
+                    AvatarId = user.UserProfile?.avatarID ?? "avatar_aaa_default",
+                    NameChangeCount = user.nameChangeCount,
+                    FacebookHandle = links?.facebook ?? "",
+                    XHandle = links?.x ?? "",
+                    InstagramHandle = links?.instagram ?? ""
+                };
+            }
+        }
+
+        public async Task<UserProfileData> GetUserProfileByEmailAsync(string email)
+        {
+            using (var context = new baseDatosTrucoEntities())
+            {
+                var user = await context.User.Include(u => u.UserProfile).FirstOrDefaultAsync(u => u.email == email);
+
+                if (user == null)
+                {
+                    return null;
+                }
+
+                string json = user.UserProfile?.socialLinksJson != null ? Encoding.UTF8.GetString(user.UserProfile.socialLinksJson) : "{}";
                 dynamic links = JsonConvert.DeserializeObject(json);
 
                 return new UserProfileData
@@ -408,7 +516,7 @@ namespace TrucoServer
 
                     if (user.username != profile.Username)
                     {
-                        if (user.nameChangeCount >= MaxNameChanges)
+                        if (user.nameChangeCount >= MAX_NAME_CHANGES)
                         {
                             return false;
                         }
@@ -473,176 +581,6 @@ namespace TrucoServer
             {
                 return Task.FromResult(false);
             }
-        }
-
-        public async Task<UserProfileData> GetUserProfileByEmailAsync(string email)
-        {
-            using (var context = new baseDatosTrucoEntities())
-            {
-                var user = await context.User.Include(u => u.UserProfile).FirstOrDefaultAsync(u => u.email == email);
-
-                if (user == null)
-                {
-                    return null;
-                }
-
-                string json = user.UserProfile?.socialLinksJson != null ? Encoding.UTF8.GetString(user.UserProfile.socialLinksJson) : "{}";
-                dynamic links = JsonConvert.DeserializeObject(json);
-
-                return new UserProfileData
-                {
-                    Username = user.username,
-                    Email = user.email,
-                    AvatarId = user.UserProfile?.avatarID ?? "avatar_aaa_default",
-                    NameChangeCount = user.nameChangeCount,
-                    FacebookHandle = links?.facebook ?? "",
-                    XHandle = links?.x ?? "",
-                    InstagramHandle = links?.instagram ?? ""
-                };
-            }
-        }
-
-        public bool PasswordReset(string email, string code, string newPassword, string languageCode) 
-        { 
-            if (!ConfirmEmailVerification(email, code)) 
-            { 
-                return false; 
-            } 
-
-            using (var context = new baseDatosTrucoEntities()) 
-            { 
-                User user = context.User.FirstOrDefault(u => u.email == email);
-                
-                if (user == null) 
-                { 
-                    return false; 
-                } 
-
-                user.passwordHash = PasswordHasher.Hash(newPassword); 
-                context.SaveChanges(); 
-
-                Task.Run(() => SendPasswordNotificationEmail(user.email, user.username, languageCode)); 
-                return true; 
-            } 
-        }
-        public bool PasswordChange(string email, string newPassword, string languageCode) 
-        { 
-            using (var context = new baseDatosTrucoEntities()) 
-            { 
-                User user = context.User.FirstOrDefault(u => u.email == email); 
-                if (user == null) 
-                { 
-                    return false; 
-                } 
-
-                user.passwordHash = PasswordHasher.Hash(newPassword); 
-                context.SaveChanges(); 
-
-                Task.Run(() => SendPasswordNotificationEmail(user.email, user.username, languageCode)); 
-                return true; 
-            } 
-        }
-
-        private void SendLoginNotificationEmail(string email, string username, string languageCode)
-        {
-            try
-            {
-                LanguageManager.SetLanguage(languageCode);
-
-                var settings = ConfigurationReader.EmailSettings;
-                MailAddress fromAddress = new MailAddress(settings.FromAddress, settings.FromDisplayName);
-                MailAddress toAddress = new MailAddress(email);
-                string fromPassword = settings.FromPassword;
-
-                string subject = Lang.EmailLoginNotificationSubject;
-                string body = string.Format(Lang.EmailLoginNotificactionBody, username, DateTime.Now).Replace("\\n", Environment.NewLine);
-
-                SmtpClient smtp = new SmtpClient
-                {
-                    Host = settings.SmtpHost,
-                    Port = settings.SmtpPort,
-                    EnableSsl = settings.EnableSsl,
-                    DeliveryMethod = SmtpDeliveryMethod.Network,
-                    UseDefaultCredentials = false,
-                    Credentials = new NetworkCredential(fromAddress.Address, fromPassword)
-                };
-                using (MailMessage message = new MailMessage(fromAddress, toAddress)
-                {
-                    Subject = subject,
-                    Body = body
-                })
-                {
-                    smtp.Send(message);
-                }
-            }
-            catch (SmtpException ex)
-            {
-                LogError(ex, nameof(SendLoginNotificationEmail));
-            }
-            catch (Exception ex)
-            {
-                LogError(ex, nameof(SendLoginNotificationEmail));
-            }
-        }
-
-        public bool Login(string username, string password, string languageCode)
-        {
-            using (var context = new baseDatosTrucoEntities())
-            {
-                User user = context.User.FirstOrDefault(u => u.email == username || u.username == username);
-                if (user != null && PasswordHasher.Verify(password, user.passwordHash))
-                {
-                    ITrucoCallback callback = OperationContext.Current.GetCallbackChannel<ITrucoCallback>();
-                    OnlineUsers.TryAdd(user.username, callback);
-
-                    Task.Run(() => SendLoginNotificationEmail(user.email, user.username, languageCode));
-
-                    return true;
-                }
-                return false;
-            }
-        }
-
-        private void SendPasswordNotificationEmail(string email, string username, string languageCode) 
-        { 
-            try 
-            { 
-                LanguageManager.SetLanguage(languageCode); 
-
-                var settings = ConfigurationReader.EmailSettings; 
-                MailAddress fromAddress = new MailAddress(settings.FromAddress, settings.FromDisplayName); 
-                MailAddress toAddress = new MailAddress(email); 
-                string fromPassword = settings.FromPassword; 
-
-                string subject = Lang.EmailPasswordNotificationSubject; 
-                string body = string.Format(Lang.EmailPasswordNotificationBody, username, DateTime.Now).Replace("\\n", Environment.NewLine); 
-
-                SmtpClient smtp = new SmtpClient 
-                { 
-                    Host = settings.SmtpHost, 
-                    Port = settings.SmtpPort, 
-                    EnableSsl = settings.EnableSsl, 
-                    DeliveryMethod = SmtpDeliveryMethod.Network, 
-                    UseDefaultCredentials = false, 
-                    Credentials = new NetworkCredential(fromAddress.Address, fromPassword) 
-                }; 
-                using (MailMessage message = new MailMessage(fromAddress, toAddress) 
-                { 
-                    Subject = subject, 
-                    Body = body 
-                }) 
-                { 
-                    smtp.Send(message); 
-                } 
-            } 
-            catch (SmtpException ex) 
-            { 
-                LogError(ex, nameof(SendPasswordNotificationEmail)); 
-            } 
-            catch (Exception ex) 
-            { 
-                LogError(ex, nameof(SendPasswordNotificationEmail)); 
-            } 
         }
 
         public bool SendFriendRequest(string fromUser, string toUser)
@@ -744,6 +682,7 @@ namespace TrucoServer
 
                 db.Friendship.RemoveRange(toRemove);
                 db.SaveChanges();
+
                 return true;
             }
         }
@@ -806,314 +745,75 @@ namespace TrucoServer
             }
         }
 
-        public string CreateMatch(string hostPlayer)
+        public string CreateLobby(string hostUsername, int maxPlayers, string privacy)
         {
             try
             {
                 using (var context = new baseDatosTrucoEntities())
                 {
-                    var host = context.User.FirstOrDefault(u => u.username == hostPlayer);
-                    if (host == null)
-                    {
-                        throw new InvalidOperationException("Usuario no encontrado.");
-                    }
+                    var host = context.User.FirstOrDefault(u => u.username == hostUsername)
+                        ?? throw new InvalidOperationException("Host user not found.");
+
+                    int versionId = ResolveVersionId(context, maxPlayers);
 
                     string matchCode = GenerateMatchCode();
+                    var lobby = CreateNewLobby(context, host, versionId, maxPlayers);
 
-                    int versionId = context.Versions.Any() ? context.Versions.First().versionID : 1;
-
-                    Lobby lobby = new Lobby
+                    AddLobbyOwner(context, lobby, host);
+                    if (privacy.Equals("private", StringComparison.OrdinalIgnoreCase))
                     {
-                        ownerID = host.userID,
-                        versionID = versionId,
-                        maxPlayers = 4,
-                        status = "Open",
-                        createdAt = DateTime.Now
-                    };
-                    context.Lobby.Add(lobby);
-                    context.SaveChanges();
-
-                    context.LobbyMember.Add(new LobbyMember
-                    {
-                        lobbyID = lobby.lobbyID,
-                        userID = host.userID,
-                        role = "Owner"
-                    });
-
-                    int numericCode = GenerateNumericCodeFromString(matchCode);
-                    context.Invitation.Add(new Invitation
-                    {
-                        senderID = host.userID,
-                        receiverEmail = null,
-                        code = numericCode,
-                        status = "Pending",
-                        expiresAt = DateTime.Now.AddDays(1)
-                    });
-
-                    context.SaveChanges();
-
-                    var previousInvitations = context.Invitation.Where(i => i.senderID == host.userID && i.status == "Pending").ToList();
-                    foreach (var inv in previousInvitations)
-                    {
-                        if (inv.code != numericCode)
-                        {
-                            inv.status = "Expired";
-                            inv.expiresAt = DateTime.Now;
-                        }
+                        CreatePrivateInvitation(context, host, matchCode);
                     }
+
                     context.SaveChanges();
+                    RegisterLobbyMapping(matchCode, lobby);
 
-                    matchCodeToLobbyId[matchCode] = lobby.lobbyID;
-
-                    matchCallbacks.TryAdd(matchCode, new List<ITrucoCallback>());
-
-                    Console.WriteLine($"[SERVER] Lobby privado creado por {hostPlayer} con código {matchCode}");
+                    Console.WriteLine($"[SERVER] Lobby created by {hostUsername}, code={matchCode}, privacy={privacy}, maxPlayers={maxPlayers}.");
                     return matchCode;
                 }
             }
-            catch (System.Data.Entity.Validation.DbEntityValidationException ex)
-            {
-                foreach (var validationErrors in ex.EntityValidationErrors)
-                {
-                    foreach (var validationError in validationErrors.ValidationErrors)
-                    {
-                        Console.WriteLine($"[VALIDATION ERROR] {validationError.PropertyName}: {validationError.ErrorMessage}");
-                    }
-                }
-                LogError(ex, nameof(CreateMatch));
-                return null;
-            }
-            catch (InvalidOperationException ex)
-            {
-                LogError(ex, nameof(CreateMatch));
-                return null;
-            }
-            catch (System.Data.Entity.Infrastructure.DbUpdateException ex)
-            {
-                LogError(ex, nameof(CreateMatch));
-                if (ex.InnerException != null)
-                    Console.WriteLine($"[INNER EXCEPTION] {ex.InnerException.Message}");
-                return null;
-            }
-            catch (CommunicationException ex)
-            {
-                LogError(ex, nameof(CreateMatch));
-                return null;
-            }
             catch (Exception ex)
             {
-                LogError(ex, nameof(CreateMatch));
-                return null;
+                LogError(ex, nameof(CreateLobby));
+                return string.Empty;
             }
         }
 
         public bool JoinMatch(string matchCode, string player)
         {
+            bool result = false;
+
             try
             {
                 using (var context = new baseDatosTrucoEntities())
                 {
-                    int numericCode = GenerateNumericCodeFromString(matchCode);
-
-                    Lobby lobby = null;
-                    if (matchCodeToLobbyId.TryGetValue(matchCode, out int mappedLobbyId))
-                    {
-                        lobby = context.Lobby.FirstOrDefault(l => l.lobbyID == mappedLobbyId && l.status == "Open");
-                        Console.WriteLine(lobby != null
-                            ? $"[JOIN] Found lobby by mapping: {matchCode} -> {mappedLobbyId}"
-                            : $"[JOIN] Mapping existed but no open lobby found for id {mappedLobbyId}");
-                    }
-
-                    Invitation invitation = null;
+                    Lobby lobby = ResolveLobbyForJoin(context, matchCode);
                     if (lobby == null)
                     {
-                        invitation = context.Invitation.FirstOrDefault(i => i.code == numericCode && i.status == "Pending");
-                        if (invitation == null)
-                        {
-                            Console.WriteLine($"[JOIN] Invitation not found (code {numericCode}) for matchCode {matchCode}");
-                            return false;
-                        }
-
-                        if (invitation.expiresAt != null && invitation.expiresAt.Date < DateTime.Now)
-                        {
-                            Console.WriteLine($"[JOIN] Invitation expired for code {numericCode}");
-                            return false;
-                        }
-
-                        lobby = context.Lobby.FirstOrDefault(l => l.ownerID == invitation.senderID && l.status == "Open");
-                        if (lobby == null)
-                        {
-                            Console.WriteLine($"[JOIN] Lobby not found for invitation sender {invitation.senderID}");
-                            return false;
-                        }
-
-                        matchCodeToLobbyId.TryAdd(matchCode, lobby.lobbyID);
-                        Console.WriteLine($"[JOIN] Mapped {matchCode} -> lobbyId {lobby.lobbyID}");
-                    }
-
-                    var playerUser = context.User.FirstOrDefault(u => u.username == player);
-                    if (playerUser == null)
-                    {
-                        Console.WriteLine($"[JOIN] Player user not found: {player}");
                         return false;
                     }
 
-                    if (!context.LobbyMember.Any(lm => lm.lobbyID == lobby.lobbyID && lm.userID == playerUser.userID))
+                    User playerUser = context.User.FirstOrDefault(u => u.username == player);
+                    if (!ValidateJoinConditions(context, lobby, playerUser))
                     {
-                        context.LobbyMember.Add(new LobbyMember
-                        {
-                            lobbyID = lobby.lobbyID,
-                            userID = playerUser.userID,
-                            role = "Player"
-                        });
-
-                        if (invitation != null)
-                        {
-                            invitation.status = "Accepted";
-                        }
-
-                        context.SaveChanges();
-                        Console.WriteLine($"[JOIN] Added LobbyMember user={player} to lobbyId={lobby.lobbyID}");
-                    }
-                    else
-                    {
-                        Console.WriteLine($"[JOIN] User {player} already a member of lobbyId={lobby.lobbyID}");
+                        return false;
                     }
 
-                    matchCallbacks.TryAdd(matchCode, new List<ITrucoCallback>());
+                    AddPlayerToLobby(context, lobby, playerUser);
+                    RegisterMatchCallback(matchCode, player);
+                    NotifyPlayerJoined(matchCode, player);
 
-                    var callback = OperationContext.Current.GetCallbackChannel<ITrucoCallback>();
-
-                    string newSessionId = null;
-                    try
-                    {
-                        var newCtx = callback as IContextChannel;
-                        newSessionId = newCtx?.SessionId;
-                    }
-                    catch
-                    {
-                        newSessionId = null;
-                    }
-
-                    lock (matchCallbacks)
-                    {
-                        matchCallbacks[matchCode].RemoveAll(cb =>
-                        {
-                            try
-                            {
-                                var comm = (ICommunicationObject)cb;
-                                if (comm.State != CommunicationState.Opened)
-                                {
-                                    try 
-                                    { 
-                                        comm.Abort(); 
-                                    } 
-                                    catch 
-                                    { 
-                                        /* noop */ 
-                                    }
-
-                                    return true;
-                                }
-                                return false;
-                            }
-                            catch
-                            {
-                                return true;
-                            }
-                        });
-
-                        bool alreadyExists = false;
-                        if (!string.IsNullOrEmpty(newSessionId))
-                        {
-                            foreach (var cb in matchCallbacks[matchCode])
-                            {
-                                try
-                                {
-                                    var ctx = cb as IContextChannel;
-                                    if (ctx != null && ctx.SessionId == newSessionId)
-                                    {
-                                        alreadyExists = true;
-                                        break;
-                                    }
-                                }
-                                catch 
-                                { 
-                                    /* noop */ 
-                                }
-                            }
-                        }
-                        else
-                        {
-                            alreadyExists = matchCallbacks[matchCode].Any(cb => ReferenceEquals(cb, callback) || cb.GetHashCode() == callback.GetHashCode());
-                        }
-
-                        if (!alreadyExists)
-                        {
-                            matchCallbacks[matchCode].Add(callback);
-                            Console.WriteLine($"[JOIN] Callback added for {player} on match {matchCode}");
-                        }
-                    }
-
-                    BroadcastToMatchCallbacksAsync(matchCode, cb =>
-                    {
-                        try
-                        {
-                            cb.OnPlayerJoined(matchCode, player);
-                        }
-                        catch (Exception ex)
-                        {
-                            LogError(ex, nameof(JoinMatch));
-                        }
-                    });
-
-                    Console.WriteLine($"[SERVER] {player} se unió al lobby {matchCode}");
-                    return true;
+                    Console.WriteLine($"[SERVER] {player} joined the lobby {matchCode}.");
+                    result = true;
                 }
-            }
-            catch (InvalidOperationException ex)
-            {
-                LogError(ex, nameof(JoinMatch));
-                return false;
-            }
-            catch (System.Data.Entity.Infrastructure.DbUpdateException ex)
-            {
-                LogError(ex, nameof(JoinMatch));
-                return false;
-            }
-            catch (CommunicationException ex)
-            {
-                LogError(ex, nameof(JoinMatch));
-                return false;
-            }
-        }
-
-        public void JoinMatchChat(string matchCode, string player)
-        {
-            try
-            {
-                var callback = OperationContext.Current.GetCallbackChannel<ITrucoCallback>();
-                CleanupDisconnectedCallbacks(matchCode);
-
-                lock (matchCallbacks)
-                {
-                    if (!matchCallbacks.ContainsKey(matchCode))
-                    {
-                        matchCallbacks[matchCode] = new List<ITrucoCallback>();
-                    }
-
-                    if (!matchCallbacks[matchCode].Any(cb => ReferenceEquals(cb, callback)))
-                    {
-                        matchCallbacks[matchCode].Add(callback);
-                    }
-                }
-
-                Console.WriteLine($"{player} se unió a {matchCode}");
             }
             catch (Exception ex)
             {
-                LogError(ex, nameof(JoinMatchChat));
+                LogError(ex, nameof(JoinMatch));
+                result = false;
             }
+
+            return result;
         }
 
         public void LeaveMatch(string matchCode, string username)
@@ -1122,80 +822,34 @@ namespace TrucoServer
             {
                 using (var context = new baseDatosTrucoEntities())
                 {
-                    int numericCode = GenerateNumericCodeFromString(matchCode);
-
-                    var player = context.User.FirstOrDefault(u => u.username == username);
-                    if (player == null)
+                    Lobby lobby = ResolveLobbyForLeave(context, matchCode, username, out User player);
+                    if (lobby == null || player == null)
                     {
                         return;
                     }
 
-                    Lobby lobby = null;
-
-                    if (matchCodeToLobbyId.TryGetValue(matchCode, out int mappedLobbyId))
-                    {
-                        lobby = context.Lobby.FirstOrDefault(l => l.lobbyID == mappedLobbyId && l.status == "Open");
-                    }
-
-                    if (lobby == null)
-                    {
-                        numericCode = GenerateNumericCodeFromString(matchCode);
-                        var invitation = context.Invitation.FirstOrDefault(i => i.code == numericCode);
-
-                        if (invitation != null)
-                        {
-                            lobby = context.Lobby.FirstOrDefault(l => l.ownerID == invitation.senderID && l.status == "Open");
-                        }
-                    }
-
-                    if (lobby == null)
-                    {
-                        Console.WriteLine($"[LEAVE] No se encontró lobby abierto para {matchCode}");
-                        return;
-                    }
-
-
-                    var member = context.LobbyMember.FirstOrDefault(lm => lm.lobbyID == lobby.lobbyID && lm.userID == player.userID);
-                    if (member != null)
-                    {
-                        context.LobbyMember.Remove(member);
-                        context.SaveChanges();
-                    }
-
-                    BroadcastToMatchCallbacksAsync(matchCode, cb =>
-                    {
-                        try
-                        {
-                            cb.OnPlayerLeft(matchCode, username);
-                        }
-                        catch (Exception ex)
-                        {
-                            LogError(ex, nameof(LeaveMatch));
-                        }
-                    });
-
-                    bool isEmpty = !context.LobbyMember.Any(lm => lm.lobbyID == lobby.lobbyID);
-                    if (isEmpty)
-                    {
-                        lobby.status = "Closed";
-
-                        var invitation = context.Invitation.FirstOrDefault(i => i.code == numericCode);
-                        if (invitation != null)
-                        {
-                            invitation.status = "Expired";
-                            invitation.expiresAt = DateTime.Now;
-                        }
-
-                        context.SaveChanges();
-                        Console.WriteLine($"[SERVER] Lobby {matchCode} expiró (vacío).");
-
-                        RemoveMatchMappingIfClosed(matchCode);
-                    }
+                    RemovePlayerFromLobby(context, lobby, player);
+                    NotifyPlayerLeft(matchCode, username);
+                    HandleEmptyLobbyCleanup(context, lobby, matchCode);
                 }
             }
             catch (Exception ex)
             {
                 LogError(ex, nameof(LeaveMatch));
+            }
+        }
+
+        public void StartMatch(string matchCode)
+        {
+            try
+            {
+                var players = GetLobbyPlayers(matchCode);
+                NotifyMatchStart(matchCode, players);
+                HandleMatchStartupCleanup(matchCode);
+            }
+            catch (Exception ex)
+            {
+                LogError(ex, nameof(StartMatch));
             }
         }
 
@@ -1207,12 +861,12 @@ namespace TrucoServer
                 {
                     int numericCode = GenerateNumericCodeFromString(matchCode);
 
-                    Lobby lobby = null;
-
-                    if (matchCodeToLobbyId.TryGetValue(matchCode, out int mappedLobbyId))
+                    Lobby lobby = FindLobbyByMatchCode(context, matchCode, true);
+                    if (lobby == null)
                     {
-                        lobby = context.Lobby.FirstOrDefault(l => l.lobbyID == mappedLobbyId && l.status == "Open");
+                        return new List<PlayerInfo>();
                     }
+
 
                     if (lobby == null)
                     {
@@ -1249,10 +903,122 @@ namespace TrucoServer
                     return players;
                 }
             }
+            catch (FormatException ex)
+            {
+                LogError(ex, $"{nameof(GetLobbyPlayers)} - Code Format Error");
+                return new List<PlayerInfo>();
+            }
+            catch (OverflowException ex)
+            {
+                LogError(ex, $"{nameof(GetLobbyPlayers)} - Code Out of Range");
+                return new List<PlayerInfo>();
+            }
+            catch (SqlException ex)
+            {
+                LogError(ex, $"{nameof(GetLobbyPlayers)} - SQL Server Error");
+                return new List<PlayerInfo>();
+            }
+            catch (NotSupportedException ex)
+            {
+                LogError(ex, $"{nameof(GetLobbyPlayers)} - LINQ Not Supported");
+                return new List<PlayerInfo>();
+            }
+            catch (InvalidOperationException ex)
+            {
+                LogError(ex, $"{nameof(GetLobbyPlayers)} - Invalid Operation (DataBase Context)");
+                return new List<PlayerInfo>();
+            }
             catch (Exception ex)
             {
                 LogError(ex, nameof(GetLobbyPlayers));
                 return new List<PlayerInfo>();
+            }
+        }
+
+        public List<PlayerStats> GetGlobalRanking()
+        {
+            try
+            {
+                using (var context = new baseDatosTrucoEntities())
+                {
+                    var topPlayers = context.User
+                        .OrderByDescending(u => u.wins)
+                        .Take(10)
+                        .Select(u => new PlayerStats
+                        {
+                            PlayerName = u.username,
+                            Wins = u.wins,
+                        })
+                        .ToList();
+
+                    return topPlayers;
+                }
+            }
+            catch (NotSupportedException ex)
+            {
+                LogError(ex, $"{nameof(GetGlobalRanking)} - LINQ Not Supported");
+                return new List<PlayerStats>();
+            }
+            catch (SqlException ex)
+            {
+                LogError(ex, $"{nameof(GetGlobalRanking)} - SQL Error");
+                return new List<PlayerStats>();
+            }
+            catch (InvalidOperationException ex)
+            {
+                LogError(ex, $"{nameof(GetGlobalRanking)} - Invalid Operation (DataBase Context)");
+                return new List<PlayerStats>();
+            }
+            catch (Exception ex)
+            {
+                LogError(ex, nameof(GetGlobalRanking));
+                return new List<PlayerStats>();
+            }
+        }
+
+        public List<MatchResult> GetLastMatches(string username)
+        {
+            throw new NotImplementedException();
+        }
+
+        public List<string> GetOnlinePlayers()
+        {
+            throw new NotImplementedException();
+        }
+
+        public void JoinMatchChat(string matchCode, string player)
+        {
+            try
+            {
+                var callback = OperationContext.Current.GetCallbackChannel<ITrucoCallback>();
+                RemoveInactiveCallbacks(matchCode);
+
+                lock (matchCallbacks)
+                {
+                    if (!matchCallbacks.ContainsKey(matchCode))
+                    {
+                        matchCallbacks[matchCode] = new List<ITrucoCallback>();
+                    }
+
+                    if (!matchCallbacks[matchCode].Any(cb => ReferenceEquals(cb, callback)))
+                    {
+                        matchCallbacks[matchCode].Add(callback);
+                    }
+                }
+
+                Console.WriteLine($"[CHAT] {player} joined the lobby {matchCode}.");
+            }
+            catch (InvalidOperationException ex)
+            {
+                LogError(ex, $"{nameof(JoinMatchChat)} - There is no WCF Operational Context");
+            }
+            catch (OutOfMemoryException ex)
+            {
+                LogError(ex, $"{nameof(JoinMatchChat)} - Insuficient Memory");
+            }
+            catch (Exception ex)
+            {
+                LogError(ex, nameof(JoinMatchChat));
             }
         }
 
@@ -1278,13 +1044,25 @@ namespace TrucoServer
                         {
                             cb.OnPlayerLeft(matchCode, player);
                         }
+                        catch (CommunicationException ex)
+                        {
+                            LogError(ex, $"{nameof(LeaveMatchChat)} - Callback Communication Error");
+                        }
+                        catch (TimeoutException ex)
+                        {
+                            LogError(ex, $"{nameof(LeaveMatchChat)} - Timeout When Notifying Exit");
+                        }
                         catch (Exception ex)
                         {
                             LogError(ex, nameof(LeaveMatchChat));
                         }
                     });
                 }
-                Console.WriteLine($"{player} salió de {matchCode}");
+                Console.WriteLine($"[CHAT] {player} left the lobby {matchCode}.");
+            }
+            catch (InvalidOperationException ex)
+            {
+                LogError(ex, $"{nameof(LeaveMatchChat)} - There is no WCF Operational Context");
             }
             catch (Exception ex)
             {
@@ -1292,42 +1070,11 @@ namespace TrucoServer
             }
         }
 
-        public void PlayCard(string matchCode, string player, string card)
-        {
-            throw new NotImplementedException();
-        }
-
-        public void StartMatch(string matchCode)
-        {
-            try
-            {
-                var players = GetLobbyPlayers(matchCode);
-
-                BroadcastToMatchCallbacksAsync(matchCode, cb =>
-                {
-                    try
-                    {
-                        cb.OnMatchStarted(matchCode, players);
-                    }
-                    catch (Exception ex)
-                    {
-                        LogError(ex, nameof(StartMatch));
-                    }
-                });
-
-                Console.WriteLine($"[SERVER] Partida {matchCode} iniciada por el propietario.");
-            }
-            catch (Exception ex)
-            {
-                LogError(ex, nameof(StartMatch));
-            }
-        }
-
         public void SendChatMessage(string matchCode, string player, string message)
         {
             try
             {
-                CleanupDisconnectedCallbacks(matchCode);
+                RemoveInactiveCallbacks(matchCode);
 
                 if (!matchCallbacks.ContainsKey(matchCode))
                 {
@@ -1345,14 +1092,25 @@ namespace TrucoServer
                             cb.OnChatMessage(matchCode, player, message);
                         }
                     }
+                    catch (CommunicationException ex)
+                    {
+                        LogError(ex, $"{nameof(SendChatMessage)} - Disconnected Client");
+                    }
+                    catch (TimeoutException ex)
+                    {
+                        LogError(ex, $"{nameof(SendChatMessage)} - Timeout When Sending Message");
+                    }
                     catch (Exception ex)
                     {
-                        LogError(ex, nameof(SendChatMessage));
+                        LogError(ex, $"{nameof(SendChatMessage)} - Callback Error");
                     }
                 });
 
-
                 Console.WriteLine($"[{matchCode}] {player}: {message}");
+            }
+            catch (InvalidOperationException ex)
+            {
+                LogError(ex, $"{nameof(SendChatMessage)} - Invalid OperationContext");
             }
             catch (Exception ex)
             {
@@ -1360,54 +1118,432 @@ namespace TrucoServer
             }
         }
 
-
-        public List<PlayerStats> GetGlobalRanking()
+        public void PlayCard(string matchCode, string player, string card)
         {
-            using (var context = new baseDatosTrucoEntities())
-            {
-                var topPlayers = context.User
-                    .OrderByDescending(u => u.wins)
-                    .Take(10)
-                    .Select(u => new PlayerStats
-                    {
-                        PlayerName = u.username,
-                        Wins = u.wins,
-                    })
-                    .ToList();
+            throw new NotImplementedException();
+        }
 
-                return topPlayers;
+        private static int ResolveVersionId(baseDatosTrucoEntities context, int maxPlayers)
+        {
+            int versionId = context.Versions
+                .Where(v => v.configuration.Contains(maxPlayers == 2 ? "1v1" : "2v2"))
+                .Select(v => v.versionID)
+                .FirstOrDefault();
+
+            return versionId == 0 && context.Versions.Any()
+                ? context.Versions.First().versionID
+                : versionId;
+        }
+
+        private Lobby CreateNewLobby(baseDatosTrucoEntities context, User host, int versionId, int maxPlayers)
+        {
+            var newLobby = new Lobby
+            {
+                ownerID = host.userID,
+                versionID = versionId,
+                maxPlayers = maxPlayers,
+                status = "Open",
+                createdAt = DateTime.Now
+            };
+
+            context.Lobby.Add(newLobby);
+            context.SaveChanges();
+            return newLobby;
+        }
+
+        private void AddLobbyOwner(baseDatosTrucoEntities context, Lobby lobby, User host)
+        {
+            context.LobbyMember.Add(new LobbyMember
+            {
+                lobbyID = lobby.lobbyID,
+                userID = host.userID,
+                role = "Owner"
+            });
+        }
+
+        private void CreatePrivateInvitation(baseDatosTrucoEntities context, User host, string matchCode)
+        {
+            int numericCode = GenerateNumericCodeFromString(matchCode);
+
+            var previousInvitations = context.Invitation
+                .Where(i => i.senderID == host.userID && i.status == "Pending")
+                .ToList();
+
+            foreach (var inv in previousInvitations)
+            {
+                inv.status = "Expired";
+                inv.expiresAt = DateTime.Now;
             }
-        }
 
-        public List<MatchResult> GetLastMatches(string username)
-        {
-            throw new NotImplementedException();
-        }
-
-        public List<string> GetOnlinePlayers()
-        {
-            throw new NotImplementedException();
-        }
-
-        private static string GenerateMatchCode()
-        {
-            const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-            var random = new Random();
-            return new string(Enumerable.Repeat(chars, 6)
-                .Select(s => s[random.Next(s.Length)]).ToArray());
-        }
-
-        private static int GenerateNumericCodeFromString(string code)
-        {
-            unchecked
+            context.Invitation.Add(new Invitation
             {
-                int hash = 17;
-                foreach (char c in code)
+                senderID = host.userID,
+                receiverEmail = null,
+                code = numericCode,
+                status = "Pending",
+                expiresAt = DateTime.Now.AddHours(2)
+            });
+        }
+
+        private void RegisterLobbyMapping(string matchCode, Lobby lobby)
+        {
+            matchCodeToLobbyId[matchCode] = lobby.lobbyID;
+            matchCallbacks.TryAdd(matchCode, new List<ITrucoCallback>());
+        }
+
+        private Lobby ResolveLobbyForJoin(baseDatosTrucoEntities context, string matchCode)
+        {
+            Lobby lobby = FindLobbyByMatchCode(context, matchCode, true);
+
+            if (lobby == null)
+            {
+                int numericCode = GenerateNumericCodeFromString(matchCode);
+                var invitation = context.Invitation.FirstOrDefault(i => i.code == numericCode && i.status == "Pending");
+
+                if (invitation == null || (invitation.expiresAt != null && invitation.expiresAt < DateTime.Now))
                 {
-                    hash = hash * 31 + c;
+                    return null;
                 }
-                return Math.Abs(hash % 999999);
+
+                lobby = context.Lobby.FirstOrDefault(l => l.ownerID == invitation.senderID && l.status == "Open");
+                if (lobby != null)
+                {
+                    matchCodeToLobbyId.TryAdd(matchCode, lobby.lobbyID);
+                }
             }
+
+            return lobby;
+        }
+
+        private bool ValidateJoinConditions(baseDatosTrucoEntities context, Lobby lobby, User playerUser)
+        {
+            if (playerUser == null)
+            {
+                Console.WriteLine($"[JOIN] Player not found.");
+                return false;
+            }
+
+            int count = context.LobbyMember.Count(lm => lm.lobbyID == lobby.lobbyID);
+            if (count >= lobby.maxPlayers)
+            {
+                Console.WriteLine($"[JOIN] Lobby {lobby.lobbyID} is full ({count}/{lobby.maxPlayers}).");
+                return false;
+            }
+
+            return true;
+        }
+
+        private void AddPlayerToLobby(baseDatosTrucoEntities context, Lobby lobby, User playerUser)
+        {
+            if (!context.LobbyMember.Any(lm => lm.lobbyID == lobby.lobbyID && lm.userID == playerUser.userID))
+            {
+                context.LobbyMember.Add(new LobbyMember
+                {
+                    lobbyID = lobby.lobbyID,
+                    userID = playerUser.userID,
+                    role = "Player"
+                });
+
+                context.SaveChanges();
+                Console.WriteLine($"[JOIN] Player '{playerUser.username}' added to lobby {lobby.lobbyID}.");
+            }
+        }
+
+        private void RegisterMatchCallback(string matchCode, string player)
+        {
+            var callback = OperationContext.Current.GetCallbackChannel<ITrucoCallback>();
+            RemoveInactiveCallbacks(matchCode);
+
+            lock (matchCallbacks)
+            {
+                if (!matchCallbacks.ContainsKey(matchCode))
+                {
+                    matchCallbacks[matchCode] = new List<ITrucoCallback>();
+                }
+
+                if (!matchCallbacks[matchCode].Any(cb => ReferenceEquals(cb, callback)))
+                {
+                    matchCallbacks[matchCode].Add(callback);
+                    Console.WriteLine($"[JOIN] Callback added for {player} in match {matchCode}.");
+                }
+            }
+        }
+
+        private void NotifyPlayerJoined(string matchCode, string player)
+        {
+            BroadcastToMatchCallbacksAsync(matchCode, cb =>
+            {
+                try
+                {
+                    cb.OnPlayerJoined(matchCode, player);
+                }
+                catch (Exception ex)
+                {
+                    LogError(ex, nameof(NotifyPlayerJoined));
+                }
+            });
+        }
+
+        private Lobby ResolveLobbyForLeave(baseDatosTrucoEntities context, string matchCode, string username, out User player)
+        {
+            player = context.User.FirstOrDefault(u => u.username == username);
+            if (player == null)
+            {
+                return null;
+            }
+
+            return FindLobbyByMatchCode(context, matchCode, true);
+        }
+
+        private void RemovePlayerFromLobby(baseDatosTrucoEntities context, Lobby lobby, User player)
+        {
+            var member = context.LobbyMember.FirstOrDefault(lm => lm.lobbyID == lobby.lobbyID && lm.userID == player.userID);
+            if (member != null)
+            {
+                context.LobbyMember.Remove(member);
+                context.SaveChanges();
+                Console.WriteLine($"[LEAVE] Player '{player.username}' removed from lobby {lobby.lobbyID}.");
+            }
+        }
+
+        private void NotifyPlayerLeft(string matchCode, string username)
+        {
+            BroadcastToMatchCallbacksAsync(matchCode, cb =>
+            {
+                try
+                {
+                    cb.OnPlayerLeft(matchCode, username);
+                }
+                catch (Exception ex)
+                {
+                    LogError(ex, nameof(NotifyPlayerLeft));
+                }
+            });
+        }
+
+        private void HandleEmptyLobbyCleanup(baseDatosTrucoEntities context, Lobby lobby, string matchCode)
+        {
+            bool isEmpty = !context.LobbyMember.Any(lm => lm.lobbyID == lobby.lobbyID);
+            if (isEmpty)
+            {
+                bool closed = CloseLobbyById(lobby.lobbyID);
+                bool expired = ExpireInvitationByMatchCode(matchCode);
+                bool removed = RemoveLobbyMembersById(lobby.lobbyID);
+
+                Console.WriteLine($"[CLEANUP] Lobby {lobby.lobbyID} cleanup result: closed={closed}, expired={expired}, removed={removed}");
+                matchCodeToLobbyId.TryRemove(matchCode, out _);
+            }
+        }
+
+        private void NotifyMatchStart(string matchCode, List<PlayerInfo> players)
+        {
+            BroadcastToMatchCallbacksAsync(matchCode, cb =>
+            {
+                try
+                {
+                    cb.OnMatchStarted(matchCode, players);
+                }
+                catch (Exception ex)
+                {
+                    LogError(ex, nameof(NotifyMatchStart));
+                }
+            });
+
+            Console.WriteLine($"[SERVER] Match {matchCode} started by the owner.");
+        }
+
+        private void HandleMatchStartupCleanup(string matchCode)
+        {
+            if (!matchCodeToLobbyId.TryGetValue(matchCode, out int lobbyId))
+            {
+                Console.WriteLine($"[WARNING] No lobby found for {matchCode} during match start cleanup.");
+                return;
+            }
+
+            bool closedLobby = CloseLobbyById(lobbyId);
+            bool expiredInvitation = ExpireInvitationByMatchCode(matchCode);
+            bool removedLobby = RemoveLobbyMembersById(lobbyId);
+
+            if (!closedLobby || !expiredInvitation || !removedLobby)
+            {
+                Console.WriteLine($"[WARNING] Partial DB update for {matchCode} (closed={closedLobby}, expired={expiredInvitation}, removedMembers={removedLobby}).");
+            }
+            else
+            {
+                Console.WriteLine($"[SERVER] Lobby {matchCode} fully cleaned after starting match.");
+            }
+
+            matchCodeToLobbyId.TryRemove(matchCode, out _);
+        }
+
+        private bool CloseLobbyById(int lobbyId)
+        {
+            try
+            {
+                using (var context = new baseDatosTrucoEntities())
+                {
+                    var lobby = context.Lobby.FirstOrDefault(l => l.lobbyID == lobbyId);
+                    if (lobby == null)
+                    {
+                        return false;
+                    }
+
+                    if (lobby.status != "Closed")
+                    {
+                        lobby.status = "Closed";
+                        context.SaveChanges();
+                    }
+                    return true;
+                }
+            }
+            catch (DbUpdateConcurrencyException ex)
+            {
+                LogError(ex, $"{nameof(CloseLobbyById)} - Concurrency");
+                return false;
+            }
+            catch (System.Data.Entity.Core.UpdateException ex)
+            {
+                LogError(ex, $"{nameof(CloseLobbyById)} - Update Error");
+                return false;
+            }
+            catch (System.Data.Entity.Validation.DbEntityValidationException ex)
+            {
+                LogError(ex, $"{nameof(CloseLobbyById)} - Entity Validation");
+                return false;
+            }
+            catch (DbUpdateException ex)
+            {
+                LogError(ex, $"{nameof(CloseLobbyById)} - DataBase Saving Error");
+                return false;
+            }
+            catch (SqlException ex)
+            {
+                LogError(ex, $"{nameof(CloseLobbyById)} - SQL Error");
+                return false;
+            }
+            catch (Exception ex)
+            {
+                LogError(ex, nameof(CloseLobbyById));
+                return false;
+            }
+        }
+
+        private bool ExpireInvitationByMatchCode(string matchCode)
+        {
+            try
+            {
+                int numericCode = GenerateNumericCodeFromString(matchCode);
+                using (var context = new baseDatosTrucoEntities())
+                {
+                    var invitations = context.Invitation
+                        .Where(i => i.code == numericCode && i.status == "Pending")
+                        .ToList();
+
+                    if (!invitations.Any())
+                    {
+                        return true;
+                    }
+
+                    foreach (var inv in invitations)
+                    {
+                        inv.status = "Expired";
+                        inv.expiresAt = DateTime.Now;
+                    }
+
+                    context.SaveChanges();
+                    return true;
+                }
+            }
+            catch (FormatException ex)
+            {
+                LogError(ex, $"{nameof(ExpireInvitationByMatchCode)} - Invalid Code");
+                return false;
+            }
+            catch (OverflowException ex)
+            {
+                LogError(ex, $"{nameof(ExpireInvitationByMatchCode)} - Code Out of Range");
+                return false;
+            }
+            catch (DbUpdateException ex)
+            {
+                LogError(ex, $"{nameof(ExpireInvitationByMatchCode)} - DataBase Saving Error");
+                return false;
+            }
+            catch (SqlException ex)
+            {
+                LogError(ex, $"{nameof(ExpireInvitationByMatchCode)} - SQL Error");
+                return false;
+            }
+            catch (Exception ex)
+            {
+                LogError(ex, nameof(ExpireInvitationByMatchCode));
+                return false;
+            }
+        }
+
+        private bool RemoveLobbyMembersById(int lobbyId)
+        {
+            try
+            {
+                using (var context = new baseDatosTrucoEntities())
+                {
+                    var members = context.LobbyMember.Where(lm => lm.lobbyID == lobbyId).ToList();
+                    if (!members.Any())
+                    {
+                        return true;
+                    }
+
+                    context.LobbyMember.RemoveRange(members);
+                    context.SaveChanges();
+                    return true;
+                }
+            }
+            catch (System.Data.Entity.Core.UpdateException ex) when (ex.InnerException is SqlException sqlEx && (sqlEx.Number == 547))
+            {
+                LogError(ex, $"{nameof(RemoveLobbyMembersById)} - FK Restriction (Code 547)");
+                return false;
+            }
+            catch (DbUpdateException ex)
+            {
+                LogError(ex, $"{nameof(RemoveLobbyMembersById)} - Database Deleting Error");
+                return false;
+            }
+            catch (SqlException ex)
+            {
+                LogError(ex, $"{nameof(RemoveLobbyMembersById)} - SQL Error");
+                return false;
+            }
+            catch (Exception ex)
+            {
+                LogError(ex, nameof(RemoveLobbyMembersById));
+                return false;
+            }
+        }
+
+        private Lobby FindLobbyByMatchCode(baseDatosTrucoEntities context, string matchCode, bool onlyOpen = true)
+        {
+            int numericCode = GenerateNumericCodeFromString(matchCode);
+            Lobby lobby = null;
+
+            if (matchCodeToLobbyId.TryGetValue(matchCode, out int mappedLobbyId))
+            {
+                lobby = onlyOpen
+                    ? context.Lobby.FirstOrDefault(l => l.lobbyID == mappedLobbyId && l.status == "Open")
+                    : context.Lobby.FirstOrDefault(l => l.lobbyID == mappedLobbyId);
+            }
+
+            if (lobby == null)
+            {
+                var invitation = context.Invitation.FirstOrDefault(i => i.code == numericCode);
+                if (invitation != null)
+                {
+                    lobby = onlyOpen
+                        ? context.Lobby.FirstOrDefault(l => l.ownerID == invitation.senderID && l.status == "Open")
+                        : context.Lobby.FirstOrDefault(l => l.ownerID == invitation.senderID);
+                }
+            }
+
+            return lobby;
         }
     }
 }

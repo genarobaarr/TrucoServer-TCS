@@ -1,8 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using System.Collections.Generic;
 using System.ServiceModel;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace TrucoServer
@@ -80,7 +77,7 @@ namespace TrucoServer
     public interface ITrucoMatchService
     {
         [OperationContract]
-        string CreateMatch(string hostPlayer);
+        string CreateLobby(string hostUsername, int maxPlayers, string privacy);
 
         [OperationContract]
         bool JoinMatch(string matchCode, string player);
