@@ -39,19 +39,19 @@ namespace HostServer
 // Así se encontraba antes el server
 // Cada vez que se quiera correr el server se debe descomentar este codigo y comentar el que esta arriba
 namespace HostServer
+{
+    internal static class Program // Solamente para prueba se hace public
     {
-        internal class Program // Solamente para prueba se hace public
+        static void Main(string[] args)
         {
-            static void Main(string[] args)
+            using (ServiceHost host = new ServiceHost(typeof(TrucoServer.TrucoServer)))
             {
-                using (ServiceHost host = new ServiceHost(typeof(TrucoServer.TrucoServer)))
-                {
-                    host.Open();
+                host.Open();
 
-                    Console.WriteLine("Servidor iniciado en net.tcp://localhost:8091/TrucoServiceBase  http://localhost:8080/TrucoServiceBase");
-                    Console.ReadLine();
-                }
+                Console.WriteLine("Servidor iniciado en net.tcp://localhost:8091/TrucoServiceBase  http://localhost:8080/TrucoServiceBase");
+                Console.ReadLine();
             }
         }
     }
+}
 

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Reflection;
 using System.Text;
 
@@ -7,6 +8,7 @@ namespace TrucoServer
     static class EfHelpers //El static se cambia a public para poder probarlo y viceversa para correr el server
     {
         private const BindingFlags REFLECTIONFLAGS = BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase;
+
         public static T GetPropValue<T>(object entity, params string[] names)
         {
             if (entity == null)
@@ -15,36 +17,31 @@ namespace TrucoServer
             }
 
             var type = entity.GetType();
+
             foreach (var name in names)
             {
                 var property = type.GetProperty(name, REFLECTIONFLAGS);
-                if (property != null)
+
+                if (property == null)
                 {
-                    var value = property.GetValue(entity);
-                    if (value == null)
-                    {
-                        return default;
-                    }
+                    continue;
+                }
 
-                    try
-                    {
-                        if (typeof(T) == typeof(string))
-                        {
-                            if (value is byte[] bytes)
-                            {
-                                return (T)(object)Encoding.UTF8.GetString(bytes);
-                            }
-                            return (T)(object)value.ToString();
-                        }
+                var value = property.GetValue(entity);
 
-                        return (T)Convert.ChangeType(value, typeof(T));
-                    }
-                    catch
-                    {
-                        return default(T);
-                    }
+                if (value == null)
+                {
+                    return default;
+                }
+
+                T result = ConvertValue<T>(value);
+
+                if (!EqualityComparer<T>.Default.Equals(result, default))
+                {
+                    return result;
                 }
             }
+
             return default;
         }
 
@@ -66,6 +63,27 @@ namespace TrucoServer
                 }
             }
             return null;
+        }
+
+        private static T ConvertValue<T>(object value)
+        {
+            try
+            {
+                if (typeof(T) == typeof(string))
+                {
+                    if (value is byte[] bytes)
+                    {
+                        return (T)(object)Encoding.UTF8.GetString(bytes);
+                    }
+                    return (T)(object)value.ToString();
+                }
+
+                return (T)Convert.ChangeType(value, typeof(T));
+            }
+            catch
+            {
+                return default;
+            }
         }
     }
 }

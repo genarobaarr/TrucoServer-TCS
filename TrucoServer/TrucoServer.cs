@@ -8,6 +8,7 @@ using System.Data.SqlClient;
 using System.Linq;
 using System.Net;
 using System.Net.Mail;
+using System.Security.Cryptography;
 using System.ServiceModel;
 using System.Text;
 using System.Threading.Tasks;
@@ -19,12 +20,19 @@ namespace TrucoServer
     public partial class TrucoServer : ITrucoUserService, ITrucoFriendService, ITrucoMatchService
     {
         private const int MAX_NAME_CHANGES = 2;
-        private static readonly ConcurrentDictionary<string, string> VerificationCodes = new ConcurrentDictionary<string, string>();
-        private static readonly ConcurrentDictionary<string, ITrucoCallback> OnlineUsers = new ConcurrentDictionary<string, ITrucoCallback>();
+        private const string DEFAULT_AVATAR_ID = "avatar_aaa_default";
+        private const string PENDING_STATUS = "Pending";
+        private const string ACCEPTED_STATUS = "Accepted";
+        private const string OPEN_STATUS = "Open";
+        private const string CLOSED_STATUS = "Closed";
+        private const string EXPIRED_STATUS = "Expired";
+        private static readonly Random randomNumberGenerator = new Random();
+        private static readonly ConcurrentDictionary<string, string> verificationCodes = new ConcurrentDictionary<string, string>();
+        private static readonly ConcurrentDictionary<string, ITrucoCallback> onlineUsers = new ConcurrentDictionary<string, ITrucoCallback>();
         private readonly ConcurrentDictionary<string, int> matchCodeToLobbyId = new ConcurrentDictionary<string, int>();
         private readonly ConcurrentDictionary<string, List<ITrucoCallback>> matchCallbacks = new ConcurrentDictionary<string, List<ITrucoCallback>>();
 
-        private void LogError(Exception ex, string methodName)
+        private static void LogError(Exception ex, string methodName)
         {
             try
             {
@@ -41,7 +49,7 @@ namespace TrucoServer
         {
             try
             {
-                if (OnlineUsers.TryGetValue(username, out ITrucoCallback callback))
+                if (onlineUsers.TryGetValue(username, out ITrucoCallback callback))
                 {
                     var communicationObject = (ICommunicationObject)callback;
                     if (communicationObject.State == CommunicationState.Opened)
@@ -57,7 +65,7 @@ namespace TrucoServer
                     { 
                         /* noop */ 
                     }
-                    OnlineUsers.TryRemove(username, out _);
+                    onlineUsers.TryRemove(username, out _);
                 }
             }
             catch (CommunicationException ex)
@@ -130,9 +138,12 @@ namespace TrucoServer
         private static string GenerateMatchCode()
         {
             const string CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-            var random = new Random();
-            return new string(Enumerable.Repeat(CHARS, 6)
-                .Select(s => s[random.Next(s.Length)]).ToArray());
+
+            lock (randomNumberGenerator)
+            {
+                return new string(Enumerable.Repeat(CHARS, 6)
+                    .Select(s => s[randomNumberGenerator.Next(s.Length)]).ToArray());
+            }
         }
 
         private static int GenerateNumericCodeFromString(string code)
@@ -166,50 +177,7 @@ namespace TrucoServer
             {
                 Task.Run(() =>
                 {
-                    try
-                    {
-                        try
-                        {
-                            var comm = (ICommunicationObject)cb;
-                            if (comm.State != CommunicationState.Opened)
-                            {
-                                lock (matchCallbacks)
-                                {
-                                    RemoveInactiveCallbacks(matchCode);
-                                }
-                                try 
-                                { 
-                                    comm.Abort(); 
-                                } 
-                                catch 
-                                { 
-                                    /* noop */ 
-                                }
-
-                                return;
-                            }
-                        }
-                        catch
-                        {
-                            
-                        }
-
-                        invocation(cb);
-                    }
-                    catch (CommunicationException)
-                    {
-                        lock (matchCallbacks)
-                        {
-                            if (matchCallbacks.TryGetValue(matchCode, out var listLocal))
-                            {
-                                listLocal.Remove(cb);
-                            }
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        LogError(ex, nameof(BroadcastToMatchCallbacksAsync));
-                    }
+                    ProcessSingleCallbackAsync(matchCode, cb, invocation);
                 });
             }
         }
@@ -226,7 +194,7 @@ namespace TrucoServer
                 {
                     Host = settings.SmtpHost,
                     Port = settings.SmtpPort,
-                    EnableSsl = settings.EnableSsl,
+                    EnableSsl = true,
                     DeliveryMethod = SmtpDeliveryMethod.Network,
                     UseDefaultCredentials = false,
                     Credentials = new NetworkCredential(fromAddress.Address, settings.FromPassword)
@@ -254,9 +222,9 @@ namespace TrucoServer
         {
             try
             {
-                string code = new Random().Next(100000, 999999).ToString();
+                string code = GenerateSecureNumericCode();
 
-                VerificationCodes[email] = code;
+                verificationCodes[email] = code;
 
                 LanguageManager.SetLanguage(languageCode);
                 Task.Run(() => SendEmail(email, Lang.EmailVerificationSubject, 
@@ -287,31 +255,28 @@ namespace TrucoServer
 
         public bool ConfirmEmailVerification(string email, string code)
         {
-            if (VerificationCodes.TryGetValue(email, out string storedCode))
+            if (verificationCodes.TryGetValue(email, out string storedCode) && storedCode == code)
             {
-                if (storedCode == code)
-                {
-                    VerificationCodes.TryRemove(email, out _);
-                    return true;
-                }
+                verificationCodes.TryRemove(email, out _);
+                return true;
             }
             return false;
         }
 
-        public bool Register(string newUsername, string password, string email)
+        public bool Register(string username, string password, string email)
         {
             try
             {
                 using (var context = new baseDatosTrucoEntities())
                 {
-                    if (context.User.Any(u => u.email == email || u.username == newUsername))
+                    if (context.User.Any(u => u.email == email || u.username == username))
                     {
                         return false;
                     }
 
                     User user = new User
                     {
-                        username = newUsername,
+                        username = username,
                         passwordHash = PasswordHasher.Hash(password),
                         email = email,
                         wins = 0,
@@ -324,7 +289,7 @@ namespace TrucoServer
                     UserProfile profile = new UserProfile
                     {
                         userID = user.userID,
-                        avatarID = "avatar_aaa_default",
+                        avatarID = DEFAULT_AVATAR_ID,
                         socialLinksJson = Encoding.UTF8.GetBytes("{}")
                     };
                     context.UserProfile.Add(profile);
@@ -382,7 +347,7 @@ namespace TrucoServer
                 if (user != null && PasswordHasher.Verify(password, user.passwordHash))
                 {
                     ITrucoCallback callback = OperationContext.Current.GetCallbackChannel<ITrucoCallback>();
-                    OnlineUsers.TryAdd(user.username, callback);
+                    onlineUsers.TryAdd(user.username, callback);
 
                     LanguageManager.SetLanguage(languageCode);
                     Task.Run(() => SendEmail(user.email, Lang.EmailLoginNotificationSubject,
@@ -461,7 +426,7 @@ namespace TrucoServer
                 {
                     Username = user.username,
                     Email = user.email,
-                    AvatarId = user.UserProfile?.avatarID ?? "avatar_aaa_default",
+                    AvatarId = user.UserProfile?.avatarID ?? DEFAULT_AVATAR_ID,
                     NameChangeCount = user.nameChangeCount,
                     FacebookHandle = links?.facebook ?? "",
                     XHandle = links?.x ?? "",
@@ -488,7 +453,7 @@ namespace TrucoServer
                 {
                     Username = user.username,
                     Email = user.email,
-                    AvatarId = user.UserProfile?.avatarID ?? "avatar_aaa_default",
+                    AvatarId = user.UserProfile?.avatarID ?? DEFAULT_AVATAR_ID,
                     NameChangeCount = user.nameChangeCount,
                     FacebookHandle = links?.facebook ?? "",
                     XHandle = links?.x ?? "",
@@ -534,7 +499,7 @@ namespace TrucoServer
                         context.UserProfile.Add(user.UserProfile);
                     }
 
-                    user.UserProfile.avatarID = profile.AvatarId ?? "avatar_aaa_default";
+                    user.UserProfile.avatarID = profile.AvatarId ?? DEFAULT_AVATAR_ID;
                     string json = JsonConvert.SerializeObject(new
                     {
                         facebook = profile.FacebookHandle ?? "",
@@ -610,7 +575,7 @@ namespace TrucoServer
                 {
                     userID = requesterId,
                     friendID = targetId,
-                    status = "Pending"
+                    status = PENDING_STATUS
                 };
                 db.Friendship.Add(newRequest);
                 db.SaveChanges();
@@ -636,19 +601,19 @@ namespace TrucoServer
                 Friendship request = db.Friendship.FirstOrDefault(f =>
                     f.userID == requester.userID &&
                     f.friendID == acceptor.userID &&
-                    f.status == "Pending");
+                    f.status == PENDING_STATUS);
                 if (request == null)
                 {
                     return false;
                 }
 
-                request.status = "Accepted";
+                request.status = ACCEPTED_STATUS;
 
                 Friendship reciprocalFriendship = new Friendship
                 {
                     userID = acceptor.userID,
                     friendID = requester.userID,
-                    status = "Accepted"
+                    status = ACCEPTED_STATUS
                 };
                 db.Friendship.Add(reciprocalFriendship);
 
@@ -700,7 +665,7 @@ namespace TrucoServer
                 int currentUserId = user.userID;
 
                 var friendsData = context.Friendship
-                    .Where(f => (f.userID == currentUserId || f.friendID == currentUserId) && f.status == "Accepted")
+                    .Where(f => (f.userID == currentUserId || f.friendID == currentUserId) && f.status == ACCEPTED_STATUS)
                     .Select(f => f.userID == currentUserId ? f.friendID : f.userID)
                     .Distinct()
                     .Join(context.User.Include("UserProfile"),
@@ -730,7 +695,7 @@ namespace TrucoServer
                 int currentUserId = user.userID;
 
                 var pendingRequests = context.Friendship
-                    .Where(f => f.friendID == currentUserId && f.status == "Pending")
+                    .Where(f => f.friendID == currentUserId && f.status == PENDING_STATUS)
                     .Join(context.User.Include("UserProfile"),
                           f => f.userID,
                           u => u.userID,
@@ -816,20 +781,20 @@ namespace TrucoServer
             return result;
         }
 
-        public void LeaveMatch(string matchCode, string username)
+        public void LeaveMatch(string matchCode, string player)
         {
             try
             {
                 using (var context = new baseDatosTrucoEntities())
                 {
-                    Lobby lobby = ResolveLobbyForLeave(context, matchCode, username, out User player);
-                    if (lobby == null || player == null)
+                    Lobby lobby = ResolveLobbyForLeave(context, matchCode, player, out User username);
+                    if (lobby == null || username == null)
                     {
                         return;
                     }
 
-                    RemovePlayerFromLobby(context, lobby, player);
-                    NotifyPlayerLeft(matchCode, username);
+                    RemovePlayerFromLobby(context, lobby, username);
+                    NotifyPlayerLeft(matchCode, player);
                     HandleEmptyLobbyCleanup(context, lobby, matchCode);
                 }
             }
@@ -876,7 +841,7 @@ namespace TrucoServer
                             return new List<PlayerInfo>();
                         }
 
-                        lobby = context.Lobby.FirstOrDefault(l => l.ownerID == invitation.senderID && l.status == "Open");
+                        lobby = context.Lobby.FirstOrDefault(l => l.ownerID == invitation.senderID && l.status == OPEN_STATUS);
                         if (lobby == null)
                         {
                             return new List<PlayerInfo>();
@@ -896,7 +861,7 @@ namespace TrucoServer
                                    select new PlayerInfo
                                    {
                                        Username = u.username,
-                                       AvatarId = (up != null ? up.avatarID : "avatar_aaa_default"),
+                                       AvatarId = (up != null ? up.avatarID : DEFAULT_AVATAR_ID),
                                        OwnerUsername = ownerUsername
                                    }).ToList();
 
@@ -1123,6 +1088,65 @@ namespace TrucoServer
             throw new NotImplementedException();
         }
 
+        private void ProcessSingleCallbackAsync(string matchCode, ITrucoCallback cb, Action<ITrucoCallback> invocation)
+        {
+            try
+            {
+                var comm = (ICommunicationObject)cb;
+
+                if (comm.State != CommunicationState.Opened)
+                {
+                    lock (matchCallbacks)
+                    {
+                        RemoveInactiveCallbacks(matchCode);
+                    }
+                    try
+                    {
+                        comm.Abort();
+                    }
+                    catch 
+                    { 
+                        /* noop */ 
+                    }
+
+                    return;
+                }
+
+                invocation(cb);
+            }
+            catch (CommunicationException)
+            {
+                lock (matchCallbacks)
+                {
+                    if (matchCallbacks.TryGetValue(matchCode, out var listLocal))
+                    {
+                        listLocal.Remove(cb);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                LogError(ex, nameof(BroadcastToMatchCallbacksAsync));
+            }
+        }
+
+        private static string GenerateSecureNumericCode()
+        {
+            using (var rng = new RNGCryptoServiceProvider())
+            {
+                byte[] buffer = new byte[4];
+
+                rng.GetBytes(buffer);
+                int secureInt = BitConverter.ToInt32(buffer, 0);
+
+                secureInt = Math.Abs(secureInt);
+
+                string secureCode = (secureInt % 900000 + 100000).ToString();
+
+                return secureCode;
+            }
+        }
+
         private static int ResolveVersionId(baseDatosTrucoEntities context, int maxPlayers)
         {
             int versionId = context.Versions
@@ -1142,7 +1166,7 @@ namespace TrucoServer
                 ownerID = host.userID,
                 versionID = versionId,
                 maxPlayers = maxPlayers,
-                status = "Open",
+                status = OPEN_STATUS,
                 createdAt = DateTime.Now
             };
 
@@ -1166,12 +1190,12 @@ namespace TrucoServer
             int numericCode = GenerateNumericCodeFromString(matchCode);
 
             var previousInvitations = context.Invitation
-                .Where(i => i.senderID == host.userID && i.status == "Pending")
+                .Where(i => i.senderID == host.userID && i.status == PENDING_STATUS)
                 .ToList();
 
             foreach (var inv in previousInvitations)
             {
-                inv.status = "Expired";
+                inv.status = EXPIRED_STATUS;
                 inv.expiresAt = DateTime.Now;
             }
 
@@ -1180,7 +1204,7 @@ namespace TrucoServer
                 senderID = host.userID,
                 receiverEmail = null,
                 code = numericCode,
-                status = "Pending",
+                status = PENDING_STATUS,
                 expiresAt = DateTime.Now.AddHours(2)
             });
         }
@@ -1198,14 +1222,14 @@ namespace TrucoServer
             if (lobby == null)
             {
                 int numericCode = GenerateNumericCodeFromString(matchCode);
-                var invitation = context.Invitation.FirstOrDefault(i => i.code == numericCode && i.status == "Pending");
+                var invitation = context.Invitation.FirstOrDefault(i => i.code == numericCode && i.status == PENDING_STATUS);
 
                 if (invitation == null || (invitation.expiresAt != null && invitation.expiresAt < DateTime.Now))
                 {
                     return null;
                 }
 
-                lobby = context.Lobby.FirstOrDefault(l => l.ownerID == invitation.senderID && l.status == "Open");
+                lobby = context.Lobby.FirstOrDefault(l => l.ownerID == invitation.senderID && l.status == OPEN_STATUS);
                 if (lobby != null)
                 {
                     matchCodeToLobbyId.TryAdd(matchCode, lobby.lobbyID);
@@ -1215,7 +1239,7 @@ namespace TrucoServer
             return lobby;
         }
 
-        private bool ValidateJoinConditions(baseDatosTrucoEntities context, Lobby lobby, User playerUser)
+        private static bool ValidateJoinConditions(baseDatosTrucoEntities context, Lobby lobby, User playerUser)
         {
             if (playerUser == null)
             {
@@ -1295,7 +1319,7 @@ namespace TrucoServer
             return FindLobbyByMatchCode(context, matchCode, true);
         }
 
-        private void RemovePlayerFromLobby(baseDatosTrucoEntities context, Lobby lobby, User player)
+        private static void RemovePlayerFromLobby(baseDatosTrucoEntities context, Lobby lobby, User player)
         {
             var member = context.LobbyMember.FirstOrDefault(lm => lm.lobbyID == lobby.lobbyID && lm.userID == player.userID);
             if (member != null)
@@ -1376,7 +1400,7 @@ namespace TrucoServer
             matchCodeToLobbyId.TryRemove(matchCode, out _);
         }
 
-        private bool CloseLobbyById(int lobbyId)
+        private static bool CloseLobbyById(int lobbyId)
         {
             try
             {
@@ -1388,9 +1412,9 @@ namespace TrucoServer
                         return false;
                     }
 
-                    if (lobby.status != "Closed")
+                    if (lobby.status != CLOSED_STATUS)
                     {
-                        lobby.status = "Closed";
+                        lobby.status = CLOSED_STATUS;
                         context.SaveChanges();
                     }
                     return true;
@@ -1428,7 +1452,7 @@ namespace TrucoServer
             }
         }
 
-        private bool ExpireInvitationByMatchCode(string matchCode)
+        private static bool ExpireInvitationByMatchCode(string matchCode)
         {
             try
             {
@@ -1436,7 +1460,7 @@ namespace TrucoServer
                 using (var context = new baseDatosTrucoEntities())
                 {
                     var invitations = context.Invitation
-                        .Where(i => i.code == numericCode && i.status == "Pending")
+                        .Where(i => i.code == numericCode && i.status == PENDING_STATUS)
                         .ToList();
 
                     if (!invitations.Any())
@@ -1446,7 +1470,7 @@ namespace TrucoServer
 
                     foreach (var inv in invitations)
                     {
-                        inv.status = "Expired";
+                        inv.status = EXPIRED_STATUS;
                         inv.expiresAt = DateTime.Now;
                     }
 
@@ -1481,7 +1505,7 @@ namespace TrucoServer
             }
         }
 
-        private bool RemoveLobbyMembersById(int lobbyId)
+        private static bool RemoveLobbyMembersById(int lobbyId)
         {
             try
             {
@@ -1528,7 +1552,7 @@ namespace TrucoServer
             if (matchCodeToLobbyId.TryGetValue(matchCode, out int mappedLobbyId))
             {
                 lobby = onlyOpen
-                    ? context.Lobby.FirstOrDefault(l => l.lobbyID == mappedLobbyId && l.status == "Open")
+                    ? context.Lobby.FirstOrDefault(l => l.lobbyID == mappedLobbyId && l.status == OPEN_STATUS)
                     : context.Lobby.FirstOrDefault(l => l.lobbyID == mappedLobbyId);
             }
 
@@ -1538,7 +1562,7 @@ namespace TrucoServer
                 if (invitation != null)
                 {
                     lobby = onlyOpen
-                        ? context.Lobby.FirstOrDefault(l => l.ownerID == invitation.senderID && l.status == "Open")
+                        ? context.Lobby.FirstOrDefault(l => l.ownerID == invitation.senderID && l.status == OPEN_STATUS)
                         : context.Lobby.FirstOrDefault(l => l.ownerID == invitation.senderID);
                 }
             }
