@@ -102,5 +102,8 @@ namespace TrucoServer
 
         [OperationContract]
         List<PlayerInfo> GetLobbyPlayers(string matchCode);
+
+        [OperationContract]
+        List<PublicLobbyInfo> GetPublicLobbies();
     }
 }

@@ -127,6 +127,7 @@
     <Compile Include="PlayerInfo.cs" />
     <Compile Include="PlayerStats.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="PublicLobbyInfo.cs" />
     <Compile Include="Round.cs">
       <DependentUpon>baseDatosTruco.tt</DependentUpon>
     </Compile>
