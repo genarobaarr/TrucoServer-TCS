@@ -38,6 +38,7 @@ namespace TrucoServer
         private static readonly ConcurrentDictionary<string, ITrucoCallback> onlineUsers = new ConcurrentDictionary<string, ITrucoCallback>();
         private readonly ConcurrentDictionary<string, int> matchCodeToLobbyId = new ConcurrentDictionary<string, int>();
         private readonly ConcurrentDictionary<string, List<ITrucoCallback>> matchCallbacks = new ConcurrentDictionary<string, List<ITrucoCallback>>();
+        private static readonly ConcurrentDictionary<ITrucoCallback, string> matchCallbackToPlayerName = new ConcurrentDictionary<ITrucoCallback, string>();
 
         private static void LogError(Exception ex, string methodName)
         {
@@ -1109,7 +1110,31 @@ namespace TrucoServer
                     lobby = ResolveLobbyForJoin(context, matchCode);
                     if (lobby == null || lobby.status.Equals(CLOSED_STATUS, StringComparison.OrdinalIgnoreCase))
                     {
+                        Console.WriteLine($"[JOIN] Denied: Lobby closed or not found for code {matchCode}.");
                         return false;
+                    }
+
+                    bool isGuest = player.StartsWith("Guest_");
+
+                    if (isGuest)
+                    {
+                        if (!lobby.status.Equals(PUBLIC_STATUS, StringComparison.OrdinalIgnoreCase))
+                        {
+                            Console.WriteLine($"[JOIN] Denied: Guest player {player} tried to join a private lobby.");
+                            return false;
+                        }
+
+                        int currentPlayers = context.LobbyMember.Count(lm => lm.lobbyID == lobby.lobbyID);
+                        if (currentPlayers >= lobby.maxPlayers)
+                        {
+                            Console.WriteLine($"[JOIN] Denied: Public lobby {lobby.lobbyID} is full ({currentPlayers}/{lobby.maxPlayers}).");
+                            return false;
+                        }
+
+                        RegisterMatchCallback(matchCode, player);
+                        NotifyPlayerJoined(matchCode, player);
+                        Console.WriteLine($"[SERVER] Guest player {player} joined the public lobby {matchCode}.");
+                        return true;
                     }
 
                     User playerUser = context.User.FirstOrDefault(u => u.username == player);
@@ -1217,19 +1242,40 @@ namespace TrucoServer
                         .Select(u => u.username)
                         .FirstOrDefault();
 
-                    var players = (from lm in context.LobbyMember
-                                   join u in context.User on lm.userID equals u.userID
-                                   join up in context.UserProfile on u.userID equals up.userID into upj
-                                   from up in upj.DefaultIfEmpty()
-                                   where lm.lobbyID == lobby.lobbyID
-                                   select new PlayerInfo
-                                   {
-                                       Username = u.username,
-                                       AvatarId = (up != null ? up.avatarID : DEFAULT_AVATAR_ID),
-                                       OwnerUsername = ownerUsername
-                                   }).ToList();
+                    var dbPlayers = (from lm in context.LobbyMember
+                                     join u in context.User on lm.userID equals u.userID
+                                     join up in context.UserProfile on u.userID equals up.userID into upj
+                                     from up in upj.DefaultIfEmpty()
+                                     where lm.lobbyID == lobby.lobbyID
+                                     select new PlayerInfo
+                                     {
+                                         Username = u.username,
+                                         AvatarId = up != null ? up.avatarID : DEFAULT_AVATAR_ID,
+                                         OwnerUsername = ownerUsername
+                                     }).ToList();
 
-                    return players;
+                    if (matchCallbacks.TryGetValue(matchCode, out var callbacks))
+                    {
+                        var connectedPlayers = callbacks
+                            .OfType<ITrucoCallback>()
+                            .Select(cb => GetPlayerNameFromCallback(cb))
+                            .Where(name => !string.IsNullOrEmpty(name))
+                            .Distinct()
+                            .ToList();
+
+                        var playersToAdd = connectedPlayers
+                            .Where(connectedName => !dbPlayers.Any(p => p.Username == connectedName))
+                            .Select(player => new PlayerInfo
+                            {
+                                Username = player,
+                                AvatarId = DEFAULT_AVATAR_ID,
+                                OwnerUsername = ownerUsername
+                            });
+
+                        dbPlayers.AddRange(playersToAdd);
+                    }
+
+                    return dbPlayers;
                 }
             }
             catch (FormatException ex)
@@ -1863,6 +1909,7 @@ namespace TrucoServer
                     {
                         matchCallbacks[matchCode].Add(callback);
                         Console.WriteLine($"[JOIN] Callback added for {player} in match {matchCode}.");
+                        matchCallbackToPlayerName[callback] = player;
                     }
                 }
             }
@@ -2288,6 +2335,24 @@ namespace TrucoServer
             }
 
             return query.FirstOrDefault();
+        }
+
+        private static string GetPlayerNameFromCallback(ITrucoCallback callback)
+        {
+            try
+            {
+                string name;
+                if (matchCallbackToPlayerName.TryGetValue(callback, out name))
+                {
+                    return name;
+                }
+
+                return string.Empty;
+            }
+            catch
+            {
+                return string.Empty;
+            }
         }
     }
 }
