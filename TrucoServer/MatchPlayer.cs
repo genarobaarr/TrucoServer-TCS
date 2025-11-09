@@ -18,6 +18,7 @@ namespace TrucoServer
         public int userID { get; set; }
         public string team { get; set; }
         public int score { get; set; }
+        public bool isWinner { get; set; }
     
         public virtual Match Match { get; set; }
         public virtual User User { get; set; }
