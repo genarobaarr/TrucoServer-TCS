@@ -1378,9 +1378,45 @@ namespace TrucoServer
             }
         }
 
-        public List<MatchResult> GetLastMatches(string username)
+        public List<MatchScore> GetLastMatches(string username)
         {
-            throw new NotImplementedException();
+            try
+            {
+                using (var context = new baseDatosTrucoEntities())
+                {
+                    var user = context.User.FirstOrDefault(u => u.username == username);
+
+                    if (user == null)
+                    {
+                        LogManager.LogWarn($"Intento de historial para usuario no encontrado: {username}", nameof(GetLastMatches));
+                        return new List<MatchScore>();
+                    }
+
+                    int userID = user.userID;
+
+                    var lastMatches = context.MatchPlayer
+                        .Where(mp => mp.userID == userID)
+                        .Select(mp => new { MatchPlayer = mp, Match = mp.Match })
+                        .Where(join => join.Match.status == "Finished" && join.Match.endedAt.HasValue)
+                        .OrderByDescending(join => join.Match.endedAt)
+                        .Take(5)
+                        .Select(join => new MatchScore
+                        {
+                            MatchID = join.Match.matchID.ToString(),
+                            EndedAt = join.Match.endedAt.Value,
+                            IsWin = join.MatchPlayer.isWinner, 
+                            FinalScore = join.MatchPlayer.score
+                        })
+                        .ToList();
+
+                    return lastMatches;
+                }
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError(ex, nameof(GetLastMatches) + $" [User:{username}]");
+                return new List<MatchScore>();
+            }
         }
 
         public List<string> GetOnlinePlayers()

@@ -99,6 +99,7 @@
           <Property Name="userID" Type="int" Nullable="false" />
           <Property Name="team" Type="varchar" MaxLength="50" Nullable="false" />
           <Property Name="score" Type="int" Nullable="false" />
+          <Property Name="isWinner" Type="bit" Nullable="false" />
         </EntityType>
         <EntityType Name="Round">
           <Key>
@@ -562,6 +563,7 @@
           <Property Name="score" Type="Int32" Nullable="false" />
           <NavigationProperty Name="Match" Relationship="Self.FK_MatchPlayer_Match" FromRole="MatchPlayer" ToRole="Match" />
           <NavigationProperty Name="User" Relationship="Self.FK_MatchPlayer_User" FromRole="MatchPlayer" ToRole="User" />
+          <Property Name="isWinner" Type="Boolean" Nullable="false" />
         </EntityType>
         <EntityType Name="Round">
           <Key>
@@ -1023,6 +1025,7 @@
           <EntitySetMapping Name="MatchPlayer">
             <EntityTypeMapping TypeName="baseDatosTrucoModel.MatchPlayer">
               <MappingFragment StoreEntitySet="MatchPlayer">
+                <ScalarProperty Name="isWinner" ColumnName="isWinner" />
                 <ScalarProperty Name="matchID" ColumnName="matchID" />
                 <ScalarProperty Name="userID" ColumnName="userID" />
                 <ScalarProperty Name="team" ColumnName="team" />

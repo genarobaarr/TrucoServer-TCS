@@ -38,7 +38,7 @@ namespace TrucoServer
         List<PlayerStats> GetGlobalRanking();
 
         [OperationContract]
-        List<MatchResult> GetLastMatches(string username);
+        List<MatchScore> GetLastMatches(string username);
 
         [OperationContract]
         UserProfileData GetUserProfile(string username);

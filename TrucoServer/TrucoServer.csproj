@@ -96,6 +96,7 @@
     <Compile Include="DealtCard.cs">
       <DependentUpon>baseDatosTruco.tt</DependentUpon>
     </Compile>
+    <Compile Include="Deck.cs" />
     <Compile Include="EfHelpers.cs" />
     <Compile Include="EmailSettings.cs" />
     <Compile Include="FriendData.cs" />
@@ -128,6 +129,7 @@
       <DependentUpon>baseDatosTruco.tt</DependentUpon>
     </Compile>
     <Compile Include="MatchResult.cs" />
+    <Compile Include="MatchScore.cs" />
     <Compile Include="PasswordHasher.cs" />
     <Compile Include="PlayerInfo.cs" />
     <Compile Include="PlayerStats.cs" />
@@ -137,6 +139,8 @@
       <DependentUpon>baseDatosTruco.tt</DependentUpon>
     </Compile>
     <Compile Include="SocialLinks.cs" />
+    <Compile Include="TrucoCard.cs" />
+    <Compile Include="TrucoRules.cs" />
     <Compile Include="TrucoServer.cs" />
     <Compile Include="User.cs">
       <DependentUpon>baseDatosTruco.tt</DependentUpon>
