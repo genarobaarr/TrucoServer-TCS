@@ -40,27 +40,6 @@ namespace TrucoServer
         private readonly ConcurrentDictionary<string, List<ITrucoCallback>> matchCallbacks = new ConcurrentDictionary<string, List<ITrucoCallback>>();
         private static readonly ConcurrentDictionary<ITrucoCallback, string> matchCallbackToPlayerName = new ConcurrentDictionary<ITrucoCallback, string>();
 
-        private static void LogError(Exception ex, string methodName)
-        {
-            try
-            {
-                Console.ForegroundColor = ConsoleColor.Red;
-                Console.WriteLine($"[ERROR IN {methodName}] {ex.GetType().Name}: {ex.Message}");
-            }
-            catch (System.IO.IOException)
-            {
-                /* The error cannot be logged; it is simply ignored to avoid creating an error loop. */
-            }
-            catch (Exception)
-            {
-                /* noop */
-            }
-            finally
-            {
-                Console.ResetColor();
-            }
-        }
-
         private static ITrucoCallback GetUserCallback(string username)
         {
             try
@@ -143,15 +122,15 @@ namespace TrucoServer
             }
             catch (SynchronizationLockException ex)
             {
-                LogError(ex, $"{nameof(RemoveInactiveCallbacks)} - Synchronization Block Error");
+                LogManager.LogError(ex, $"{nameof(RemoveInactiveCallbacks)} - Synchronization Block Error");
             }
             catch (OutOfMemoryException ex)
             {
-                LogError(ex, $"{nameof(RemoveInactiveCallbacks)} - Insufficient Memory For Operation");
+                LogManager.LogError(ex, $"{nameof(RemoveInactiveCallbacks)} - Insufficient Memory For Operation");
             }
             catch (Exception ex)
             {
-                LogError(ex, nameof(RemoveInactiveCallbacks));
+                LogManager.LogError(ex, nameof(RemoveInactiveCallbacks));
             }
         }
 
@@ -169,12 +148,12 @@ namespace TrucoServer
             }
             catch (SynchronizationLockException ex)
             {
-                LogError(ex, $"{nameof(GenerateMatchCode)} - Synchronization Block Error");
+                LogManager.LogError(ex, $"{nameof(GenerateMatchCode)} - Synchronization Block Error");
                 return string.Empty;
             }
             catch (Exception ex)
             {
-                LogError(ex, nameof(GenerateMatchCode));
+                LogManager.LogError(ex, nameof(GenerateMatchCode));
                 return string.Empty;
             }
         }
@@ -218,11 +197,11 @@ namespace TrucoServer
             }
             catch (OutOfMemoryException ex)
             {
-                LogError(ex, $"{nameof(BroadcastToMatchCallbacksAsync)} - Insufficient Memory For Snapshot");
+                LogManager.LogError(ex, $"{nameof(BroadcastToMatchCallbacksAsync)} - Insufficient Memory For Snapshot");
             }
             catch (Exception ex)
             {
-                LogError(ex, nameof(BroadcastToMatchCallbacksAsync));
+                LogManager.LogError(ex, nameof(BroadcastToMatchCallbacksAsync));
             }
         }
 
@@ -254,19 +233,19 @@ namespace TrucoServer
             }
             catch (SmtpException ex)
             {
-                LogError(ex, nameof(SendEmail));
+                LogManager.LogError(ex, nameof(SendEmail));
             }
             catch (FormatException ex)
             {
-                LogError(ex, $"{nameof(SendEmail)} - Invalid Email Format");
+                LogManager.LogError(ex, $"{nameof(SendEmail)} - Invalid Email Format");
             }
             catch (ConfigurationErrorsException ex)
             {
-                LogError(ex, $"{nameof(SendEmail)} - Configuration Error");
+                LogManager.LogError(ex, $"{nameof(SendEmail)} - Configuration Error");
             }
             catch (Exception ex)
             {
-                LogError(ex, nameof(SendEmail));
+                LogManager.LogError(ex, nameof(SendEmail));
             }
         }
 
@@ -288,19 +267,19 @@ namespace TrucoServer
             }
             catch (ArgumentNullException ex)
             {
-                LogError(ex, nameof(RequestEmailVerification));
+                LogManager.LogError(ex, nameof(RequestEmailVerification));
             }
             catch (SmtpException ex)
             {
-                LogError(ex, nameof(RequestEmailVerification));
+                LogManager.LogError(ex, nameof(RequestEmailVerification));
             }
             catch (InvalidOperationException ex)
             {
-                LogError(ex, nameof(RequestEmailVerification));
+                LogManager.LogError(ex, nameof(RequestEmailVerification));
             }
             catch (Exception ex)
             {
-                LogError(ex, nameof(RequestEmailVerification));
+                LogManager.LogError(ex, nameof(RequestEmailVerification));
             }
             return false;
         }
@@ -352,27 +331,27 @@ namespace TrucoServer
             }
             catch (DbEntityValidationException ex)
             {
-                LogError(ex, $"{nameof(Register)} - Entity Validation Error");
+                LogManager.LogError(ex, $"{nameof(Register)} - Entity Validation Error");
                 return false;
             }
             catch (DbUpdateException ex)
             {
-                LogError(ex, nameof(Register));
+                LogManager.LogError(ex, nameof(Register));
                 return false;
             }
             catch (SqlException ex)
             {
-                LogError(ex, $"{nameof(Register)} - SQL Server Error");
+                LogManager.LogError(ex, $"{nameof(Register)} - SQL Server Error");
                 return false;
             }
             catch (ArgumentException ex)
             {
-                LogError(ex, nameof(Register));
+                LogManager.LogError(ex, nameof(Register));
                 return false;
             }
             catch (Exception ex)
             {
-                LogError(ex, nameof(Register));
+                LogManager.LogError(ex, nameof(Register));
                 return false;
             }
         }
@@ -393,17 +372,17 @@ namespace TrucoServer
             }
             catch (SqlException ex)
             {
-                LogError(ex, $"{nameof(UsernameExists)} - SQL Server Error");
+                LogManager.LogError(ex, $"{nameof(UsernameExists)} - SQL Server Error");
                 throw;
             }
             catch (InvalidOperationException ex)
             {
-                LogError(ex, $"{nameof(UsernameExists)} - Invalid Operation (DataBase Context)");
+                LogManager.LogError(ex, $"{nameof(UsernameExists)} - Invalid Operation (DataBase Context)");
                 throw;
             }
             catch (Exception ex)
             {
-                LogError(ex, nameof(UsernameExists));
+                LogManager.LogError(ex, nameof(UsernameExists));
                 throw;
             }
         }
@@ -424,17 +403,17 @@ namespace TrucoServer
             }
             catch (SqlException ex)
             {
-                LogError(ex, $"{nameof(UsernameExists)} - SQL Server Error");
+                LogManager.LogError(ex, $"{nameof(UsernameExists)} - SQL Server Error");
                 throw;
             }
             catch (InvalidOperationException ex)
             {
-                LogError(ex, $"{nameof(UsernameExists)} - Invalid Operation (DataBase Context)");
+                LogManager.LogError(ex, $"{nameof(UsernameExists)} - Invalid Operation (DataBase Context)");
                 throw;
             }
             catch (Exception ex)
             {
-                LogError(ex, nameof(UsernameExists));
+                LogManager.LogError(ex, nameof(UsernameExists));
                 throw;
             }
         }
@@ -462,22 +441,22 @@ namespace TrucoServer
             }
             catch (InvalidOperationException ex) when (ex.Source.Contains("System.ServiceModel"))
             {
-                LogError(ex, $"{nameof(Login)} - WCF Context Error");
+                LogManager.LogError(ex, $"{nameof(Login)} - WCF Context Error");
                 return false;
             }
             catch (SqlException ex)
             {
-                LogError(ex, $"{nameof(Login)} - SQL Server Error");
+                LogManager.LogError(ex, $"{nameof(Login)} - SQL Server Error");
                 return false;
             }
             catch (SmtpException ex)
             {
-                LogError(ex, $"{nameof(Login)} - Email Error");
+                LogManager.LogError(ex, $"{nameof(Login)} - Email Error");
                 return true;
             }
             catch (Exception ex)
             {
-                LogError(ex, nameof(Login));
+                LogManager.LogError(ex, nameof(Login));
                 return false;
             }
         }
@@ -506,22 +485,22 @@ namespace TrucoServer
             }
             catch (DbUpdateException ex)
             {
-                LogError(ex, $"{nameof(PasswordChange)} - DataBase Saving Error");
+                LogManager.LogError(ex, $"{nameof(PasswordChange)} - DataBase Saving Error");
                 return false;
             }
             catch (SqlException ex)
             {
-                LogError(ex, $"{nameof(PasswordChange)} - SQL Server Error");
+                LogManager.LogError(ex, $"{nameof(PasswordChange)} - SQL Server Error");
                 return false;
             }
             catch (SmtpException ex)
             {
-                LogError(ex, $"{nameof(PasswordChange)} - Email Error");
+                LogManager.LogError(ex, $"{nameof(PasswordChange)} - Email Error");
                 return true;
             }
             catch (Exception ex)
             {
-                LogError(ex, nameof(PasswordChange));
+                LogManager.LogError(ex, nameof(PasswordChange));
                 return false;
             }
         }
@@ -556,22 +535,22 @@ namespace TrucoServer
             }
             catch (DbUpdateException ex)
             {
-                LogError(ex, $"{nameof(PasswordReset)} - DataBase Saving Error");
+                LogManager.LogError(ex, $"{nameof(PasswordReset)} - DataBase Saving Error");
                 return false;
             }
             catch (SqlException ex)
             {
-                LogError(ex, $"{nameof(PasswordReset)} - SQL Server Error");
+                LogManager.LogError(ex, $"{nameof(PasswordReset)} - SQL Server Error");
                 return false;
             }
             catch (SmtpException ex)
             {
-                LogError(ex, $"{nameof(PasswordReset)} - Email Error");
+                LogManager.LogError(ex, $"{nameof(PasswordReset)} - Email Error");
                 return true;
             }
             catch (Exception ex)
             {
-                LogError(ex, nameof(PasswordReset));
+                LogManager.LogError(ex, nameof(PasswordReset));
                 return false;
             }
         }
@@ -607,22 +586,22 @@ namespace TrucoServer
             }
             catch (Newtonsoft.Json.JsonException ex)
             {
-                LogError(ex, $"{nameof(GetUserProfile)} - JSON Deserialization Error");
+                LogManager.LogError(ex, $"{nameof(GetUserProfile)} - JSON Deserialization Error");
                 return null;
             }
             catch (SqlException ex)
             {
-                LogError(ex, $"{nameof(GetUserProfile)} - SQL Server Error");
+                LogManager.LogError(ex, $"{nameof(GetUserProfile)} - SQL Server Error");
                 return null;
             }
             catch (InvalidOperationException ex)
             {
-                LogError(ex, $"{nameof(GetUserProfile)} - Invalid Operation (DataBase Context)");
+                LogManager.LogError(ex, $"{nameof(GetUserProfile)} - Invalid Operation (DataBase Context)");
                 return null;
             }
             catch (Exception ex)
             {
-                LogError(ex, nameof(GetUserProfile));
+                LogManager.LogError(ex, nameof(GetUserProfile));
                 return null;
             }
         }
@@ -657,17 +636,17 @@ namespace TrucoServer
             }
             catch (JsonException ex)
             {
-                LogError(ex, $"{nameof(GetUserProfileByEmailAsync)} - JSON Deserialization Error");
+                LogManager.LogError(ex, $"{nameof(GetUserProfileByEmailAsync)} - JSON Deserialization Error");
                 return null;
             }
             catch (System.Data.Common.DbException ex)
             {
-                LogError(ex, $"{nameof(GetUserProfileByEmailAsync)} - Database Query Error");
+                LogManager.LogError(ex, $"{nameof(GetUserProfileByEmailAsync)} - Database Query Error");
                 return null;
             }
             catch (Exception ex)
             {
-                LogError(ex, nameof(GetUserProfileByEmailAsync));
+                LogManager.LogError(ex, nameof(GetUserProfileByEmailAsync));
                 return null;
             }
         }
@@ -724,22 +703,22 @@ namespace TrucoServer
             }
             catch (JsonSerializationException ex)
             {
-                LogError(ex, $"{nameof(SaveUserProfile)} - JSON Serialization Error");
+                LogManager.LogError(ex, $"{nameof(SaveUserProfile)} - JSON Serialization Error");
                 return false;
             }
             catch (DbUpdateException ex)
             {
-                LogError(ex, $"{nameof(SaveUserProfile)} - DataBase Saving Error");
+                LogManager.LogError(ex, $"{nameof(SaveUserProfile)} - DataBase Saving Error");
                 return false;
             }
             catch (SqlException ex)
             {
-                LogError(ex, $"{nameof(SaveUserProfile)} - SQL Server Error");
+                LogManager.LogError(ex, $"{nameof(SaveUserProfile)} - SQL Server Error");
                 return false;
             }
             catch (Exception ex)
             {
-                LogError(ex, nameof(SaveUserProfile));
+                LogManager.LogError(ex, nameof(SaveUserProfile));
                 return false;
             }
         }
@@ -770,15 +749,15 @@ namespace TrucoServer
             }
             catch (DbUpdateException ex)
             {
-                LogError(ex, $"{nameof(UpdateUserAvatarAsync)} - DataBase Saving Error");
+                LogManager.LogError(ex, $"{nameof(UpdateUserAvatarAsync)} - DataBase Saving Error");
             }
             catch (SqlException ex)
             {
-                LogError(ex, $"{nameof(UpdateUserAvatarAsync)} - SQL Server Error");
+                LogManager.LogError(ex, $"{nameof(UpdateUserAvatarAsync)} - SQL Server Error");
             }
             catch (Exception ex)
             {
-                LogError(ex, nameof(UpdateUserAvatarAsync));
+                LogManager.LogError(ex, nameof(UpdateUserAvatarAsync));
             }
             return Task.FromResult(false);
         }
@@ -825,22 +804,22 @@ namespace TrucoServer
             }
             catch (DbUpdateException ex)
             {
-                LogError(ex, $"{nameof(SendFriendRequest)} - DataBase Saving Error");
+                LogManager.LogError(ex, $"{nameof(SendFriendRequest)} - DataBase Saving Error");
                 return false;
             }
             catch (SqlException ex)
             {
-                LogError(ex, $"{nameof(SendFriendRequest)} - SQL Server Error");
+                LogManager.LogError(ex, $"{nameof(SendFriendRequest)} - SQL Server Error");
                 return false;
             }
             catch (CommunicationException ex)
             {
-                LogError(ex, $"{nameof(SendFriendRequest)} - Callback Communication Error");
+                LogManager.LogError(ex, $"{nameof(SendFriendRequest)} - Callback Communication Error");
                 return true;
             }
             catch (Exception ex)
             {
-                LogError(ex, nameof(SendFriendRequest));
+                LogManager.LogError(ex, nameof(SendFriendRequest));
                 return false;
             }
         }
@@ -887,22 +866,22 @@ namespace TrucoServer
             }
             catch (DbUpdateException ex)
             {
-                LogError(ex, $"{nameof(AcceptFriendRequest)} - DataBase Saving Error");
+                LogManager.LogError(ex, $"{nameof(AcceptFriendRequest)} - DataBase Saving Error");
                 return false;
             }
             catch (SqlException ex)
             {
-                LogError(ex, $"{nameof(AcceptFriendRequest)} - SQL Server Error");
+                LogManager.LogError(ex, $"{nameof(AcceptFriendRequest)} - SQL Server Error");
                 return false;
             }
             catch (CommunicationException ex)
             {
-                LogError(ex, $"{nameof(AcceptFriendRequest)} - Callback Communication Error");
+                LogManager.LogError(ex, $"{nameof(AcceptFriendRequest)} - Callback Communication Error");
                 return true;
             }
             catch (Exception ex)
             {
-                LogError(ex, nameof(AcceptFriendRequest));
+                LogManager.LogError(ex, nameof(AcceptFriendRequest));
                 return false;
             }
         }
@@ -936,17 +915,17 @@ namespace TrucoServer
             }
             catch (DbUpdateException ex)
             {
-                LogError(ex, $"{nameof(RemoveFriendOrRequest)} - DataBase Deletion Error");
+                LogManager.LogError(ex, $"{nameof(RemoveFriendOrRequest)} - DataBase Deletion Error");
                 return false;
             }
             catch (SqlException ex)
             {
-                LogError(ex, $"{nameof(RemoveFriendOrRequest)} - SQL Server Error");
+                LogManager.LogError(ex, $"{nameof(RemoveFriendOrRequest)} - SQL Server Error");
                 return false;
             }
             catch (Exception ex)
             {
-                LogError(ex, nameof(RemoveFriendOrRequest));
+                LogManager.LogError(ex, nameof(RemoveFriendOrRequest));
                 return false;
             }
         }
@@ -984,17 +963,17 @@ namespace TrucoServer
             }
             catch (SqlException ex)
             {
-                LogError(ex, $"{nameof(GetFriends)} - SQL Server Error");
+                LogManager.LogError(ex, $"{nameof(GetFriends)} - SQL Server Error");
                 return new List<FriendData>();
             }
             catch (InvalidOperationException ex)
             {
-                LogError(ex, $"{nameof(GetFriends)} - Invalid Operation (DataBase Context)");
+                LogManager.LogError(ex, $"{nameof(GetFriends)} - Invalid Operation (DataBase Context)");
                 return new List<FriendData>();
             }
             catch (Exception ex)
             {
-                LogError(ex, nameof(GetFriends));
+                LogManager.LogError(ex, nameof(GetFriends));
                 return new List<FriendData>();
             }
         }
@@ -1030,17 +1009,17 @@ namespace TrucoServer
             }
             catch (SqlException ex)
             {
-                LogError(ex, $"{nameof(GetFriends)} - SQL Server Error");
+                LogManager.LogError(ex, $"{nameof(GetFriends)} - SQL Server Error");
                 return new List<FriendData>();
             }
             catch (InvalidOperationException ex)
             {
-                LogError(ex, $"{nameof(GetFriends)} - Invalid Operation (DataBase Context)");
+                LogManager.LogError(ex, $"{nameof(GetFriends)} - Invalid Operation (DataBase Context)");
                 return new List<FriendData>();
             }
             catch (Exception ex)
             {
-                LogError(ex, nameof(GetFriends));
+                LogManager.LogError(ex, nameof(GetFriends));
                 return new List<FriendData>();
             }
         }
@@ -1078,22 +1057,22 @@ namespace TrucoServer
             }
             catch (InvalidOperationException ex)
             {
-                LogError(ex, $"{nameof(CreateLobby)} - Business Logic Error (Host not found)");
+                LogManager.LogError(ex, $"{nameof(CreateLobby)} - Business Logic Error (Host not found)");
                 return string.Empty;
             }
             catch (DbUpdateException ex)
             {
-                LogError(ex, $"{nameof(CreateLobby)} - DataBase Saving Error");
+                LogManager.LogError(ex, $"{nameof(CreateLobby)} - DataBase Saving Error");
                 return string.Empty;
             }
             catch (SqlException ex)
             {
-                LogError(ex, $"{nameof(CreateLobby)} - SQL Server Error");
+                LogManager.LogError(ex, $"{nameof(CreateLobby)} - SQL Server Error");
                 return string.Empty;
             }
             catch (Exception ex)
             {
-                LogError(ex, nameof(CreateLobby));
+                LogManager.LogError(ex, nameof(CreateLobby));
                 return string.Empty;
             }
         }
@@ -1158,19 +1137,19 @@ namespace TrucoServer
             }
             catch (DbUpdateException ex)
             {
-                LogError(ex, $"{nameof(JoinMatch)} - DataBase Saving Error");
+                LogManager.LogError(ex, $"{nameof(JoinMatch)} - DataBase Saving Error");
             }
             catch (SqlException ex)
             {
-                LogError(ex, $"{nameof(JoinMatch)} - SQL Server Error");
+                LogManager.LogError(ex, $"{nameof(JoinMatch)} - SQL Server Error");
             }
             catch (CommunicationException ex)
             {
-                LogError(ex, $"{nameof(JoinMatch)} - Callback Communication Error");
+                LogManager.LogError(ex, $"{nameof(JoinMatch)} - Callback Communication Error");
             }
             catch (Exception ex)
             {
-                LogError(ex, nameof(JoinMatch));
+                LogManager.LogError(ex, nameof(JoinMatch));
             }
 
             return joinSuccess;
@@ -1195,15 +1174,15 @@ namespace TrucoServer
             }
             catch (DbUpdateException ex)
             {
-                LogError(ex, $"{nameof(LeaveMatch)} - DataBase Deletion Error");
+                LogManager.LogError(ex, $"{nameof(LeaveMatch)} - DataBase Deletion Error");
             }
             catch (SqlException ex)
             {
-                LogError(ex, $"{nameof(LeaveMatch)} - SQL Server Error");
+                LogManager.LogError(ex, $"{nameof(LeaveMatch)} - SQL Server Error");
             }
             catch (Exception ex)
             {
-                LogError(ex, nameof(LeaveMatch));
+                LogManager.LogError(ex, nameof(LeaveMatch));
             }
         }
 
@@ -1217,11 +1196,11 @@ namespace TrucoServer
             }
             catch (CommunicationException ex)
             {
-                LogError(ex, $"{nameof(StartMatch)} - Callback Communication Error");
+                LogManager.LogError(ex, $"{nameof(StartMatch)} - Callback Communication Error");
             }
             catch (Exception ex)
             {
-                LogError(ex, nameof(StartMatch));
+                LogManager.LogError(ex, nameof(StartMatch));
             }
         }
 
@@ -1280,32 +1259,32 @@ namespace TrucoServer
             }
             catch (FormatException ex)
             {
-                LogError(ex, $"{nameof(GetLobbyPlayers)} - Code Format Error");
+                LogManager.LogError(ex, $"{nameof(GetLobbyPlayers)} - Code Format Error");
                 return new List<PlayerInfo>();
             }
             catch (OverflowException ex)
             {
-                LogError(ex, $"{nameof(GetLobbyPlayers)} - Code Out of Range");
+                LogManager.LogError(ex, $"{nameof(GetLobbyPlayers)} - Code Out of Range");
                 return new List<PlayerInfo>();
             }
             catch (SqlException ex)
             {
-                LogError(ex, $"{nameof(GetLobbyPlayers)} - SQL Server Error");
+                LogManager.LogError(ex, $"{nameof(GetLobbyPlayers)} - SQL Server Error");
                 return new List<PlayerInfo>();
             }
             catch (NotSupportedException ex)
             {
-                LogError(ex, $"{nameof(GetLobbyPlayers)} - LINQ Not Supported");
+                LogManager.LogError(ex, $"{nameof(GetLobbyPlayers)} - LINQ Not Supported");
                 return new List<PlayerInfo>();
             }
             catch (InvalidOperationException ex)
             {
-                LogError(ex, $"{nameof(GetLobbyPlayers)} - Invalid Operation (DataBase Context)");
+                LogManager.LogError(ex, $"{nameof(GetLobbyPlayers)} - Invalid Operation (DataBase Context)");
                 return new List<PlayerInfo>();
             }
             catch (Exception ex)
             {
-                LogError(ex, nameof(GetLobbyPlayers));
+                LogManager.LogError(ex, nameof(GetLobbyPlayers));
                 return new List<PlayerInfo>();
             }
         }
@@ -1350,15 +1329,18 @@ namespace TrucoServer
             }
             catch (Exception ex)
             {
-                LogError(ex, nameof(GetPublicLobbies));
+                LogManager.LogError(ex, nameof(GetPublicLobbies));
                 return new List<PublicLobbyInfo>();
             }
         }
-
+        
         public List<PlayerStats> GetGlobalRanking()
         {
             try
             {
+                // Línea para pruebas de log4net
+                // throw new InvalidOperationException("¡PRUEBA LOG4NET! Simulación de un error de contexto de base de datos.");
+
                 using (var context = new baseDatosTrucoEntities())
                 {
                     var topPlayers = context.User
@@ -1376,22 +1358,22 @@ namespace TrucoServer
             }
             catch (NotSupportedException ex)
             {
-                LogError(ex, $"{nameof(GetGlobalRanking)} - LINQ Not Supported");
+                LogManager.LogError(ex, $"{nameof(GetGlobalRanking)} - LINQ Not Supported");
                 return new List<PlayerStats>();
             }
             catch (SqlException ex)
             {
-                LogError(ex, $"{nameof(GetGlobalRanking)} - SQL Error");
+                LogManager.LogError(ex, $"{nameof(GetGlobalRanking)} - SQL Error");
                 return new List<PlayerStats>();
             }
             catch (InvalidOperationException ex)
             {
-                LogError(ex, $"{nameof(GetGlobalRanking)} - Invalid Operation (DataBase Context)");
+                LogManager.LogError(ex, $"{nameof(GetGlobalRanking)} - Invalid Operation (DataBase Context)");
                 return new List<PlayerStats>();
             }
             catch (Exception ex)
             {
-                LogError(ex, nameof(GetGlobalRanking));
+                LogManager.LogError(ex, nameof(GetGlobalRanking));
                 return new List<PlayerStats>();
             }
         }
@@ -1430,15 +1412,15 @@ namespace TrucoServer
             }
             catch (InvalidOperationException ex)
             {
-                LogError(ex, $"{nameof(JoinMatchChat)} - There is no WCF Operational Context");
+                LogManager.LogError(ex, $"{nameof(JoinMatchChat)} - There is no WCF Operational Context");
             }
             catch (OutOfMemoryException ex)
             {
-                LogError(ex, $"{nameof(JoinMatchChat)} - Insuficient Memory");
+                LogManager.LogError(ex, $"{nameof(JoinMatchChat)} - Insuficient Memory");
             }
             catch (Exception ex)
             {
-                LogError(ex, nameof(JoinMatchChat));
+                LogManager.LogError(ex, nameof(JoinMatchChat));
             }
         }
 
@@ -1466,15 +1448,15 @@ namespace TrucoServer
                         }
                         catch (CommunicationException ex)
                         {
-                            LogError(ex, $"{nameof(LeaveMatchChat)} - Callback Communication Error");
+                            LogManager.LogError(ex, $"{nameof(LeaveMatchChat)} - Callback Communication Error");
                         }
                         catch (TimeoutException ex)
                         {
-                            LogError(ex, $"{nameof(LeaveMatchChat)} - Timeout When Notifying Exit");
+                            LogManager.LogError(ex, $"{nameof(LeaveMatchChat)} - Timeout When Notifying Exit");
                         }
                         catch (Exception ex)
                         {
-                            LogError(ex, nameof(LeaveMatchChat));
+                            LogManager.LogError(ex, nameof(LeaveMatchChat));
                         }
                     });
                 }
@@ -1482,11 +1464,11 @@ namespace TrucoServer
             }
             catch (InvalidOperationException ex)
             {
-                LogError(ex, $"{nameof(LeaveMatchChat)} - There is no WCF Operational Context");
+                LogManager.LogError(ex, $"{nameof(LeaveMatchChat)} - There is no WCF Operational Context");
             }
             catch (Exception ex)
             {
-                LogError(ex, nameof(LeaveMatchChat));
+                LogManager.LogError(ex, nameof(LeaveMatchChat));
             }
         }
 
@@ -1514,15 +1496,15 @@ namespace TrucoServer
                     }
                     catch (CommunicationException ex)
                     {
-                        LogError(ex, $"{nameof(SendChatMessage)} - Disconnected Client");
+                        LogManager.LogError(ex, $"{nameof(SendChatMessage)} - Disconnected Client");
                     }
                     catch (TimeoutException ex)
                     {
-                        LogError(ex, $"{nameof(SendChatMessage)} - Timeout When Sending Message");
+                        LogManager.LogError(ex, $"{nameof(SendChatMessage)} - Timeout When Sending Message");
                     }
                     catch (Exception ex)
                     {
-                        LogError(ex, $"{nameof(SendChatMessage)} - Callback Error");
+                        LogManager.LogError(ex, $"{nameof(SendChatMessage)} - Callback Error");
                     }
                 });
 
@@ -1530,11 +1512,11 @@ namespace TrucoServer
             }
             catch (InvalidOperationException ex)
             {
-                LogError(ex, $"{nameof(SendChatMessage)} - Invalid OperationContext");
+                LogManager.LogError(ex, $"{nameof(SendChatMessage)} - Invalid OperationContext");
             }
             catch (Exception ex)
             {
-                LogError(ex, nameof(SendChatMessage));
+                LogManager.LogError(ex, nameof(SendChatMessage));
             }
         }
 
@@ -1571,7 +1553,7 @@ namespace TrucoServer
             }
             catch (InvalidCastException ex)
             {
-                LogError(ex, $"{nameof(ProcessSingleCallbackAsync)} - Invalid Callback Cast");
+                LogManager.LogError(ex, $"{nameof(ProcessSingleCallbackAsync)} - Invalid Callback Cast");
                 lock (matchCallbacks)
                 {
                     if (matchCallbacks.TryGetValue(matchCode, out var listLocal))
@@ -1582,11 +1564,11 @@ namespace TrucoServer
             }
             catch (SynchronizationLockException ex)
             {
-                LogError(ex, $"{nameof(ProcessSingleCallbackAsync)} - Synchronization Block Error");
+                LogManager.LogError(ex, $"{nameof(ProcessSingleCallbackAsync)} - Synchronization Block Error");
             }
             catch (Exception ex)
             {
-                LogError(ex, nameof(BroadcastToMatchCallbacksAsync));
+                LogManager.LogError(ex, nameof(BroadcastToMatchCallbacksAsync));
             }
         }
 
@@ -1610,12 +1592,12 @@ namespace TrucoServer
             }
             catch (System.Security.Cryptography.CryptographicException ex)
             {
-                LogError(ex, $"{nameof(GenerateSecureNumericCode)} - Cryptographic Provider Error");
+                LogManager.LogError(ex, $"{nameof(GenerateSecureNumericCode)} - Cryptographic Provider Error");
                 return "000000";
             }
             catch (Exception ex)
             {
-                LogError(ex, nameof(GenerateSecureNumericCode));
+                LogManager.LogError(ex, nameof(GenerateSecureNumericCode));
                 return "000000";
             }
         }
@@ -1635,17 +1617,17 @@ namespace TrucoServer
             }
             catch (SqlException ex)
             {
-                LogError(ex, $"{nameof(ResolveVersionId)} - SQL Server Error");
+                LogManager.LogError(ex, $"{nameof(ResolveVersionId)} - SQL Server Error");
                 return 0;
             }
             catch (InvalidOperationException ex)
             {
-                LogError(ex, $"{nameof(ResolveVersionId)} - Invalid Operation (DataBase Context)");
+                LogManager.LogError(ex, $"{nameof(ResolveVersionId)} - Invalid Operation (DataBase Context)");
                 return 0;
             }
             catch (Exception ex)
             {
-                LogError(ex, nameof(ResolveVersionId));
+                LogManager.LogError(ex, nameof(ResolveVersionId));
                 return 0;
             }
         }
@@ -1670,17 +1652,17 @@ namespace TrucoServer
             }
             catch (DbUpdateException ex)
             {
-                LogError(ex, $"{nameof(CreateNewLobby)} - DataBase Saving Error");
+                LogManager.LogError(ex, $"{nameof(CreateNewLobby)} - DataBase Saving Error");
                 return null;
             }
             catch (SqlException ex)
             {
-                LogError(ex, $"{nameof(CreateNewLobby)} - SQL Server Error");
+                LogManager.LogError(ex, $"{nameof(CreateNewLobby)} - SQL Server Error");
                 return null;
             }
             catch (Exception ex)
             {
-                LogError(ex, nameof(CreateNewLobby));
+                LogManager.LogError(ex, nameof(CreateNewLobby));
                 return null;
             }
         }
@@ -1698,12 +1680,12 @@ namespace TrucoServer
             }
             catch (ArgumentNullException ex)
             {
-                LogError(ex, $"{nameof(AddLobbyOwner)} - Null Argument");
+                LogManager.LogError(ex, $"{nameof(AddLobbyOwner)} - Null Argument");
                 throw;
             }
             catch (Exception ex)
             {
-                LogError(ex, nameof(AddLobbyOwner));
+                LogManager.LogError(ex, nameof(AddLobbyOwner));
                 throw;
             }
         }
@@ -1735,17 +1717,17 @@ namespace TrucoServer
             }
             catch (FormatException ex)
             {
-                LogError(ex, $"{nameof(CreatePrivateInvitation)} - Code Format Error");
+                LogManager.LogError(ex, $"{nameof(CreatePrivateInvitation)} - Code Format Error");
                 throw;
             }
             catch (SqlException ex)
             {
-                LogError(ex, $"{nameof(CreatePrivateInvitation)} - SQL Server Error on Query");
+                LogManager.LogError(ex, $"{nameof(CreatePrivateInvitation)} - SQL Server Error on Query");
                 throw;
             }
             catch (Exception ex)
             {
-                LogError(ex, nameof(CreatePrivateInvitation));
+                LogManager.LogError(ex, nameof(CreatePrivateInvitation));
                 throw;
             }
         }
@@ -1802,22 +1784,22 @@ namespace TrucoServer
             }
             catch (SqlException ex)
             {
-                LogError(ex, $"{nameof(ResolveLobbyForJoin)} - SQL Server Error");
+                LogManager.LogError(ex, $"{nameof(ResolveLobbyForJoin)} - SQL Server Error");
                 return null;
             }
             catch (FormatException ex)
             {
-                LogError(ex, $"{nameof(ResolveLobbyForJoin)} - Code Format Error");
+                LogManager.LogError(ex, $"{nameof(ResolveLobbyForJoin)} - Code Format Error");
                 return null;
             }
             catch (InvalidOperationException ex)
             {
-                LogError(ex, $"{nameof(ResolveLobbyForJoin)} - Invalid Operation (DataBase Context)");
+                LogManager.LogError(ex, $"{nameof(ResolveLobbyForJoin)} - Invalid Operation (DataBase Context)");
                 return null;
             }
             catch (Exception ex)
             {
-                LogError(ex, nameof(ResolveLobbyForJoin));
+                LogManager.LogError(ex, nameof(ResolveLobbyForJoin));
                 return null;
             }
         }
@@ -1850,12 +1832,12 @@ namespace TrucoServer
             }
             catch (SqlException ex)
             {
-                LogError(ex, $"{nameof(ValidateJoinConditions)} - SQL Server Error");
+                LogManager.LogError(ex, $"{nameof(ValidateJoinConditions)} - SQL Server Error");
                 return false;
             }
             catch (Exception ex)
             {
-                LogError(ex, nameof(ValidateJoinConditions));
+                LogManager.LogError(ex, nameof(ValidateJoinConditions));
                 return false;
             }
         }
@@ -1879,15 +1861,15 @@ namespace TrucoServer
             }
             catch (DbUpdateException ex)
             {
-                LogError(ex, $"{nameof(AddPlayerToLobby)} - DataBase Saving Error");
+                LogManager.LogError(ex, $"{nameof(AddPlayerToLobby)} - DataBase Saving Error");
             }
             catch (SqlException ex)
             {
-                LogError(ex, $"{nameof(AddPlayerToLobby)} - SQL Server Error");
+                LogManager.LogError(ex, $"{nameof(AddPlayerToLobby)} - SQL Server Error");
             }
             catch (Exception ex)
             {
-                LogError(ex, nameof(AddPlayerToLobby));
+                LogManager.LogError(ex, nameof(AddPlayerToLobby));
             }
         }
 
@@ -1915,15 +1897,15 @@ namespace TrucoServer
             }
             catch (InvalidOperationException ex)
             {
-                LogError(ex, $"{nameof(RegisterMatchCallback)} - No WCF Operational Context");
+                LogManager.LogError(ex, $"{nameof(RegisterMatchCallback)} - No WCF Operational Context");
             }
             catch (SynchronizationLockException ex)
             {
-                LogError(ex, $"{nameof(RegisterMatchCallback)} - Synchronization Block Error");
+                LogManager.LogError(ex, $"{nameof(RegisterMatchCallback)} - Synchronization Block Error");
             }
             catch (Exception ex)
             {
-                LogError(ex, nameof(RegisterMatchCallback));
+                LogManager.LogError(ex, nameof(RegisterMatchCallback));
             }
         }
 
@@ -1937,15 +1919,15 @@ namespace TrucoServer
                 }
                 catch (CommunicationException ex)
                 {
-                    LogError(ex, $"{nameof(NotifyPlayerJoined)} - Callback Communication Error");
+                    LogManager.LogError(ex, $"{nameof(NotifyPlayerJoined)} - Callback Communication Error");
                 }
                 catch (TimeoutException ex)
                 {
-                    LogError(ex, $"{nameof(NotifyPlayerJoined)} - Timeout Error");
+                    LogManager.LogError(ex, $"{nameof(NotifyPlayerJoined)} - Timeout Error");
                 }
                 catch (Exception ex)
                 {
-                    LogError(ex, nameof(NotifyPlayerJoined));
+                    LogManager.LogError(ex, nameof(NotifyPlayerJoined));
                 }
             });
         }
@@ -1965,19 +1947,19 @@ namespace TrucoServer
             }
             catch (SqlException ex)
             {
-                LogError(ex, $"{nameof(ResolveLobbyForLeave)} - SQL Server Error");
+                LogManager.LogError(ex, $"{nameof(ResolveLobbyForLeave)} - SQL Server Error");
                 player = null;
                 return null;
             }
             catch (InvalidOperationException ex)
             {
-                LogError(ex, $"{nameof(ResolveLobbyForLeave)} - Invalid Operation (DataBase Context)");
+                LogManager.LogError(ex, $"{nameof(ResolveLobbyForLeave)} - Invalid Operation (DataBase Context)");
                 player = null;
                 return null;
             }
             catch (Exception ex)
             {
-                LogError(ex, nameof(ResolveLobbyForLeave));
+                LogManager.LogError(ex, nameof(ResolveLobbyForLeave));
                 player = null;
                 return null;
             }
@@ -1998,15 +1980,15 @@ namespace TrucoServer
             }
             catch (DbUpdateException ex)
             {
-                LogError(ex, $"{nameof(RemovePlayerFromLobby)} - SQL Server Error");
+                LogManager.LogError(ex, $"{nameof(RemovePlayerFromLobby)} - SQL Server Error");
             }
             catch (SqlException ex)
             {
-                LogError(ex, $"{nameof(RemovePlayerFromLobby)} - Invalid Operation (DataBase Context)");
+                LogManager.LogError(ex, $"{nameof(RemovePlayerFromLobby)} - Invalid Operation (DataBase Context)");
             }
             catch (Exception ex)
             {
-                LogError(ex, nameof(RemovePlayerFromLobby));
+                LogManager.LogError(ex, nameof(RemovePlayerFromLobby));
             }
         }
 
@@ -2020,15 +2002,15 @@ namespace TrucoServer
                 }
                 catch (CommunicationException ex)
                 {
-                    LogError(ex, $"{nameof(NotifyPlayerJoined)} - Callback Communication Error");
+                    LogManager.LogError(ex, $"{nameof(NotifyPlayerJoined)} - Callback Communication Error");
                 }
                 catch (TimeoutException ex)
                 {
-                    LogError(ex, $"{nameof(NotifyPlayerJoined)} - Timeout Error");
+                    LogManager.LogError(ex, $"{nameof(NotifyPlayerJoined)} - Timeout Error");
                 }
                 catch (Exception ex)
                 {
-                    LogError(ex, nameof(NotifyPlayerJoined));
+                    LogManager.LogError(ex, nameof(NotifyPlayerJoined));
                 }
             });
         }
@@ -2051,15 +2033,15 @@ namespace TrucoServer
             }
             catch (SqlException ex)
             {
-                LogError(ex, $"{nameof(HandleEmptyLobbyCleanup)} - SQL Server Error on Check");
+                LogManager.LogError(ex, $"{nameof(HandleEmptyLobbyCleanup)} - SQL Server Error on Check");
             }
             catch (InvalidOperationException ex)
             {
-                LogError(ex, $"{nameof(HandleEmptyLobbyCleanup)} - Invalid Operation (DataBase Context)");
+                LogManager.LogError(ex, $"{nameof(HandleEmptyLobbyCleanup)} - Invalid Operation (DataBase Context)");
             }
             catch (Exception ex)
             {
-                LogError(ex, nameof(HandleEmptyLobbyCleanup));
+                LogManager.LogError(ex, nameof(HandleEmptyLobbyCleanup));
             }
         }
 
@@ -2073,15 +2055,15 @@ namespace TrucoServer
                 }
                 catch (CommunicationException ex)
                 {
-                    LogError(ex, $"{nameof(NotifyPlayerJoined)} - Callback Communication Error");
+                    LogManager.LogError(ex, $"{nameof(NotifyPlayerJoined)} - Callback Communication Error");
                 }
                 catch (TimeoutException ex)
                 {
-                    LogError(ex, $"{nameof(NotifyPlayerJoined)} - Timeout Error");
+                    LogManager.LogError(ex, $"{nameof(NotifyPlayerJoined)} - Timeout Error");
                 }
                 catch (Exception ex)
                 {
-                    LogError(ex, nameof(NotifyPlayerJoined));
+                    LogManager.LogError(ex, nameof(NotifyPlayerJoined));
                 }
             });
 
@@ -2116,11 +2098,11 @@ namespace TrucoServer
             }
             catch (KeyNotFoundException ex)
             {
-                LogError(ex, $"{nameof(HandleMatchStartupCleanup)} - Key Not Found");
+                LogManager.LogError(ex, $"{nameof(HandleMatchStartupCleanup)} - Key Not Found");
             }
             catch (Exception ex)
             {
-                LogError(ex, nameof(HandleMatchStartupCleanup));
+                LogManager.LogError(ex, nameof(HandleMatchStartupCleanup));
             }
         }
 
@@ -2146,32 +2128,32 @@ namespace TrucoServer
             }
             catch (DbUpdateConcurrencyException ex)
             {
-                LogError(ex, $"{nameof(CloseLobbyById)} - Concurrency");
+                LogManager.LogError(ex, $"{nameof(CloseLobbyById)} - Concurrency");
                 return false;
             }
             catch (UpdateException ex)
             {
-                LogError(ex, $"{nameof(CloseLobbyById)} - Update Error");
+                LogManager.LogError(ex, $"{nameof(CloseLobbyById)} - Update Error");
                 return false;
             }
             catch (DbEntityValidationException ex)
             {
-                LogError(ex, $"{nameof(CloseLobbyById)} - Entity Validation");
+                LogManager.LogError(ex, $"{nameof(CloseLobbyById)} - Entity Validation");
                 return false;
             }
             catch (DbUpdateException ex)
             {
-                LogError(ex, $"{nameof(CloseLobbyById)} - DataBase Saving Error");
+                LogManager.LogError(ex, $"{nameof(CloseLobbyById)} - DataBase Saving Error");
                 return false;
             }
             catch (SqlException ex)
             {
-                LogError(ex, $"{nameof(CloseLobbyById)} - SQL Error");
+                LogManager.LogError(ex, $"{nameof(CloseLobbyById)} - SQL Error");
                 return false;
             }
             catch (Exception ex)
             {
-                LogError(ex, nameof(CloseLobbyById));
+                LogManager.LogError(ex, nameof(CloseLobbyById));
                 return false;
             }
         }
@@ -2204,27 +2186,27 @@ namespace TrucoServer
             }
             catch (FormatException ex)
             {
-                LogError(ex, $"{nameof(ExpireInvitationByMatchCode)} - Invalid Code");
+                LogManager.LogError(ex, $"{nameof(ExpireInvitationByMatchCode)} - Invalid Code");
                 return false;
             }
             catch (OverflowException ex)
             {
-                LogError(ex, $"{nameof(ExpireInvitationByMatchCode)} - Code Out of Range");
+                LogManager.LogError(ex, $"{nameof(ExpireInvitationByMatchCode)} - Code Out of Range");
                 return false;
             }
             catch (DbUpdateException ex)
             {
-                LogError(ex, $"{nameof(ExpireInvitationByMatchCode)} - DataBase Saving Error");
+                LogManager.LogError(ex, $"{nameof(ExpireInvitationByMatchCode)} - DataBase Saving Error");
                 return false;
             }
             catch (SqlException ex)
             {
-                LogError(ex, $"{nameof(ExpireInvitationByMatchCode)} - SQL Error");
+                LogManager.LogError(ex, $"{nameof(ExpireInvitationByMatchCode)} - SQL Error");
                 return false;
             }
             catch (Exception ex)
             {
-                LogError(ex, nameof(ExpireInvitationByMatchCode));
+                LogManager.LogError(ex, nameof(ExpireInvitationByMatchCode));
                 return false;
             }
         }
@@ -2248,22 +2230,22 @@ namespace TrucoServer
             }
             catch (UpdateException ex) when (ex.InnerException is SqlException sqlEx && (sqlEx.Number == 547))
             {
-                LogError(ex, $"{nameof(RemoveLobbyMembersById)} - FK Restriction (Code 547)");
+                LogManager.LogError(ex, $"{nameof(RemoveLobbyMembersById)} - FK Restriction (Code 547)");
                 return false;
             }
             catch (DbUpdateException ex)
             {
-                LogError(ex, $"{nameof(RemoveLobbyMembersById)} - Database Deleting Error");
+                LogManager.LogError(ex, $"{nameof(RemoveLobbyMembersById)} - Database Deleting Error");
                 return false;
             }
             catch (SqlException ex)
             {
-                LogError(ex, $"{nameof(RemoveLobbyMembersById)} - SQL Error");
+                LogManager.LogError(ex, $"{nameof(RemoveLobbyMembersById)} - SQL Error");
                 return false;
             }
             catch (Exception ex)
             {
-                LogError(ex, nameof(RemoveLobbyMembersById));
+                LogManager.LogError(ex, nameof(RemoveLobbyMembersById));
                 return false;
             }
         }
@@ -2290,19 +2272,19 @@ namespace TrucoServer
             }
             catch (SqlException ex)
             {
-                LogError(ex, $"{nameof(FindLobbyByMatchCode)} - SQL Server Error");
+                LogManager.LogError(ex, $"{nameof(FindLobbyByMatchCode)} - SQL Server Error");
             }
             catch (InvalidOperationException ex)
             {
-                LogError(ex, $"{nameof(FindLobbyByMatchCode)} - Invalid Operation (Database Context/Mapping)");
+                LogManager.LogError(ex, $"{nameof(FindLobbyByMatchCode)} - Invalid Operation (Database Context/Mapping)");
             }
             catch (FormatException ex)
             {
-                LogError(ex, $"{nameof(FindLobbyByMatchCode)} - Code Format Error");
+                LogManager.LogError(ex, $"{nameof(FindLobbyByMatchCode)} - Code Format Error");
             }
             catch (Exception ex)
             {
-                LogError(ex, nameof(FindLobbyByMatchCode));
+                LogManager.LogError(ex, nameof(FindLobbyByMatchCode));
             }
 
             return null;
