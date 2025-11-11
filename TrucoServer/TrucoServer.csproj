@@ -149,6 +149,7 @@
       <DependentUpon>baseDatosTruco.tt</DependentUpon>
     </Compile>
     <Compile Include="UserProfileData.cs" />
+    <Compile Include="ValidatedLobbyData.cs" />
     <Compile Include="Versions.cs">
       <DependentUpon>baseDatosTruco.tt</DependentUpon>
     </Compile>

@@ -78,6 +78,7 @@
           <Property Name="lobbyID" Type="int" Nullable="false" />
           <Property Name="userID" Type="int" Nullable="false" />
           <Property Name="role" Type="varchar" MaxLength="20" Nullable="false" />
+          <Property Name="team" Type="varchar" MaxLength="50" Nullable="false" />
         </EntityType>
         <EntityType Name="Match">
           <Key>
@@ -536,6 +537,7 @@
           <Property Name="role" Type="String" MaxLength="20" FixedLength="false" Unicode="false" Nullable="false" />
           <NavigationProperty Name="Lobby" Relationship="Self.FK_LobbyMember_Lobby" FromRole="LobbyMember" ToRole="Lobby" />
           <NavigationProperty Name="User" Relationship="Self.FK_LobbyMember_User" FromRole="LobbyMember" ToRole="User" />
+          <Property Name="team" Type="String" Nullable="false" MaxLength="50" FixedLength="false" Unicode="false" />
         </EntityType>
         <EntityType Name="Match">
           <Key>
@@ -1004,6 +1006,7 @@
           <EntitySetMapping Name="LobbyMember">
             <EntityTypeMapping TypeName="baseDatosTrucoModel.LobbyMember">
               <MappingFragment StoreEntitySet="LobbyMember">
+                <ScalarProperty Name="team" ColumnName="team" />
                 <ScalarProperty Name="lobbyID" ColumnName="lobbyID" />
                 <ScalarProperty Name="userID" ColumnName="userID" />
                 <ScalarProperty Name="role" ColumnName="role" />

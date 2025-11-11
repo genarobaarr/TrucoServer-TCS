@@ -33,12 +33,15 @@ namespace TrucoServer
         private const string CLOSED_STATUS = "Closed";
         private const string INPROGRESS_STATUS = "InProgress";
         private const string FINISHED_STATUS = "Finished";
+        private const string TEAM_1 = "Team 1";
+        private const string TEAM_2 = "Team 2";
         private static readonly Random randomNumberGenerator = new Random();
         private static readonly ConcurrentDictionary<string, string> verificationCodes = new ConcurrentDictionary<string, string>();
         private static readonly ConcurrentDictionary<string, ITrucoCallback> onlineUsers = new ConcurrentDictionary<string, ITrucoCallback>();
         private readonly ConcurrentDictionary<string, int> matchCodeToLobbyId = new ConcurrentDictionary<string, int>();
+        private readonly ConcurrentDictionary<int, object> lobbyLocks = new ConcurrentDictionary<int, object>();
         private readonly ConcurrentDictionary<string, List<ITrucoCallback>> matchCallbacks = new ConcurrentDictionary<string, List<ITrucoCallback>>();
-        private static readonly ConcurrentDictionary<ITrucoCallback, string> matchCallbackToPlayerName = new ConcurrentDictionary<ITrucoCallback, string>();
+        private static readonly ConcurrentDictionary<ITrucoCallback, PlayerInfo> matchCallbackToPlayer = new ConcurrentDictionary<ITrucoCallback, PlayerInfo>();
 
         private static ITrucoCallback GetUserCallback(string username)
         {
@@ -1050,6 +1053,7 @@ namespace TrucoServer
 
                     context.SaveChanges();
                     RegisterLobbyMapping(matchCode, lobby);
+                    lobbyLocks.TryAdd(lobby.lobbyID, new object());
 
                     Console.WriteLine($"[SERVER] Lobby created by {hostUsername}, code={matchCode}, privacy={privacy}, maxPlayers={maxPlayers}.");
                     return matchCode;
@@ -1092,47 +1096,65 @@ namespace TrucoServer
                         Console.WriteLine($"[JOIN] Denied: Lobby closed or not found for code {matchCode}.");
                         return false;
                     }
+                }
 
-                    bool isGuest = player.StartsWith("Guest_");
+                object lobbyLock = lobbyLocks.GetOrAdd(lobby.lobbyID, (id) => new object());
 
-                    if (isGuest)
+                lock (lobbyLock)
+                {
+                    using (var context = new baseDatosTrucoEntities())
                     {
-                        if (!lobby.status.Equals(PUBLIC_STATUS, StringComparison.OrdinalIgnoreCase))
+                        var freshLobby = context.Lobby.Find(lobby.lobbyID);
+                        if (freshLobby == null || freshLobby.status.Equals(CLOSED_STATUS, StringComparison.OrdinalIgnoreCase))
                         {
-                            Console.WriteLine($"[JOIN] Denied: Guest player {player} tried to join a private lobby.");
+                            Console.WriteLine($"[JOIN] Denied: Lobby closed while waiting for lock.");
                             return false;
                         }
 
-                        int currentPlayers = context.LobbyMember.Count(lm => lm.lobbyID == lobby.lobbyID);
-                        if (currentPlayers >= lobby.maxPlayers)
+                        bool isGuest = player.StartsWith("Guest_");
+                        if (isGuest)
                         {
-                            Console.WriteLine($"[JOIN] Denied: Public lobby {lobby.lobbyID} is full ({currentPlayers}/{lobby.maxPlayers}).");
-                            return false;
+                            if (!freshLobby.status.Equals(PUBLIC_STATUS, StringComparison.OrdinalIgnoreCase))
+                            {
+                                Console.WriteLine($"[JOIN] Denied: Guest player {player} tried to join a private lobby.");
+                                return false;
+                            }
+
+                            int currentDbPlayers = context.LobbyMember.Count(lm => lm.lobbyID == freshLobby.lobbyID);
+                            int guestCount = 0;
+                            if (matchCallbacks.TryGetValue(matchCode, out var callbacks))
+                            {
+                                guestCount = callbacks.Select(cb => GetPlayerInfoFromCallback(cb))
+                                                        .Count(info => info != null && info.Username.StartsWith("Guest_"));
+                            }
+
+                            if ((currentDbPlayers + guestCount) >= freshLobby.maxPlayers)
+                            {
+                                Console.WriteLine($"[JOIN] Denied: Public lobby {freshLobby.lobbyID} is full.");
+                                return false;
+                            }
+
+                            Console.WriteLine($"[SERVER] Guest player {player} approved for public lobby {matchCode}.");
+                            joinSuccess = true;
                         }
+                        else
+                        {
+                            User playerUser = context.User.FirstOrDefault(u => u.username == player);
 
-                        RegisterMatchCallback(matchCode, player);
-                        NotifyPlayerJoined(matchCode, player);
-                        Console.WriteLine($"[SERVER] Guest player {player} joined the public lobby {matchCode}.");
-                        return true;
+                            if (!ValidateJoinConditions(context, freshLobby, playerUser))
+                            {
+                                return false;
+                            }
+
+                            AddPlayerToLobby(context, freshLobby, playerUser);
+                            joinSuccess = true;
+                        }
                     }
+                }
 
-                    User playerUser = context.User.FirstOrDefault(u => u.username == player);
-
-                    if (!ValidateJoinConditions(context, lobby, playerUser))
-                    {
-                        return false;
-                    }
-
-                    AddPlayerToLobby(context, lobby, playerUser);
-
-                    joinSuccess = true;
-
-                    if (joinSuccess)
-                    {
-                        RegisterMatchCallback(matchCode, player);
-                        NotifyPlayerJoined(matchCode, player);
-                        Console.WriteLine($"[SERVER] {player} joined the lobby {matchCode}.");
-                    }
+                if (joinSuccess)
+                {
+                    Console.WriteLine($"[SERVER] {player} was processed for lobby {matchCode}.");
                 }
             }
             catch (DbUpdateException ex)
@@ -1190,8 +1212,23 @@ namespace TrucoServer
         {
             try
             {
-                var players = GetLobbyPlayers(matchCode);
-                NotifyMatchStart(matchCode, players);
+                using (var context = new baseDatosTrucoEntities())
+                {
+                    ValidatedLobbyData validatedData = GetAndValidateLobbyForStart(context, matchCode);
+                    if (validatedData == null)
+                    {
+                        return;
+                    }
+
+                    bool matchCreated = CreateMatchFromLobby(context, validatedData);
+                    if (!matchCreated)
+                    {
+                        return;
+                    }
+                }
+
+                var playersList = GetLobbyPlayers(matchCode);
+                NotifyMatchStart(matchCode, playersList);
                 HandleMatchStartupCleanup(matchCode);
             }
             catch (CommunicationException ex)
@@ -1203,6 +1240,138 @@ namespace TrucoServer
                 LogManager.LogError(ex, nameof(StartMatch));
             }
         }
+
+        private ValidatedLobbyData GetAndValidateLobbyForStart(baseDatosTrucoEntities context, string matchCode)
+        {
+            var lobby = FindLobbyByMatchCode(context, matchCode, true);
+
+            if (lobby == null)
+            {
+                Console.WriteLine($"[START FAILED] Lobby not found for code {matchCode}");
+                return null;
+            }
+            var dbMembers = context.LobbyMember.Where(lm => lm.lobbyID == lobby.lobbyID).ToList();
+
+            int guestCount = 0;
+            List<PlayerInfo> guestInfos = new List<PlayerInfo>();
+            if (matchCallbacks.TryGetValue(matchCode, out var callbacks))
+            {
+                guestInfos = callbacks.Select(cb => GetPlayerInfoFromCallback(cb))
+                                        .Where(info => info != null && info.Username.StartsWith("Guest_"))
+                                        .ToList();
+                guestCount = guestInfos.Count;
+            }
+
+            if ((dbMembers.Count + guestCount) != lobby.maxPlayers)
+            {
+                Console.WriteLine($"[START FAILED] Lobby {matchCode} is not full (DB:{dbMembers.Count}, Guest:{guestCount} / Total:{lobby.maxPlayers}).");
+                return null;
+            }
+
+            int team1Count = dbMembers.Count(m => m.team == TEAM_1) + guestInfos.Count(g => g.Team == TEAM_1);
+            int team2Count = dbMembers.Count(m => m.team == TEAM_2) + guestInfos.Count(g => g.Team == TEAM_2);
+
+            if (team1Count != team2Count)
+            {
+                Console.WriteLine($"[START FAILED] Teams are unbalanced in {matchCode} (T1:{team1Count} vs T2:{team2Count}).");
+                return null;
+            }
+
+            return new ValidatedLobbyData
+            {
+                Lobby = lobby,
+                Members = dbMembers
+            };
+        }
+
+        private bool CreateMatchFromLobby(baseDatosTrucoEntities context, ValidatedLobbyData data)
+        {
+            try
+            {
+                if (context.Match.Any(m => m.lobbyID == data.Lobby.lobbyID))
+                {
+                    Console.WriteLine($"[MATCH] Match already exists for lobby {data.Lobby.lobbyID}. Skipping creation.");
+                    return false;
+                }
+
+                Match newMatch = new Match
+                {
+                    lobbyID = data.Lobby.lobbyID,
+                    versionID = data.Lobby.versionID,
+                    status = INPROGRESS_STATUS,
+                    startedAt = DateTime.Now
+                };
+
+                context.Match.Add(newMatch);
+                context.SaveChanges();
+
+                var distinctMembers = data.Members
+                    .GroupBy(m => m.userID)
+                    .Select(g => g.First())
+                    .ToList();
+
+                var existingPlayers = context.MatchPlayer
+                    .Where(mp => mp.matchID == newMatch.matchID)
+                    .Select(mp => mp.userID)
+                    .ToList();
+
+                int team1Count = 0;
+                int team2Count = 0;
+
+                foreach (var member in distinctMembers)
+                {
+                    if (existingPlayers.Contains(member.userID))
+                    {
+                        Console.WriteLine($"[MATCH] Skipping duplicate player userID={member.userID} in match {newMatch.matchID}");
+                        continue;
+                    }
+
+                    string correctTeam = member.team;
+
+                    if (correctTeam != TEAM_1 && correctTeam != TEAM_2)
+                    {
+                        correctTeam = (team1Count <= team2Count) ? TEAM_1 : TEAM_2;
+                    }
+
+                    if (correctTeam == TEAM_1)
+                    {
+                        team1Count++;
+                    }
+                    else
+                    {
+                        team2Count++;
+                    }
+
+                    context.MatchPlayer.Add(new MatchPlayer
+                    {
+                        matchID = newMatch.matchID,
+                        userID = member.userID,
+                        team = correctTeam,
+                        score = 0,
+                        isWinner = false
+                    });
+                }
+
+                context.SaveChanges();
+                return true;
+            }
+            catch (DbUpdateException ex)
+            {
+                LogManager.LogError(ex, $"{nameof(CreateMatchFromLobby)} - Database Error (Possible duplicate key)");
+                return false;
+            }
+            catch (SqlException ex)
+            {
+                LogManager.LogError(ex, $"{nameof(CreateMatchFromLobby)} - SQL Server Error");
+                return false;
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError(ex, nameof(CreateMatchFromLobby));
+                return false;
+            }
+        }
+
 
         public List<PlayerInfo> GetLobbyPlayers(string matchCode)
         {
@@ -1230,25 +1399,29 @@ namespace TrucoServer
                                      {
                                          Username = u.username,
                                          AvatarId = up != null ? up.avatarID : DEFAULT_AVATAR_ID,
-                                         OwnerUsername = ownerUsername
+                                         OwnerUsername = ownerUsername,
+                                         Team = lm.team
                                      }).ToList();
 
                     if (matchCallbacks.TryGetValue(matchCode, out var callbacks))
                     {
-                        var connectedPlayers = callbacks
-                            .OfType<ITrucoCallback>()
-                            .Select(cb => GetPlayerNameFromCallback(cb))
-                            .Where(name => !string.IsNullOrEmpty(name))
-                            .Distinct()
+                        var connectedPlayerInfos = callbacks
+                            .Select(cb => GetPlayerInfoFromCallback(cb))
+                            .Where(info => info != null && !string.IsNullOrEmpty(info.Username))
                             .ToList();
 
-                        var playersToAdd = connectedPlayers
-                            .Where(connectedName => !dbPlayers.Any(p => p.Username == connectedName))
-                            .Select(player => new PlayerInfo
+                        var dbUsernames = dbPlayers.Select(p => p.Username).ToHashSet();
+
+                        var playersToAdd = connectedPlayerInfos
+                            .Where(info => !dbUsernames.Contains(info.Username))
+                            .GroupBy(info => info.Username)
+                            .Select(group => group.First())
+                            .Select(info => new PlayerInfo
                             {
-                                Username = player,
-                                AvatarId = DEFAULT_AVATAR_ID,
-                                OwnerUsername = ownerUsername
+                                Username = info.Username,
+                                AvatarId = info.AvatarId ?? DEFAULT_AVATAR_ID,
+                                OwnerUsername = ownerUsername,
+                                Team = info.Team ?? TEAM_1
                             });
 
                         dbPlayers.AddRange(playersToAdd);
@@ -1338,9 +1511,6 @@ namespace TrucoServer
         {
             try
             {
-                // Línea para pruebas de log4net
-                // throw new InvalidOperationException("¡PRUEBA LOG4NET! Simulación de un error de contexto de base de datos.");
-
                 using (var context = new baseDatosTrucoEntities())
                 {
                     var topPlayers = context.User
@@ -1431,6 +1601,9 @@ namespace TrucoServer
                 var callback = OperationContext.Current.GetCallbackChannel<ITrucoCallback>();
                 RemoveInactiveCallbacks(matchCode);
 
+                bool isNewCallback = false;
+                PlayerInfo playerInfo = null;
+
                 lock (matchCallbacks)
                 {
                     if (!matchCallbacks.ContainsKey(matchCode))
@@ -1440,11 +1613,49 @@ namespace TrucoServer
 
                     if (!matchCallbacks[matchCode].Any(cb => ReferenceEquals(cb, callback)))
                     {
+                        if (player.StartsWith("Guest_"))
+                        {
+                            string assignedTeam = TEAM_1;
+                            using (var context = new baseDatosTrucoEntities())
+                            {
+                                var lobby = FindLobbyByMatchCode(context, matchCode, true);
+                                if (lobby != null && lobby.maxPlayers > 2)
+                                {
+                                    int team1DbCount = context.LobbyMember.Count(lm => lm.lobbyID == lobby.lobbyID && lm.team == TEAM_1);
+                                    int team2DbCount = context.LobbyMember.Count(lm => lm.lobbyID == lobby.lobbyID && lm.team == TEAM_2);
+
+                                    int team1MemCount = matchCallbacks[matchCode]
+                                        .Select(cb => GetPlayerInfoFromCallback(cb))
+                                        .Count(info => info != null && info.Username.StartsWith("Guest_") && info.Team == TEAM_1);
+
+                                    int team2MemCount = matchCallbacks[matchCode]
+                                        .Select(cb => GetPlayerInfoFromCallback(cb))
+                                        .Count(info => info != null && info.Username.StartsWith("Guest_") && info.Team == TEAM_2);
+
+                                    if ((team1DbCount + team1MemCount) >= (team2DbCount + team2MemCount))
+                                    {
+                                        assignedTeam = TEAM_2;
+                                    }
+                                }
+                            }
+                            playerInfo = new PlayerInfo { Username = player, Team = assignedTeam, AvatarId = DEFAULT_AVATAR_ID };
+                        }
+                        else
+                        {
+                            playerInfo = new PlayerInfo { Username = player };
+                        }
+
                         matchCallbacks[matchCode].Add(callback);
+                        matchCallbackToPlayer[callback] = playerInfo;
+                        isNewCallback = true;
                     }
                 }
 
                 Console.WriteLine($"[CHAT] {player} joined the lobby {matchCode}.");
+                if (isNewCallback)
+                {
+                    NotifyPlayerJoined(matchCode, player);
+                }
             }
             catch (InvalidOperationException ex)
             {
@@ -1711,7 +1922,8 @@ namespace TrucoServer
                 {
                     lobbyID = lobby.lobbyID,
                     userID = host.userID,
-                    role = "Owner"
+                    role = "Owner",
+                    team = TEAM_1
                 });
             }
             catch (ArgumentNullException ex)
@@ -1884,11 +2096,25 @@ namespace TrucoServer
             {
                 if (!context.LobbyMember.Any(lm => lm.lobbyID == lobby.lobbyID && lm.userID == playerUser.userID))
                 {
+                    string assignedTeam = TEAM_1;
+
+                    if (lobby.maxPlayers > 2)
+                    {
+                        int team1Count = context.LobbyMember.Count(lm => lm.lobbyID == lobby.lobbyID && lm.team == TEAM_1);
+                        int team2Count = context.LobbyMember.Count(lm => lm.lobbyID == lobby.lobbyID && lm.team == TEAM_2);
+
+                        if (team1Count > team2Count)
+                        {
+                            assignedTeam = TEAM_2;
+                        }
+                    }
+
                     context.LobbyMember.Add(new LobbyMember
                     {
                         lobbyID = lobby.lobbyID,
                         userID = playerUser.userID,
-                        role = "Player"
+                        role = "Player",
+                        team = assignedTeam
                     });
 
                     context.SaveChanges();
@@ -1906,42 +2132,6 @@ namespace TrucoServer
             catch (Exception ex)
             {
                 LogManager.LogError(ex, nameof(AddPlayerToLobby));
-            }
-        }
-
-        private void RegisterMatchCallback(string matchCode, string player)
-        {
-            try
-            {
-                var callback = OperationContext.Current.GetCallbackChannel<ITrucoCallback>();
-                RemoveInactiveCallbacks(matchCode);
-
-                lock (matchCallbacks)
-                {
-                    if (!matchCallbacks.ContainsKey(matchCode))
-                    {
-                        matchCallbacks[matchCode] = new List<ITrucoCallback>();
-                    }
-
-                    if (!matchCallbacks[matchCode].Any(cb => ReferenceEquals(cb, callback)))
-                    {
-                        matchCallbacks[matchCode].Add(callback);
-                        Console.WriteLine($"[JOIN] Callback added for {player} in match {matchCode}.");
-                        matchCallbackToPlayerName[callback] = player;
-                    }
-                }
-            }
-            catch (InvalidOperationException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(RegisterMatchCallback)} - No WCF Operational Context");
-            }
-            catch (SynchronizationLockException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(RegisterMatchCallback)} - Synchronization Block Error");
-            }
-            catch (Exception ex)
-            {
-                LogManager.LogError(ex, nameof(RegisterMatchCallback));
             }
         }
 
@@ -2051,6 +2241,116 @@ namespace TrucoServer
             });
         }
 
+        public void SwitchTeam(string matchCode, string username)
+        {
+            try
+            {
+                if (username.StartsWith("Guest_"))
+                {
+                    PlayerInfo guestInfo = null;
+                    if (matchCallbacks.TryGetValue(matchCode, out var callbacks))
+                    {
+                        guestInfo = callbacks.Select(cb => GetPlayerInfoFromCallback(cb))
+                                           .FirstOrDefault(info => info != null && info.Username == username);
+                    }
+
+                    if (guestInfo == null)
+                    {
+                        LogManager.LogWarn($"SwitchTeam: Guest {username} not found in callbacks", nameof(SwitchTeam));
+                        return;
+                    }
+
+                    string currentTeam = guestInfo.Team;
+                    string newTeam = (currentTeam == TEAM_1) ? TEAM_2 : TEAM_1;
+                    int maxPerTeam;
+
+                    using (var context = new baseDatosTrucoEntities())
+                    {
+                        var lobby = FindLobbyByMatchCode(context, matchCode, true);
+                        if (lobby == null) return;
+                        maxPerTeam = lobby.maxPlayers / 2;
+
+                        int dbCount = context.LobbyMember.Count(lm => lm.lobbyID == lobby.lobbyID && lm.team == newTeam);
+                        int memCount = matchCallbacks[matchCode]
+                            .Select(cb => GetPlayerInfoFromCallback(cb))
+                            .Count(info => info != null && info.Username.StartsWith("Guest_") && info.Team == newTeam);
+
+                        if ((dbCount + memCount) >= maxPerTeam)
+                        {
+                            Console.Write($"[TEAM SWITCH] Denegado: Invitado {username} intentó unirse a {newTeam} (lleno) en {matchCode}.");
+                            return;
+                        }
+                    }
+
+                    guestInfo.Team = newTeam;
+                    Console.Write($"[TEAM SWITCH] Invitado {username} cambió a {newTeam} en {matchCode}.");
+
+                    BroadcastToMatchCallbacksAsync(matchCode, cb => cb.OnPlayerJoined(matchCode, username));
+                    return;
+                }
+                using (var context = new baseDatosTrucoEntities())
+                {
+                    Lobby lobby = FindLobbyByMatchCode(context, matchCode, true);
+                    if (lobby == null)
+                    {
+                        LogManager.LogWarn($"SwitchTeam: Lobby no encontrado {matchCode}", nameof(SwitchTeam));
+                        return;
+                    }
+
+                    if (lobby.maxPlayers == 2)
+                    {
+                        return;
+                    }
+
+                    User user = context.User.FirstOrDefault(u => u.username == username);
+                    if (user == null)
+                    {
+                        LogManager.LogWarn($"SwitchTeam: User {username} not found", nameof(SwitchTeam));
+                        return;
+                    }
+
+                    LobbyMember member = context.LobbyMember.FirstOrDefault(lm => lm.lobbyID == lobby.lobbyID && lm.userID == user.userID);
+                    if (member == null)
+                    {
+                        LogManager.LogWarn($"SwitchTeam: Member {username} not found in lobby {matchCode}", nameof(SwitchTeam));
+                        return;
+                    }
+
+                    string currentTeam = member.team;
+                    string newTeam = (currentTeam == TEAM_1) ? TEAM_2 : TEAM_1;
+                    int maxPerTeam = lobby.maxPlayers / 2;
+
+                    int newTeamCount = context.LobbyMember.Count(lm => lm.lobbyID == lobby.lobbyID && lm.team == newTeam);
+
+                    if (matchCallbacks.TryGetValue(matchCode, out var callbacks))
+                    {
+                        newTeamCount += callbacks.Select(cb => GetPlayerInfoFromCallback(cb))
+                                               .Count(info => info != null && info.Username.StartsWith("Guest_") && info.Team == newTeam);
+                    }
+
+                    if (newTeamCount >= maxPerTeam)
+                    {
+                        Console.Write($"[TEAM SWITCH] Denegado: {username} intentó unirse a {newTeam} (lleno) en {matchCode}.");
+                        return;
+                    }
+
+                    member.team = newTeam;
+                    context.SaveChanges();
+                    Console.Write($"[TEAM SWITCH] {username} cambió a {newTeam} en {matchCode}.");
+                }
+
+                BroadcastToMatchCallbacksAsync(matchCode, cb => cb.OnPlayerJoined(matchCode, username));
+            }
+            catch (DbUpdateException ex)
+            {
+                LogManager.LogError(ex, $"{nameof(SwitchTeam)} - Error Saving DataBase");
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError(ex, nameof(SwitchTeam));
+            }
+        }
+
         private void HandleEmptyLobbyCleanup(baseDatosTrucoEntities context, Lobby lobby, string matchCode)
         {
             try 
@@ -2065,6 +2365,7 @@ namespace TrucoServer
 
                     Console.WriteLine($"[CLEANUP] Lobby {lobby.lobbyID} cleanup result: closedLobby={closed}, expiredInvitation={expired}, removedMembers={removed}");
                     matchCodeToLobbyId.TryRemove(matchCode, out _);
+                    lobbyLocks.TryRemove(lobby.lobbyID, out _);
                 }
             }
             catch (SqlException ex)
@@ -2130,6 +2431,7 @@ namespace TrucoServer
                 }
 
                 matchCodeToLobbyId.TryRemove(matchCode, out _);
+                lobbyLocks.TryRemove(lobbyId, out _);
                 Console.WriteLine($"[CLEANUP] Removed mapping for {matchCode}.");
             }
             catch (KeyNotFoundException ex)
@@ -2355,21 +2657,20 @@ namespace TrucoServer
             return query.FirstOrDefault();
         }
 
-        private static string GetPlayerNameFromCallback(ITrucoCallback callback)
+        private static PlayerInfo GetPlayerInfoFromCallback(ITrucoCallback callback)
         {
             try
             {
-                string name;
-                if (matchCallbackToPlayerName.TryGetValue(callback, out name))
+                if (matchCallbackToPlayer.TryGetValue(callback, out PlayerInfo info))
                 {
-                    return name;
+                    return info;
                 }
 
-                return string.Empty;
+                return null;
             }
             catch
             {
-                return string.Empty;
+                return null;
             }
         }
     }

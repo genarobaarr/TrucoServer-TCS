@@ -17,6 +17,7 @@ namespace TrucoServer
         public int lobbyID { get; set; }
         public int userID { get; set; }
         public string role { get; set; }
+        public string team { get; set; }
     
         public virtual Lobby Lobby { get; set; }
         public virtual User User { get; set; }
