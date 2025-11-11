@@ -6,5 +6,6 @@ namespace TrucoServer
     {
         public Lobby Lobby { get; set; }
         public List<LobbyMember> Members { get; set; }
+        public List<PlayerInfo> Guests { get; set; }
     }
 }
