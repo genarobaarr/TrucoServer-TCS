@@ -1280,10 +1280,17 @@
                     int team1Count = dbMembers.Count(m => m.team == TEAM_1) + guestInfos.Count(g => string.Equals(g.Team, TEAM_1, StringComparison.OrdinalIgnoreCase));
                     int team2Count = dbMembers.Count(m => m.team == TEAM_2) + guestInfos.Count(g => string.Equals(g.Team, TEAM_2, StringComparison.OrdinalIgnoreCase));
 
-                    if (team1Count != team2Count)
+                    if (lobby.maxPlayers > 2)
                     {
-                        Console.WriteLine($"[START FAILED] Teams are unbalanced in {matchCode} (T1:{team1Count} vs T2:{team2Count}).");
-                        return null;
+                        if (team1Count != team2Count)
+                        {
+                            Console.WriteLine($"[START FAILED] Teams are unbalanced in {matchCode} (T1:{team1Count} vs T2:{team2Count}).");
+                            return null;
+                        }
+                    }
+                    else
+                    {
+                        Console.WriteLine($"[INFO] Skipping team balance check for 1v1 match {matchCode}.");
                     }
 
                     return new ValidatedLobbyData
@@ -2148,18 +2155,20 @@
                     {
                         string assignedTeam = TEAM_1;
 
-                        if (lobby.maxPlayers > 2)
-                        {
-                            int team1Count = context.LobbyMember.Count(lm => lm.lobbyID == lobby.lobbyID && lm.team == TEAM_1);
-                            int team2Count = context.LobbyMember.Count(lm => lm.lobbyID == lobby.lobbyID && lm.team == TEAM_2);
+                        int team1Count = context.LobbyMember.Count(lm => lm.lobbyID == lobby.lobbyID && lm.team == TEAM_1);
+                        int team2Count = context.LobbyMember.Count(lm => lm.lobbyID == lobby.lobbyID && lm.team == TEAM_2);
 
-                            if (team1Count > team2Count)
-                            {
-                                assignedTeam = TEAM_2;
-                            }
+                        if (lobby.maxPlayers == 2)
+                        {
+                            assignedTeam = (team1Count <= team2Count) ? TEAM_1 : TEAM_2;
+                            Console.WriteLine($"[JOIN] 1v1 match detected, assigning player {playerUser.username} to {assignedTeam}.");
+                        }
+                        else if (lobby.maxPlayers > 2)
+                        {
+                            assignedTeam = (team1Count > team2Count) ? TEAM_2 : TEAM_1;
                         }
 
-                        context.LobbyMember.Add(new LobbyMember
+                    context.LobbyMember.Add(new LobbyMember
                         {
                             lobbyID = lobby.lobbyID,
                             userID = playerUser.userID,
@@ -2349,6 +2358,7 @@
 
                         if (lobby.maxPlayers == 2)
                         {
+                            Console.WriteLine($"[TEAM SWITCH] Ignored for 1v1 match {matchCode} (no team balance needed).");
                             return;
                         }
 
