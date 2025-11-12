@@ -108,5 +108,17 @@ namespace TrucoServer
 
         [OperationContract]
         void SwitchTeam(string matchCode, string username);
+        
+        [OperationContract(IsOneWay = true)]
+        void RegisterToMatch(string matchCode, string username); 
+
+        [OperationContract(IsOneWay = true)]
+        void PlayCard(string matchCode, TrucoCard card);
+
+        [OperationContract(IsOneWay = true)]
+        void CallTruco(string matchCode); 
+
+        [OperationContract(IsOneWay = true)]
+        void RespondToCall(string matchCode, string response); 
     }
 }

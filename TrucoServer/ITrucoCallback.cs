@@ -29,5 +29,26 @@ namespace TrucoServer
 
         [OperationContract(IsOneWay = true)]
         void OnFriendRequestAccepted(string fromUser);
+        
+        [OperationContract(IsOneWay = true)]
+        void ReceiveCards(List<TrucoCard> hand);
+
+        [OperationContract(IsOneWay = true)]
+        void NotifyCardPlayed(string playerName, TrucoCard card, bool isLastCardOfRound);
+
+        [OperationContract(IsOneWay = true)]
+        void NotifyTurnChange(string nextPlayerName);
+
+        [OperationContract(IsOneWay = true)]
+        void NotifyScoreUpdate(int team1Score, int team2Score);
+
+        [OperationContract(IsOneWay = true)]
+        void NotifyTrucoCall(string callerName, string betName, bool needsResponse);
+
+        [OperationContract(IsOneWay = true)]
+        void NotifyResponse(string responderName, string response);
+
+        [OperationContract(IsOneWay = true)]
+        void NotifyRoundEnd(string winnerName, int team1Score, int team2Score);
     }
 }
