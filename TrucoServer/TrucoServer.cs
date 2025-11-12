@@ -1244,7 +1244,6 @@
                 }
             }
 
-
             private ValidatedLobbyData GetAndValidateLobbyForStart(baseDatosTrucoEntities context, string matchCode)
             {
                 try
@@ -1894,7 +1893,7 @@
                         return secureCode;
                     }
                 }
-                catch (System.Security.Cryptography.CryptographicException ex)
+                catch (CryptographicException ex)
                 {
                     LogManager.LogError(ex, $"{nameof(GenerateSecureNumericCode)} - Cryptographic Provider Error");
                     return "000000";
@@ -2500,7 +2499,6 @@
                     LogManager.LogError(ex, nameof(HandleMatchStartupCleanup));
                 }
             }
-
 
             private static bool CloseLobbyById(int lobbyId)
             {

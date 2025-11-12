@@ -9,7 +9,6 @@ namespace TrucoServer
 {
     public static class TrucoRules
     {
-        private const int ZERO = 0;
         private const int ONE = 1;
         private const int TWO = 2;
         private const int THREE = 3;
@@ -20,140 +19,139 @@ namespace TrucoServer
         private const int EIGHT = 8;
         private const int NINE = 9;
         private const int TEN = 10;
+        private const int ELEVEN = 11;
         private const int TWELVE = 12;
+        private const int THIRTEEN = 13;
+        private const int FOURTEEN = 14;
 
         private static readonly Dictionary<(Rank, Suit), int> trucoValueMap = new Dictionary<(Rank, Suit), int>
         {
             
-            // Cartas más altas
             { 
-                (Rank.Uno, Suit.sword_), TWELVE 
+                (Rank.Uno, Suit.sword_), FOURTEEN 
             }, 
             { 
-                (Rank.Uno, Suit.club_), TWELVE
+                (Rank.Uno, Suit.club_), THIRTEEN
             },  
             { 
-                (Rank.Siete, Suit.sword_), TEN
+                (Rank.Siete, Suit.sword_), TWELVE
             },
             { 
-                (Rank.Siete, Suit.gold_), NINE 
+                (Rank.Siete, Suit.gold_), ELEVEN
             },                
             
-            // Cartas del resto de la jerarquía
             { 
-                (Rank.Tres, Suit.sword_), EIGHT 
+                (Rank.Tres, Suit.sword_), TEN 
             }, 
             { 
-                (Rank.Tres, Suit.club_), EIGHT
+                (Rank.Tres, Suit.club_), TEN
             },
             { 
-                (Rank.Tres, Suit.cup_), EIGHT
+                (Rank.Tres, Suit.cup_), TEN
             }, 
             { 
-                (Rank.Tres, Suit.gold_), EIGHT 
+                (Rank.Tres, Suit.gold_), TEN
             },
             
             { 
-                (Rank.Dos, Suit.sword_), SEVEN 
+                (Rank.Dos, Suit.sword_), NINE
             }, 
             { 
-                (Rank.Dos, Suit.club_), SEVEN
+                (Rank.Dos, Suit.club_), NINE
             },
             { 
-                (Rank.Dos, Suit.cup_), SEVEN
+                (Rank.Dos, Suit.cup_), NINE
             }, 
             { 
-                (Rank.Dos, Suit.gold_), SEVEN
+                (Rank.Dos, Suit.gold_), NINE
             }, 
             
             { 
-                (Rank.Uno, Suit.cup_), SIX
+                (Rank.Uno, Suit.cup_), EIGHT
             }, 
             { 
-                (Rank.Uno, Suit.gold_), SIX
+                (Rank.Uno, Suit.gold_), EIGHT
             }, 
             { 
-                (Rank.Doce, Suit.sword_), FIVE
+                (Rank.Doce, Suit.sword_), SEVEN
             }, 
             { 
-                (Rank.Doce, Suit.club_), FIVE
+                (Rank.Doce, Suit.club_), SEVEN
             },
             { 
-                (Rank.Doce, Suit.cup_), FIVE
+                (Rank.Doce, Suit.cup_), SEVEN
             }, 
             { 
-                (Rank.Doce, Suit.gold_), FIVE
+                (Rank.Doce, Suit.gold_), SEVEN
             }, 
             { 
-                (Rank.Once, Suit.sword_), FOUR
+                (Rank.Once, Suit.sword_), SIX
             }, 
             { 
-                (Rank.Once, Suit.club_), FOUR
+                (Rank.Once, Suit.club_), SIX
             },
             { 
-                (Rank.Once, Suit.cup_), FOUR
+                (Rank.Once, Suit.cup_), SIX
             }, 
             { 
-                (Rank.Once, Suit.gold_), FOUR
+                (Rank.Once, Suit.gold_), SIX
             },
             { 
-                (Rank.Diez, Suit.sword_), THREE
+                (Rank.Diez, Suit.sword_), FIVE
             }, 
             { 
-                (Rank.Diez, Suit.club_), THREE
+                (Rank.Diez, Suit.club_), FIVE
             },
             { 
-                (Rank.Diez, Suit.cup_), THREE
+                (Rank.Diez, Suit.cup_), FIVE
             }, 
             { 
-                (Rank.Diez, Suit.gold_), THREE
+                (Rank.Diez, Suit.gold_), FIVE
             }, 
             
-            // 7s falsos (los de basto y copa)
             { 
-                (Rank.Siete, Suit.club_), TWO
+                (Rank.Siete, Suit.club_), FOUR
             }, 
             { 
-                (Rank.Siete, Suit.cup_), TWO 
-            }, 
-            
-            // Cartas más bajas (6, 5 y 4)
-            { 
-                (Rank.Seis, Suit.sword_), ONE 
-            }, 
-            { 
-                (Rank.Seis, Suit.club_), ONE 
-            },
-            { 
-                (Rank.Seis, Suit.cup_), ONE 
-            }, 
-            { 
-                (Rank.Seis, Suit.gold_), ONE 
+                (Rank.Siete, Suit.cup_), FOUR
             }, 
             
-            // Valores mínimos
             { 
-                (Rank.Cinco, Suit.sword_), ZERO 
+                (Rank.Seis, Suit.sword_), THREE 
             }, 
             { 
-                (Rank.Cinco, Suit.club_), ZERO 
+                (Rank.Seis, Suit.club_), THREE
             },
             { 
-                (Rank.Cinco, Suit.cup_), ZERO
+                (Rank.Seis, Suit.cup_), THREE
             }, 
             { 
-                (Rank.Cinco, Suit.gold_), ZERO 
+                (Rank.Seis, Suit.gold_), THREE
+            }, 
+            
+            { 
+                (Rank.Cinco, Suit.sword_), TWO
             }, 
             { 
-                (Rank.Cuatro, Suit.sword_), ZERO
-            }, 
-            { 
-                (Rank.Cuatro, Suit.club_), ZERO
+                (Rank.Cinco, Suit.club_), TWO 
             },
-            { (Rank.Cuatro, Suit.cup_), ZERO
+            { 
+                (Rank.Cinco, Suit.cup_), TWO
             }, 
             { 
-                (Rank.Cuatro, Suit.gold_), ZERO
+                (Rank.Cinco, Suit.gold_), TWO 
+            }, 
+            { 
+                (Rank.Cuatro, Suit.sword_), ONE
+            }, 
+            { 
+                (Rank.Cuatro, Suit.club_), ONE
+            },
+            { 
+                (Rank.Cuatro, Suit.cup_), ONE
+            }, 
+            { 
+                (Rank.Cuatro, Suit.gold_), ONE
             }
         };
 
@@ -177,7 +175,7 @@ namespace TrucoServer
             return 0;
         }
 
-        // Aquí iría la lógica para calcular el Envido/Flor
+        // Aquí iría la lógica para calcular el Envido/Flor/Truco
         public static int GetEnvidoValue(TrucoCard card)
         {
             if ((int)card.CardRank >= 10) return 0;
