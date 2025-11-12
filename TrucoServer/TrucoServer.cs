@@ -2715,19 +2715,42 @@
 
             private static PlayerInfo GetPlayerInfoFromCallback(ITrucoCallback callback)
             {
-                try
-                {
-                    if (matchCallbackToPlayer.TryGetValue(callback, out PlayerInfo info))
-                    {
-                        return info;
-                    }
+                throw new NotImplementedException();
+            }
 
-                    return null;
-                }
-                catch
-                {
-                    return null;
-                }
+            public void StartNewHand()
+            {
+                throw new NotImplementedException();
+            }
+
+            public bool PlayCard(int playerID, string cardFileName)
+            {
+                throw new NotImplementedException();
+            }
+
+            private void AdvanceTurn()
+            {
+                throw new NotImplementedException();
+            }
+
+            public void RegisterToMatch(string matchCode, string username)
+            {
+                throw new NotImplementedException();
+            }
+
+            public void PlayCard(string matchCode, TrucoCard card)
+            {
+                throw new NotImplementedException();
+            }
+
+            public void CallTruco(string matchCode)
+            {
+                throw new NotImplementedException();
+            }
+
+            public void RespondToCall(string matchCode, string response)
+            {
+                throw new NotImplementedException();
             }
         }
     }
