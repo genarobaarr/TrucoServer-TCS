@@ -24,9 +24,12 @@ namespace TrucoServer
         public int matchID { get; set; }
         public int number { get; set; }
         public string status { get; set; }
+        public Nullable<bool> isActive { get; set; }
+        public Nullable<int> winnerID { get; set; }
     
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
         public virtual ICollection<DealtCard> DealtCard { get; set; }
         public virtual Match Match { get; set; }
+        public virtual User User { get; set; }
     }
 }

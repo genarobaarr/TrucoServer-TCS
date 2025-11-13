@@ -25,6 +25,7 @@ namespace TrucoServer
             this.Lobby = new HashSet<Lobby>();
             this.LobbyMember = new HashSet<LobbyMember>();
             this.MatchPlayer = new HashSet<MatchPlayer>();
+            this.Round = new HashSet<Round>();
         }
     
         public int userID { get; set; }
@@ -52,5 +53,7 @@ namespace TrucoServer
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
         public virtual ICollection<MatchPlayer> MatchPlayer { get; set; }
         public virtual UserProfile UserProfile { get; set; }
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
+        public virtual ICollection<Round> Round { get; set; }
     }
 }

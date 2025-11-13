@@ -38,6 +38,7 @@
           <Property Name="roundID" Type="int" Nullable="false" />
           <Property Name="playerID" Type="int" Nullable="false" />
           <Property Name="cardID" Type="int" Nullable="false" />
+          <Property Name="playOrder" Type="int" />
         </EntityType>
         <EntityType Name="Friendship">
           <Key>
@@ -110,6 +111,8 @@
           <Property Name="matchID" Type="int" Nullable="false" />
           <Property Name="number" Type="int" Nullable="false" />
           <Property Name="status" Type="varchar" MaxLength="20" Nullable="false" />
+          <Property Name="isActive" Type="bit" />
+          <Property Name="winnerID" Type="int" />
         </EntityType>
         <EntityType Name="User">
           <Key>
@@ -138,6 +141,18 @@
           <Property Name="versionID" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
           <Property Name="configuration" Type="varchar" MaxLength="50" Nullable="false" />
         </EntityType>
+        <Association Name="FK__Round__winnerID__151B244E">
+          <End Role="User" Type="Self.User" Multiplicity="0..1" />
+          <End Role="Round" Type="Self.Round" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="User">
+              <PropertyRef Name="userID" />
+            </Principal>
+            <Dependent Role="Round">
+              <PropertyRef Name="winnerID" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
         <Association Name="FK_Ban_User">
           <End Role="User" Type="Self.User" Multiplicity="1">
             <OnDelete Action="Cascade" />
@@ -377,6 +392,10 @@
           <EntitySet Name="User" EntityType="Self.User" Schema="dbo" store:Type="Tables" />
           <EntitySet Name="UserProfile" EntityType="Self.UserProfile" Schema="dbo" store:Type="Tables" />
           <EntitySet Name="Versions" EntityType="Self.Versions" Schema="dbo" store:Type="Tables" />
+          <AssociationSet Name="FK__Round__winnerID__151B244E" Association="Self.FK__Round__winnerID__151B244E">
+            <End Role="User" EntitySet="User" />
+            <End Role="Round" EntitySet="Round" />
+          </AssociationSet>
           <AssociationSet Name="FK_Ban_User" Association="Self.FK_Ban_User">
             <End Role="User" EntitySet="User" />
             <End Role="Ban" EntitySet="Ban" />
@@ -488,6 +507,7 @@
           <NavigationProperty Name="Card" Relationship="Self.FK_DealtCard_Card" FromRole="DealtCard" ToRole="Card" />
           <NavigationProperty Name="User" Relationship="Self.FK_DealtCard_Player" FromRole="DealtCard" ToRole="User" />
           <NavigationProperty Name="Round" Relationship="Self.FK_DealtCard_Round" FromRole="DealtCard" ToRole="Round" />
+          <Property Name="playOrder" Type="Int32" />
         </EntityType>
         <EntityType Name="Friendship">
           <Key>
@@ -577,6 +597,9 @@
           <Property Name="status" Type="String" MaxLength="20" FixedLength="false" Unicode="false" Nullable="false" />
           <NavigationProperty Name="DealtCard" Relationship="Self.FK_DealtCard_Round" FromRole="Round" ToRole="DealtCard" />
           <NavigationProperty Name="Match" Relationship="Self.FK_Round_Match" FromRole="Round" ToRole="Match" />
+          <Property Name="isActive" Type="Boolean" />
+          <Property Name="winnerID" Type="Int32" />
+          <NavigationProperty Name="User" Relationship="baseDatosTrucoModel.FK__Round__winnerID__151B244E" FromRole="Round" ToRole="User" />
         </EntityType>
         <EntityType Name="User">
           <Key>
@@ -598,6 +621,7 @@
           <NavigationProperty Name="LobbyMember" Relationship="Self.FK_LobbyMember_User" FromRole="User" ToRole="LobbyMember" />
           <NavigationProperty Name="MatchPlayer" Relationship="Self.FK_MatchPlayer_User" FromRole="User" ToRole="MatchPlayer" />
           <NavigationProperty Name="UserProfile" Relationship="Self.FK_UserProfile_User" FromRole="User" ToRole="UserProfile" />
+          <NavigationProperty Name="Round" Relationship="baseDatosTrucoModel.FK__Round__winnerID__151B244E" FromRole="User" ToRole="Round" />
         </EntityType>
         <EntityType Name="UserProfile">
           <Key>
@@ -924,7 +948,23 @@
             <End Role="User" EntitySet="User" />
             <End Role="UserProfile" EntitySet="UserProfile" />
           </AssociationSet>
+          <AssociationSet Name="FK__Round__winnerID__151B244E" Association="baseDatosTrucoModel.FK__Round__winnerID__151B244E">
+            <End Role="User" EntitySet="User" />
+            <End Role="Round" EntitySet="Round" />
+          </AssociationSet>
         </EntityContainer>
+        <Association Name="FK__Round__winnerID__151B244E">
+          <End Type="baseDatosTrucoModel.User" Role="User" Multiplicity="0..1" />
+          <End Type="baseDatosTrucoModel.Round" Role="Round" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="User">
+              <PropertyRef Name="userID" />
+            </Principal>
+            <Dependent Role="Round">
+              <PropertyRef Name="winnerID" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
       </Schema>
     </edmx:ConceptualModels>
     <!-- C-S mapping content -->
@@ -962,6 +1002,7 @@
           <EntitySetMapping Name="DealtCard">
             <EntityTypeMapping TypeName="baseDatosTrucoModel.DealtCard">
               <MappingFragment StoreEntitySet="DealtCard">
+                <ScalarProperty Name="playOrder" ColumnName="playOrder" />
                 <ScalarProperty Name="dealID" ColumnName="dealID" />
                 <ScalarProperty Name="roundID" ColumnName="roundID" />
                 <ScalarProperty Name="playerID" ColumnName="playerID" />
@@ -1039,6 +1080,8 @@
           <EntitySetMapping Name="Round">
             <EntityTypeMapping TypeName="baseDatosTrucoModel.Round">
               <MappingFragment StoreEntitySet="Round">
+                <ScalarProperty Name="winnerID" ColumnName="winnerID" />
+                <ScalarProperty Name="isActive" ColumnName="isActive" />
                 <ScalarProperty Name="roundID" ColumnName="roundID" />
                 <ScalarProperty Name="matchID" ColumnName="matchID" />
                 <ScalarProperty Name="number" ColumnName="number" />

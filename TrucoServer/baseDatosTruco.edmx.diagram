@@ -36,6 +36,7 @@
         <AssociationConnector Association="baseDatosTrucoModel.FK_Round_Match" ManuallyRouted="false" />
         <AssociationConnector Association="baseDatosTrucoModel.FK_MatchPlayer_User" ManuallyRouted="false" />
         <AssociationConnector Association="baseDatosTrucoModel.FK_UserProfile_User" ManuallyRouted="false" />
+        <AssociationConnector Association="baseDatosTrucoModel.FK__Round__winnerID__151B244E" />
       </Diagram>
     </edmx:Diagrams>
   </edmx:Designer>

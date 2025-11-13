@@ -18,6 +18,7 @@ namespace TrucoServer
         public int roundID { get; set; }
         public int playerID { get; set; }
         public int cardID { get; set; }
+        public Nullable<int> playOrder { get; set; }
     
         public virtual Card Card { get; set; }
         public virtual User User { get; set; }
