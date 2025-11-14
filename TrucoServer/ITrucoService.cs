@@ -86,19 +86,13 @@ namespace TrucoServer
         void LeaveMatch(string matchCode, string player);
 
         [OperationContract(IsOneWay = true)]
-        void PlayCard(string matchCode, string player, string card);
-
-        [OperationContract(IsOneWay = true)]
-        void SendChatMessage(string matchCode, string player, string message);
-
-        [OperationContract(IsOneWay = true)]
         void JoinMatchChat(string matchCode, string player);
 
         [OperationContract(IsOneWay = true)]
         void LeaveMatchChat(string matchCode, string player);
 
         [OperationContract(IsOneWay = true)]
-        void StartMatch(string matchCode);
+        void SendChatMessage(string matchCode, string player, string message);
 
         [OperationContract]
         List<PlayerInfo> GetLobbyPlayers(string matchCode);
@@ -109,10 +103,16 @@ namespace TrucoServer
         [OperationContract]
         void SwitchTeam(string matchCode, string username);
 
-        [OperationContract]
+        [OperationContract(IsOneWay = true)]
+        void StartMatch(string matchCode);
+
+        [OperationContract(IsOneWay = true)]
+        void PlayCard(string matchCode, string cardFileName);
+
+        [OperationContract(IsOneWay = true)]
         void CallTruco(string matchCode, string betType);
 
-        [OperationContract]
-        void RespondToTruco(string matchCode, string response);
+        [OperationContract(IsOneWay = true)]
+        void RespondToCall(string matchCode, string response);
     }
 }

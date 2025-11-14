@@ -2725,17 +2725,17 @@
             }
         }
 
-        public void PlayCard(string matchCode, string player, string card)
-        {
-            throw new NotImplementedException();
-        }
-
         public void CallTruco(string matchCode, string betType)
         {
             throw new NotImplementedException();
         }
 
-        public void RespondToTruco(string matchCode, string response)
+        public void PlayCard(string matchCode, string cardFileName)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void RespondToCall(string matchCode, string response)
         {
             throw new NotImplementedException();
         }
