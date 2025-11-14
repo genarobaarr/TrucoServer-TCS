@@ -67,6 +67,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ActiveMatch.cs" />
     <Compile Include="Ban.cs">
       <DependentUpon>baseDatosTruco.tt</DependentUpon>
     </Compile>
@@ -104,6 +105,7 @@
       <DependentUpon>baseDatosTruco.tt</DependentUpon>
     </Compile>
     <Compile Include="FriendShipMapping.cs" />
+    <Compile Include="GameManager.cs" />
     <Compile Include="Invitation.cs">
       <DependentUpon>baseDatosTruco.tt</DependentUpon>
     </Compile>
@@ -132,6 +134,7 @@
     <Compile Include="MatchScore.cs" />
     <Compile Include="PasswordHasher.cs" />
     <Compile Include="PlayerInfo.cs" />
+    <Compile Include="PlayerInformation.cs" />
     <Compile Include="PlayerStats.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="PublicLobbyInfo.cs" />
@@ -140,6 +143,8 @@
     </Compile>
     <Compile Include="SocialLinks.cs" />
     <Compile Include="TrucoCard.cs" />
+    <Compile Include="TrucoGameManager.cs" />
+    <Compile Include="TrucoMatch.cs" />
     <Compile Include="TrucoRules.cs" />
     <Compile Include="TrucoServer.cs" />
     <Compile Include="User.cs">

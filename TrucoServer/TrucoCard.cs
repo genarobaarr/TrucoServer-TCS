@@ -1,37 +1,43 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.Serialization;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace TrucoServer
 {
+    [DataContract]
     public enum Suit
     {
-        club_,
-        cup_,
-        sword_,
-        gold_
+        [EnumMember] club_,
+        [EnumMember] cup_,
+        [EnumMember] sword_,
+        [EnumMember] gold_
     }
 
+    [DataContract]
     public enum Rank
     {
-        Uno = 1, 
-        Dos = 2, 
-        Tres = 3, 
-        Cuatro = 4, 
-        Cinco = 5,
-        Seis = 6, 
-        Siete = 7, 
-        Diez = 10, 
-        Once = 11, 
-        Doce = 12
+        [EnumMember] Uno = 1,
+        [EnumMember] Dos = 2,
+        [EnumMember] Tres = 3,
+        [EnumMember] Cuatro = 4,
+        [EnumMember] Cinco = 5,
+        [EnumMember] Seis = 6,
+        [EnumMember] Siete = 7,
+        [EnumMember] Diez = 10,
+        [EnumMember] Once = 11,
+        [EnumMember] Doce = 12
     }
-
+    [DataContract]
     public class TrucoCard
     {
+        [DataMember]
         public Rank CardRank { get; private set; }
+        [DataMember]
         public Suit CardSuit { get; private set; }
+        [DataMember]
         public string FileName { get; private set; }
 
         public TrucoCard(Rank rank, Suit suit)
