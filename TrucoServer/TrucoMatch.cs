@@ -140,7 +140,10 @@ namespace TrucoServer
             {
                 nextOpponentIndex = (nextOpponentIndex + 1) % numPlayers;
 
-                if (nextOpponentIndex == turnIndex) return null;
+                if (nextOpponentIndex == turnIndex)
+                {
+                    return null;
+                }
             }
             return players[nextOpponentIndex];
         }
@@ -243,7 +246,10 @@ namespace TrucoServer
                 return false;
             }
 
-            if (!playerHands.ContainsKey(playerID)) return false;
+            if (!playerHands.ContainsKey(playerID))
+            {
+                return false;
+            }
 
             var hand = playerHands[playerID];
             var cardInHand = hand.FirstOrDefault(c => c.FileName == cardFileName);
@@ -531,7 +537,10 @@ namespace TrucoServer
             if (response == "NoQuiero")
             {
                 int pointsToAward = (currentEnvidoPoints == 0) ? 1 : (currentEnvidoPoints - GetPointsForEnvidoBet(proposedEnvidoBet));
-                if (pointsToAward == 0) pointsToAward = 1; 
+                if (pointsToAward == 0)
+                {
+                    pointsToAward = 1;
+                }
                 AwardEnvidoPoints(caller.Team, pointsToAward); 
                 ResetEnvidoState();
             }
