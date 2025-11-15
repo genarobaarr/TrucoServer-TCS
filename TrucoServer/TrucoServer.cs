@@ -2776,22 +2776,6 @@
             }
         }
 
-        public void CallTruco(string matchCode, string betType)
-        {
-            try
-            {
-                if (GetMatchAndPlayerID(matchCode, out TrucoMatch match, out int playerID))
-                {
-                    // match.CallTruco(playerID, betType);
-                    LogManager.LogWarn($"CallTruco (type: {betType}) fue llamado por {playerID} en {matchCode}, pero 'TrucoMatch.CallTruco' no está implementado.", nameof(CallTruco));
-                }
-            }
-            catch (Exception ex)
-            {
-                LogManager.LogError(ex, nameof(CallTruco));
-            }
-        }
-
         public void PlayCard(string matchCode, string cardFileName)
         {
             try
@@ -2807,14 +2791,28 @@
             }
         }
 
+        public void CallTruco(string matchCode, string betType)
+        {
+            try
+            {
+                if (GetMatchAndPlayerID(matchCode, out TrucoMatch match, out int playerID))
+                {
+                    match.CallTruco(playerID, betType);
+                }
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError(ex, nameof(CallTruco));
+            }
+        }
+
         public void RespondToCall(string matchCode, string response)
         {
             try
             {
                 if (GetMatchAndPlayerID(matchCode, out TrucoMatch match, out int playerID))
                 {
-                    // match.RespondToCall(playerID, response);
-                    LogManager.LogWarn($"RespondToCall (resp: {response}) fue llamado por {playerID} en {matchCode}, pero 'TrucoMatch.RespondToCall' no está implementado.", nameof(RespondToCall));
+                    match.RespondToCall(playerID, response);
                 }
             }
             catch (Exception ex)

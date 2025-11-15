@@ -35,8 +35,8 @@ namespace TrucoServer
         private const int MAX_SCORE = 30;
         private const int CARDS_IN_HAND = 3;
         private const int MAX_ROUNDS = 3;
-        private const string TEAM_A = "Team A";
-        private const string TEAM_B = "Team B";
+        private const string TEAM_A = "Team 1";
+        private const string TEAM_B = "Team 2";
 
         public string matchCode { get; private set; }
         public List<PlayerInformation> players { get; private set; }
@@ -462,13 +462,13 @@ namespace TrucoServer
             if (response == "NoQuiero")
             {
                 int pointsToAward = GetPointsForBet(trucoBetValue);
-                NotifyResponse(response, responder.Username);
+                NotifyResponse(response, responder.Username, trucoBetValue.ToString());
                 EndHandWithPoints(caller.Team, pointsToAward);
             }
             else if (response == "Quiero")
             {
                 trucoBetValue = proposedBetValue;
-                NotifyResponse(response, responder.Username);
+                NotifyResponse(response, responder.Username, trucoBetValue.ToString());
                 ResetBetState();
                 NotifyTurnChange();
             }
@@ -671,9 +671,9 @@ namespace TrucoServer
             }
         }
 
-        private void NotifyResponse(string response, string callerName)
+        private void NotifyResponse(string response, string callerName, string newBetState)
         {
-            NotifyAll(callback => callback.NotifyResponse(callerName, response));
+            NotifyAll(callback => callback.NotifyResponse(callerName, response, newBetState));
         }
     }
 }

@@ -46,7 +46,7 @@ namespace TrucoServer
         void NotifyTrucoCall(string callerName, string betName, bool needsResponse);
 
         [OperationContract(IsOneWay = true)]
-        void NotifyResponse(string responderName, string response);
+        void NotifyResponse(string responderName, string response, string newBetState);
 
         [OperationContract(IsOneWay = true)]
         void NotifyRoundEnd(string winnerName, int team1Score, int team2Score);
