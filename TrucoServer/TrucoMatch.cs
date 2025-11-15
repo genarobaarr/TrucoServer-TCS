@@ -60,6 +60,14 @@ namespace TrucoServer
         private int currentTrucoPoints;
         private int? bettingPlayerId;
         private int? waitingForResponseToId;
+        private TrucoBet proposedBetValue;
+        public EnvidoBet envidoBetValue { get; private set; }
+        private EnvidoBet proposedEnvidoBet;
+        private int currentEnvidoPoints;
+        private int? envidoBettorId;
+        private int? waitingForEnvidoResponseId;
+        private bool envidoWasPlayed; 
+        private Dictionary<int, int> playerEnvidoScores;
 
         public TrucoMatch(
             string matchCode,
@@ -94,6 +102,92 @@ namespace TrucoServer
             gameManager.SaveMatchToDatabase(matchCode, players);
         }
 
+        private int GetPointsForBet(TrucoBet bet)
+        {
+            switch (bet)
+            {
+                case TrucoBet.Truco:
+                    return 2;
+                case TrucoBet.Retruco:
+                    return 3;
+                case TrucoBet.ValeCuatro:
+                    return 4;
+                case TrucoBet.None:
+                default:
+                    return 1;
+            }
+        }
+
+        private void ResetBetState()
+        {
+            bettingPlayerId = null;
+            waitingForResponseToId = null;
+            proposedBetValue = TrucoBet.None;
+        }
+
+        private PlayerInformation GetOpponentToRespond(PlayerInformation caller)
+        {
+            int numPlayers = players.Count;
+            var currentTurnPlayer = GetCurrentTurnPlayer();
+
+            if (currentTurnPlayer.Team != caller.Team)
+            {
+                return currentTurnPlayer;
+            }
+
+            int nextOpponentIndex = (turnIndex + 1) % numPlayers;
+            while (players[nextOpponentIndex].Team == caller.Team)
+            {
+                nextOpponentIndex = (nextOpponentIndex + 1) % numPlayers;
+
+                if (nextOpponentIndex == turnIndex) return null;
+            }
+            return players[nextOpponentIndex];
+        }
+
+        private void EndHandWithPoints(string winningTeam, int pointsToAward)
+        {
+            if (winningTeam == TEAM_A)
+            {
+                team1Score += pointsToAward;
+            }
+            else
+            {
+                team2Score += pointsToAward;
+            }
+
+            NotifyAll(callback => callback.NotifyScoreUpdate(team1Score, team2Score));
+
+            if (CheckMatchEnd())
+            {
+                string loserTeamString;
+                string matchWinnerName;
+                int winnerScore;
+                int loserScore;
+
+                if (team1Score > team2Score)
+                {
+                    loserTeamString = TEAM_B;
+                    winnerScore = team1Score;
+                    loserScore = team2Score;
+                    matchWinnerName = players.First(p => p.Team == TEAM_A).Username;
+                }
+                else
+                {
+                    loserTeamString = TEAM_A;
+                    winnerScore = team2Score;
+                    loserScore = team1Score;
+                    matchWinnerName = players.First(p => p.Team == TEAM_B).Username;
+                }
+                gameManager.SaveMatchResult(matchCode, loserTeamString, winnerScore, loserScore);
+                NotifyAll(callback => callback.OnMatchEnded(matchCode, matchWinnerName));
+            }
+            else
+            {
+                StartNewHand();
+            }
+        }
+
         public void StartNewHand()
         {
             currentState = GameState.Deal;
@@ -120,17 +214,30 @@ namespace TrucoServer
 
                 player.Hand = hand;
                 gameManager.SaveDealtCards(matchCode, player);
-                NotifyPlayer(player.PlayerID, callback => callback.ReceiveCards(hand));
+                NotifyPlayer(player.PlayerID, callback => callback.ReceiveCards(hand.ToArray()));
             }
-
+            playerEnvidoScores = new Dictionary<int, int>();
+            foreach (var player in players)
+            {
+                playerEnvidoScores[player.PlayerID] = TrucoRules.CalculateEnvidoScore(playerHands[player.PlayerID]);
+            }
+            envidoBetValue = EnvidoBet.None;
+            proposedEnvidoBet = EnvidoBet.None;
+            currentEnvidoPoints = 0;
+            envidoBettorId = null;
+            waitingForEnvidoResponseId = null;
+            envidoWasPlayed = false;
             currentState = GameState.Envido;
             NotifyTurnChange();
         }
 
         public bool PlayCard(int playerID, string cardFileName)
         {
+            if (waitingForEnvidoResponseId.HasValue)
+            {
+                return false;
+            }
             var player = GetCurrentTurnPlayer();
-
             if (player.PlayerID != playerID || (currentState != GameState.Truco && currentState != GameState.Envido))
             {
                 return false;
@@ -156,7 +263,7 @@ namespace TrucoServer
             cardsOnTable.Add(playerID, cardInHand);
 
             bool isLastCardOfRound = (playedCards[playerID].Count == CARDS_IN_HAND);
-            NotifyAll(callback => callback.NotifyCardPlayed(player.Username, cardInHand, isLastCardOfRound));
+            NotifyAll(callback => callback.NotifyCardPlayed(player.Username, cardFileName, isLastCardOfRound));
 
             AdvanceTurn();
             return true;
@@ -205,39 +312,35 @@ namespace TrucoServer
                     }
                 }
             }
-
             string winnerTeam = (roundWinner == null) ? null : roundWinner.Team;
             roundWinners[currentRound] = winnerTeam;
-
             cardsOnTable.Clear();
             currentRound++;
-
             string winnerName = roundWinner?.Username ?? "Empate";
             gameManager.SaveRoundResult(matchCode, winnerName);
             NotifyAll(callback => callback.NotifyRoundEnd(winnerName, team1Score, team2Score));
-
             if (CheckHandWinner())
             {
                 int teamAWins = roundWinners.Count(w => w == TEAM_A);
                 int teamBWins = roundWinners.Count(w => w == TEAM_B);
+                int pointsAwarded = GetPointsForBet(trucoBetValue);
 
                 if (teamAWins > teamBWins)
                 {
-                    team1Score += currentTrucoPoints;
+                    team1Score += pointsAwarded;
                 }
                 else if (teamBWins > teamAWins)
                 {
-                    team2Score += currentTrucoPoints;
+                    team2Score += pointsAwarded;
                 }
-                else if (roundWinners[0] == TEAM_A) 
+                else if (roundWinners[0] == TEAM_A)
                 {
-                    team1Score += currentTrucoPoints;
+                    team1Score += pointsAwarded;
                 }
                 else if (roundWinners[0] == TEAM_B)
                 {
-                    team2Score += currentTrucoPoints;
+                    team2Score += pointsAwarded;
                 }
-
                 NotifyAll(callback => callback.NotifyScoreUpdate(team1Score, team2Score));
 
                 if (CheckMatchEnd())
@@ -303,6 +406,209 @@ namespace TrucoServer
             return false;
         }
 
+        public bool CallTruco(int playerID, string betType)
+        {
+            if (waitingForEnvidoResponseId.HasValue) 
+            {
+                return false; 
+            }
+            if (waitingForResponseToId.HasValue)
+            {
+                return false;
+            }
+            if (currentState != GameState.Envido && currentState != GameState.Truco) 
+            {
+                return false;
+            }
+            var caller = players.FirstOrDefault(p => p.PlayerID == playerID);
+            if (caller == null)
+            {
+                return false;
+            }
+            TrucoBet newBet;
+            if (!Enum.TryParse(betType, out newBet))
+            {
+                return false;
+            }
+            if ((newBet == TrucoBet.Truco && trucoBetValue != TrucoBet.None) ||
+                (newBet == TrucoBet.Retruco && trucoBetValue != TrucoBet.Truco) ||
+                (newBet == TrucoBet.ValeCuatro && trucoBetValue != TrucoBet.Retruco))
+            {
+                return false;
+            }
+
+            var opponent = GetOpponentToRespond(caller);
+            if (opponent == null)
+            {
+                return false;
+            }
+            currentState = GameState.Truco; 
+            bettingPlayerId = playerID;
+            waitingForResponseToId = opponent.PlayerID;
+            proposedBetValue = newBet; 
+            currentTrucoPoints = GetPointsForBet(newBet); 
+            NotifyTrucoCall(playerID, betType, opponent.PlayerID);
+            return true;
+        }
+
+        public void RespondToCall(int playerID, string response)
+        {
+            if (!waitingForResponseToId.HasValue || waitingForResponseToId.Value != playerID)
+            {
+                return;
+            }
+            var responder = players.First(p => p.PlayerID == playerID);
+            var caller = players.First(p => p.PlayerID == bettingPlayerId.Value);
+            if (response == "NoQuiero")
+            {
+                int pointsToAward = GetPointsForBet(trucoBetValue);
+                NotifyResponse(response, responder.Username);
+                EndHandWithPoints(caller.Team, pointsToAward);
+            }
+            else if (response == "Quiero")
+            {
+                trucoBetValue = proposedBetValue;
+                NotifyResponse(response, responder.Username);
+                ResetBetState();
+                NotifyTurnChange();
+            }
+            else
+            {
+                ResetBetState();
+                CallTruco(playerID, response); 
+            }
+        }
+
+        public bool CallEnvido(int playerID, string betType)
+        {
+            if (envidoWasPlayed)
+            {
+                return false;
+            }
+            if (waitingForEnvidoResponseId.HasValue)
+            {
+                return false;
+            }
+            if (currentState != GameState.Envido)
+            {
+                return false;
+            }
+            var caller = players.FirstOrDefault(p => p.PlayerID == playerID);
+            if (caller == null)
+            {
+                return false;
+            }
+            EnvidoBet newBet;
+            if (!Enum.TryParse(betType, out newBet))
+            {
+                return false;
+            }
+            var opponent = GetOpponentToRespond(caller);
+            if (opponent == null)
+            {
+                return false;
+            }
+            envidoBettorId = playerID;
+            waitingForEnvidoResponseId = opponent.PlayerID;
+            proposedEnvidoBet = newBet; 
+            currentEnvidoPoints += GetPointsForEnvidoBet(newBet);
+            NotifyAll(cb => cb.NotifyEnvidoCall(caller.Username, betType, currentEnvidoPoints, true));
+            NotifyPlayer(opponent.PlayerID, cb => cb.NotifyEnvidoCall(caller.Username, betType, currentEnvidoPoints, true));
+
+            return true;
+        }
+
+        public void RespondToEnvido(int playerID, string response)
+        {
+            if (!waitingForEnvidoResponseId.HasValue || waitingForEnvidoResponseId.Value != playerID)
+            {
+                return;
+            }
+            var responder = players.First(p => p.PlayerID == playerID);
+            var caller = players.First(p => p.PlayerID == envidoBettorId.Value);
+            envidoWasPlayed = true; 
+
+            if (response == "NoQuiero")
+            {
+                int pointsToAward = (currentEnvidoPoints == 0) ? 1 : (currentEnvidoPoints - GetPointsForEnvidoBet(proposedEnvidoBet));
+                if (pointsToAward == 0) pointsToAward = 1; 
+                AwardEnvidoPoints(caller.Team, pointsToAward); 
+                ResetEnvidoState();
+            }
+            else if (response == "Quiero")
+            {
+                ResolveEnvido();
+            }
+            else
+            {
+                ResetEnvidoState(false);
+                CallEnvido(playerID, response);
+            }
+        }
+
+        private void ResolveEnvido()
+        {
+            PlayerInformation envidoWinner = null;
+            int highestScore = -1;
+            for (int i = 0; i < players.Count; i++)
+            {
+                int playerIndex = (handStartingPlayerIndex + i) % players.Count;
+                var player = players[playerIndex];
+                int score = playerEnvidoScores[player.PlayerID];
+
+                if (score > highestScore)
+                {
+                    highestScore = score;
+                    envidoWinner = player;
+                }
+            }
+            NotifyAll(cb => cb.NotifyEnvidoResult(envidoWinner.Username, highestScore, currentEnvidoPoints));
+            AwardEnvidoPoints(envidoWinner.Team, currentEnvidoPoints);
+            ResetEnvidoState();
+        }
+
+        private void AwardEnvidoPoints(string winningTeam, int points)
+        {
+            if (winningTeam == TEAM_A)
+            {
+                team1Score += points;
+            }
+            else
+            {
+                team2Score += points;
+            }
+            NotifyScoreUpdate();
+        }
+
+        private void ResetEnvidoState(bool markAsPlayed = true)
+        {
+            envidoBetValue = EnvidoBet.None;
+            proposedEnvidoBet = EnvidoBet.None;
+            currentEnvidoPoints = 0;
+            envidoBettorId = null;
+            waitingForEnvidoResponseId = null;
+            if (markAsPlayed)
+            {
+                envidoWasPlayed = true;
+            }
+        }
+
+        private int GetPointsForEnvidoBet(EnvidoBet bet)
+        {
+            switch (bet)
+            {
+                case EnvidoBet.Envido:
+                    return 2;
+                case EnvidoBet.RealEnvido:
+                    return 3;
+                case EnvidoBet.FaltaEnvido:
+                    // TODO: Lógica de FaltaEnvido (puntos restantes hasta MAX_SCORE)
+                    return MAX_SCORE - (team1Score > team2Score ? team1Score : team2Score);
+                default:
+                    return 0;
+            }
+        }
+
         private bool CheckMatchEnd()
         {
             return team1Score >= MAX_SCORE || team2Score >= MAX_SCORE;
@@ -321,7 +627,10 @@ namespace TrucoServer
                 {
                     action(callback);
                 }
-                catch (Exception) { }
+                catch (Exception) 
+                { 
+
+                }
             }
         }
 
@@ -333,7 +642,10 @@ namespace TrucoServer
                 {
                     action(callback);
                 }
-                catch (Exception) { }
+                catch (Exception) 
+                { 
+                
+                }
             }
         }
 

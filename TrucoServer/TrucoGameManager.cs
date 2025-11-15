@@ -23,7 +23,7 @@ namespace TrucoServer
                     {
                         lobbyID = 1,
                         versionID = 1,
-                        status = "in_progress",
+                        status = "InProgress",
                         startedAt = DateTime.Now
                     };
                     context.Match.Add(match);
@@ -53,7 +53,7 @@ namespace TrucoServer
                     {
                         matchID = match.matchID,
                         number = 1,
-                        status = "in_progress",
+                        status = "Playing",
                         isActive = true
                     };
 
@@ -76,7 +76,7 @@ namespace TrucoServer
             {
                 using (var context = GetContext())
                 {
-                    var match = context.Match.FirstOrDefault(m => m.status == "in_progress");
+                    var match = context.Match.FirstOrDefault(m => m.status == "InProgress");
                     if (match == null)
                     {
                         return;
@@ -123,7 +123,7 @@ namespace TrucoServer
             {
                 using (var context = GetContext())
                 {
-                    var match = context.Match.FirstOrDefault(m => m.status == "in_progress");
+                    var match = context.Match.FirstOrDefault(m => m.status == "InProgress");
                     if (match == null)
                     {
                         return;
@@ -135,7 +135,7 @@ namespace TrucoServer
                     }
                     var winner = context.User.FirstOrDefault(u => u.username == winnerUsername);
 
-                    round.status = winner != null ? "won" : "draw";
+                    round.status = "Finished";
                     round.isActive = false;
                     round.winnerID = winner?.userID;
 
@@ -154,7 +154,7 @@ namespace TrucoServer
             {
                 using (var context = GetContext())
                 {
-                    var match = context.Match.FirstOrDefault(m => m.status == "in_progress");
+                    var match = context.Match.FirstOrDefault(m => m.status == "InProgress");
                     if (match == null)
                     {
                         return;
@@ -189,7 +189,7 @@ namespace TrucoServer
                         }
                     }
 
-                    match.status = "finished";
+                    match.status = "Finished";
                     match.endedAt = DateTime.Now;
                     context.SaveChanges();
                 }

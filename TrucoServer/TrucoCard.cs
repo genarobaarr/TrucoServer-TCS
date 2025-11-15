@@ -44,7 +44,7 @@ namespace TrucoServer
         {
             CardRank = rank;
             CardSuit = suit;
-            FileName = $"{suit}{rank}";
+            FileName = $"{suit}{(int)rank}";
         }
     }
 }

@@ -43,7 +43,10 @@
         private static readonly ConcurrentDictionary<string, Match> activeMatches = new ConcurrentDictionary<string, Match>();
         private readonly ConcurrentDictionary<string, List<ITrucoCallback>> matchCallbacks = new ConcurrentDictionary<string, List<ITrucoCallback>>();
         private static readonly ConcurrentDictionary<ITrucoCallback, PlayerInfo> matchCallbackToPlayer = new ConcurrentDictionary<ITrucoCallback, PlayerInfo>();
-
+        private readonly ConcurrentDictionary<string, TrucoMatch> runningGames = new ConcurrentDictionary<string, TrucoMatch>();
+        private readonly IGameManager gameManager = new TrucoGameManager();
+        private readonly IDeckShuffler shuffler = new DefaultDeckShuffler();
+        
         private static ITrucoCallback GetUserCallback(string username)
         {
             try
@@ -1214,26 +1217,74 @@
             try
             {
                 ValidatedLobbyData validatedData = null;
+                List<PlayerInfo> playersList = GetLobbyPlayers(matchCode);
 
                 using (var context = new baseDatosTrucoEntities())
                 {
                     validatedData = GetAndValidateLobbyForStart(context, matchCode);
                     if (validatedData == null)
                     {
+                        LogManager.LogWarn($"StartMatch validation failed for {matchCode}", nameof(StartMatch));
                         return;
-                    }
-
-                    bool matchCreated = CreateMatchFromLobby(context, validatedData);
-
-                    if (!matchCreated)
-                    {
-                        Console.WriteLine($"[STARTFAILED] CreateMatchFromLobby returned false for matchCode {matchCode}");
                     }
                 }
 
-                var playersList = GetLobbyPlayers(matchCode);
+                var gamePlayers = new List<PlayerInformation>();
+                var gameCallbacks = new Dictionary<int, ITrucoCallback>();
+
+                if (!matchCallbacks.TryGetValue(matchCode, out var playerCallbacks))
+                {
+                    LogManager.LogError(new Exception($"No callbacks found for starting match {matchCode}"), nameof(StartMatch));
+                    return;
+                }
+
+                using (var context = new baseDatosTrucoEntities())
+                {
+                    foreach (var pInfo in playersList)
+                    {
+                        if (pInfo.Username.StartsWith("Guest_"))
+                        {
+                            LogManager.LogWarn($"Skipping Guest player {pInfo.Username} for match {matchCode}", nameof(StartMatch));
+                            continue;
+                        }
+
+                        var user = context.User.FirstOrDefault(u => u.username == pInfo.Username);
+                        if (user != null)
+                        {                       
+                            var pData = new PlayerInformation(user.userID, user.username, pInfo.Team);
+                            gamePlayers.Add(pData);
+
+                            var playerCb = matchCallbackToPlayer
+                            .FirstOrDefault(kvp => kvp.Value.Username == pInfo.Username).Key;
+
+                            if (playerCb != null)
+                            {
+                                gameCallbacks[user.userID] = playerCb;
+                            }
+                            else
+                            {
+                                LogManager.LogWarn($"No callback found for user {pInfo.Username} in match {matchCode}", nameof(StartMatch));
+                            }
+                        }
+                    }
+                }
+
+                var newDeck = new Deck(shuffler);
+                var newGame = new TrucoMatch(matchCode, gamePlayers, gameCallbacks, newDeck, gameManager);
+
+                if (!runningGames.TryAdd(matchCode, newGame))
+                {
+                    LogManager.LogError(new Exception($"Failed to add running game {matchCode} to dictionary"), nameof(StartMatch));
+                    return;
+                }
+
                 NotifyMatchStart(matchCode, playersList);
+
                 HandleMatchStartupCleanup(matchCode);
+
+                Task.Delay(500).Wait();
+
+                newGame.StartNewHand();
             }
             catch (CommunicationException ex)
             {
@@ -2727,17 +2778,121 @@
 
         public void CallTruco(string matchCode, string betType)
         {
-            throw new NotImplementedException();
+            try
+            {
+                if (GetMatchAndPlayerID(matchCode, out TrucoMatch match, out int playerID))
+                {
+                    // match.CallTruco(playerID, betType);
+                    LogManager.LogWarn($"CallTruco (type: {betType}) fue llamado por {playerID} en {matchCode}, pero 'TrucoMatch.CallTruco' no está implementado.", nameof(CallTruco));
+                }
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError(ex, nameof(CallTruco));
+            }
         }
 
         public void PlayCard(string matchCode, string cardFileName)
         {
-            throw new NotImplementedException();
+            try
+            {
+                if (GetMatchAndPlayerID(matchCode, out TrucoMatch match, out int playerID))
+                {
+                    match.PlayCard(playerID, cardFileName);
+                }
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError(ex, nameof(PlayCard));
+            }
         }
 
         public void RespondToCall(string matchCode, string response)
         {
-            throw new NotImplementedException();
+            try
+            {
+                if (GetMatchAndPlayerID(matchCode, out TrucoMatch match, out int playerID))
+                {
+                    // match.RespondToCall(playerID, response);
+                    LogManager.LogWarn($"RespondToCall (resp: {response}) fue llamado por {playerID} en {matchCode}, pero 'TrucoMatch.RespondToCall' no está implementado.", nameof(RespondToCall));
+                }
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError(ex, nameof(RespondToCall));
+            }
+        }
+
+        private bool GetMatchAndPlayerID(string matchCode, out TrucoMatch match, out int playerID)
+        {
+            match = null;
+            playerID = -1;
+
+            if (!runningGames.TryGetValue(matchCode, out match))
+            {
+                LogManager.LogWarn($"Method call on non-existent running game: {matchCode}", "GetMatchAndPlayerID");
+                return false;
+            }
+            var callback = OperationContext.Current.GetCallbackChannel<ITrucoCallback>();
+            if (callback == null)
+            {
+                LogManager.LogWarn($"Method call with no callback context: {matchCode}", "GetMatchAndPlayerID");
+                return false;
+            }
+            if (!matchCallbackToPlayer.TryGetValue(callback, out PlayerInfo playerInfo))
+            {
+                LogManager.LogWarn($"Method call from unknown callback: {matchCode}", "GetMatchAndPlayerID");
+                return false;
+            }
+            try
+            {
+                using (var context = new baseDatosTrucoEntities())
+                {
+                    var user = context.User.FirstOrDefault(u => u.username == playerInfo.Username);
+                    if (user == null)
+                    {
+                        LogManager.LogWarn($"Callback {playerInfo.Username} not found in DB: {matchCode}", "GetMatchAndPlayerID");
+                        return false;
+                    }
+                    playerID = user.userID;
+                    return true;
+                }
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError(ex, "GetMatchAndPlayerID (DB Query)");
+                return false;
+            }
+        }
+
+        public void CallEnvido(string matchCode, string betType)
+        {
+            try
+            {
+                if (GetMatchAndPlayerID(matchCode, out TrucoMatch match, out int playerID))
+                {
+                    match.CallEnvido(playerID, betType);
+                }
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError(ex, nameof(CallEnvido));
+            }
+        }
+
+        public void RespondToEnvido(string matchCode, string response)
+        {
+            try
+            {
+                if (GetMatchAndPlayerID(matchCode, out TrucoMatch match, out int playerID))
+                {
+                    match.RespondToEnvido(playerID, response);
+                }
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError(ex, nameof(RespondToEnvido));
+            }
         }
     }
 }

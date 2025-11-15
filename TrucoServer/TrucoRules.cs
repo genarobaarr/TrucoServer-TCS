@@ -175,6 +175,21 @@ namespace TrucoServer
             return 0;
         }
 
+        public static int CalculateEnvidoScore(List<TrucoCard> hand)
+        {
+            var groups = hand.GroupBy(card => card.CardSuit);
+            var bestGroup = groups.OrderByDescending(g => g.Count()).FirstOrDefault();
+            if (bestGroup == null || bestGroup.Count() < 2)
+            {
+                return hand.Max(card => GetEnvidoValue(card));
+            }
+            else
+            {
+                var twoHighest = bestGroup.OrderByDescending(card => GetEnvidoValue(card)).Take(2).ToList();
+                return GetEnvidoValue(twoHighest[0]) + GetEnvidoValue(twoHighest[1]) + 20;
+            }
+        }
+
         // Aquí iría la lógica para calcular el Envido/Flor/Truco
         public static int GetEnvidoValue(TrucoCard card)
         {

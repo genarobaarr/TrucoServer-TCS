@@ -114,5 +114,11 @@ namespace TrucoServer
 
         [OperationContract(IsOneWay = true)]
         void RespondToCall(string matchCode, string response);
+
+        [OperationContract(IsOneWay = true)]
+        void CallEnvido(string matchCode, string betType);
+
+        [OperationContract(IsOneWay = true)]
+        void RespondToEnvido(string matchCode, string response);
     }
 }

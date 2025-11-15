@@ -23,7 +23,7 @@ namespace TrucoServer
 
         public Deck(IDeckShuffler shuffler = null)
         {
-            shuffler = shuffler ?? new DefaultDeckShuffler();
+            this.shuffler = shuffler ?? new DefaultDeckShuffler();
             cards = InitializeDeck();
         }
 
