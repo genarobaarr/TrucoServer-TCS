@@ -157,44 +157,114 @@ namespace TrucoServer
 
         public static int GetTrucoValue(TrucoCard card)
         {
-            if (trucoValueMap.TryGetValue((card.CardRank, card.CardSuit), out int value))
+            try
             {
-                return value;
+                if (trucoValueMap.TryGetValue((card.CardRank, card.CardSuit), out int value))
+                {
+                    return value;
+                }
+                LogManager.LogError(new InvalidOperationException($"Carta no mapeada: {card.FileName}"), nameof(GetTrucoValue));
+                return 0;
             }
-            LogManager.LogError(new InvalidOperationException($"Carta no mapeada: {card.FileName}"), nameof(GetTrucoValue));
-            return 0;
+            catch (NullReferenceException ex)
+            {
+                LogManager.LogWarn(ex.Message, nameof(GetTrucoValue));
+                return 0;
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError(ex, nameof(GetTrucoValue));
+                return 0;
+            }
         }
 
         public static int CompareCards(TrucoCard cardA, TrucoCard cardB)
         {
-            int valueA = GetTrucoValue(cardA);
-            int valueB = GetTrucoValue(cardB);
+            try
+            {
+                int valueA = GetTrucoValue(cardA);
+                int valueB = GetTrucoValue(cardB);
 
-            if (valueA > valueB) return 1; 
-            if (valueB > valueA) return -1;
-            return 0;
+                if (valueA > valueB)
+                {
+                    return 1;
+                }
+                if (valueB > valueA)
+                {
+                    return -1;
+                }
+                return 0;
+            }
+            catch (NullReferenceException ex)
+            {
+                LogManager.LogWarn(ex.Message, nameof(CompareCards));
+                return 0;
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError(ex, nameof(CompareCards));
+                return 0;
+            }
         }
 
         public static int CalculateEnvidoScore(List<TrucoCard> hand)
         {
-            var groups = hand.GroupBy(card => card.CardSuit);
-            var bestGroup = groups.OrderByDescending(g => g.Count()).FirstOrDefault();
-            if (bestGroup == null || bestGroup.Count() < 2)
+            try
             {
-                return hand.Max(card => GetEnvidoValue(card));
+                var groups = hand.GroupBy(card => card.CardSuit);
+                var bestGroup = groups.OrderByDescending(g => g.Count()).FirstOrDefault();
+                if (bestGroup == null || bestGroup.Count() < 2)
+                {
+                    if (!hand.Any())
+                    {
+                        return 0;
+                    }
+                    return hand.Max(card => GetEnvidoValue(card));
+                }
+                else
+                {
+                    var twoHighest = bestGroup.OrderByDescending(card => GetEnvidoValue(card)).Take(2).ToList();
+                    return GetEnvidoValue(twoHighest[0]) + GetEnvidoValue(twoHighest[1]) + 20;
+                }
             }
-            else
+            catch (ArgumentNullException ex)
             {
-                var twoHighest = bestGroup.OrderByDescending(card => GetEnvidoValue(card)).Take(2).ToList();
-                return GetEnvidoValue(twoHighest[0]) + GetEnvidoValue(twoHighest[1]) + 20;
+                LogManager.LogWarn(ex.Message, nameof(CalculateEnvidoScore));
+                return 0;
+            }
+            catch (InvalidOperationException ex)
+            {
+                LogManager.LogWarn(ex.Message, nameof(CalculateEnvidoScore));
+                return 0;
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError(ex, nameof(CalculateEnvidoScore));
+                return 0;
             }
         }
 
         // Aquí iría la lógica para calcular el Envido/Flor/Truco
         public static int GetEnvidoValue(TrucoCard card)
         {
-            if ((int)card.CardRank >= 10) return 0;
-            return (int)card.CardRank;
+            try
+            {
+                if ((int)card.CardRank >= 10)
+                {
+                    return 0;
+                }
+                return (int)card.CardRank;
+            }
+            catch (NullReferenceException ex)
+            {
+                LogManager.LogWarn(ex.Message, nameof(GetEnvidoValue));
+                return 0;
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError(ex, nameof(GetEnvidoValue));
+                return 0;
+            }
         }
     }
 }

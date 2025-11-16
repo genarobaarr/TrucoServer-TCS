@@ -2785,6 +2785,14 @@
                     match.PlayCard(playerID, cardFileName);
                 }
             }
+            catch (InvalidOperationException ex)
+            {
+                LogManager.LogError(ex, nameof(PlayCard));
+            }
+            catch (NullReferenceException ex)
+            {
+                LogManager.LogError(ex, nameof(PlayCard));
+            }
             catch (Exception ex)
             {
                 LogManager.LogError(ex, nameof(PlayCard));
@@ -2799,6 +2807,14 @@
                 {
                     match.CallTruco(playerID, betType);
                 }
+            }
+            catch (InvalidOperationException ex)
+            {
+                LogManager.LogError(ex, nameof(CallTruco));
+            }
+            catch (NullReferenceException ex)
+            {
+                LogManager.LogError(ex, nameof(CallTruco));
             }
             catch (Exception ex)
             {
@@ -2815,9 +2831,17 @@
                     match.RespondToCall(playerID, response);
                 }
             }
+            catch (InvalidOperationException ex)
+            {
+                LogManager.LogError(ex, nameof(CallTruco));
+            }
+            catch (NullReferenceException ex)
+            {
+                LogManager.LogError(ex, nameof(CallTruco));
+            }
             catch (Exception ex)
             {
-                LogManager.LogError(ex, nameof(RespondToCall));
+                LogManager.LogError(ex, nameof(CallTruco));
             }
         }
 
@@ -2856,9 +2880,24 @@
                     return true;
                 }
             }
-            catch (Exception ex)
+            catch (SqlException ex)
             {
                 LogManager.LogError(ex, "GetMatchAndPlayerID (DB Query)");
+                return false;
+            }
+            catch (InvalidOperationException ex)
+            {
+                LogManager.LogError(ex, "GetMatchAndPlayerID (WCF Context or DB Operation)");
+                return false;
+            }
+            catch (CommunicationException ex)
+            {
+                LogManager.LogError(ex, "GetMatchAndPlayerID (WCF Channel)");
+                return false;
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError(ex, "GetMatchAndPlayerID (General)");
                 return false;
             }
         }
@@ -2871,6 +2910,14 @@
                 {
                     match.CallEnvido(playerID, betType);
                 }
+            }
+            catch (InvalidOperationException ex)
+            {
+                LogManager.LogError(ex, nameof(CallEnvido));
+            }
+            catch (NullReferenceException ex)
+            {
+                LogManager.LogError(ex, nameof(CallEnvido));
             }
             catch (Exception ex)
             {
@@ -2887,9 +2934,17 @@
                     match.RespondToEnvido(playerID, response);
                 }
             }
+            catch (InvalidOperationException ex)
+            {
+                LogManager.LogError(ex, nameof(CallEnvido));
+            }
+            catch (NullReferenceException ex)
+            {
+                LogManager.LogError(ex, nameof(CallEnvido));
+            }
             catch (Exception ex)
             {
-                LogManager.LogError(ex, nameof(RespondToEnvido));
+                LogManager.LogError(ex, nameof(CallEnvido));
             }
         }
     }

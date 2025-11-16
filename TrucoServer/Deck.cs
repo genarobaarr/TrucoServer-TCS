@@ -47,35 +47,107 @@ namespace TrucoServer
 
         public void Reset()
         {
-            cards.Clear();
-            cards.AddRange(InitializeDeck());
+            try
+            {
+                cards.Clear();
+                cards.AddRange(InitializeDeck());
+            }
+            catch (OutOfMemoryException ex)
+            {
+                LogManager.LogError(ex, nameof(Reset));
+                throw; 
+            }
+            catch (ArgumentNullException ex)
+            {
+                LogManager.LogError(ex, nameof(Reset));
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError(ex, nameof(Reset));
+            }
         }
 
         public void Shuffle()
         {
-            shuffler.Shuffle(cards);
+            try
+            {
+                shuffler.Shuffle(cards);
+            }
+            catch (ArgumentNullException ex)
+            {
+                LogManager.LogError(ex, nameof(Shuffle));
+            }
+            catch (NullReferenceException ex)
+            {
+                LogManager.LogError(ex, nameof(Shuffle));
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError(ex, nameof(Shuffle));
+            }
         }
 
         public List<TrucoCard> DealHand()
         {
-            if (cards.Count < 3)
+            try
             {
-                throw new InvalidOperationException("No hay suficientes cartas para repartir una mano.");
+                if (cards.Count < 3)
+                {
+                    throw new InvalidOperationException("No hay suficientes cartas para repartir una mano.");
+                }
+                var hand = cards.Take(3).ToList();
+                cards.RemoveRange(0, 3);
+                return hand;
             }
-            var hand = cards.Take(3).ToList();
-            cards.RemoveRange(0, 3);
-            return hand;
+            catch (InvalidOperationException ex)
+            {
+                LogManager.LogWarn(ex.Message, nameof(DealHand));
+                throw; 
+            }
+            catch (ArgumentOutOfRangeException ex)
+            {
+                LogManager.LogError(ex, nameof(DealHand));
+                return new List<TrucoCard>();
+            }
+            catch (ArgumentNullException ex) 
+            {
+                LogManager.LogError(ex, nameof(DealHand));
+                return new List<TrucoCard>();
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError(ex, nameof(DealHand));
+                return new List<TrucoCard>();
+            }
         }
 
         public TrucoCard DrawCard()
         {
-            if (cards.Count == 0)
+            try
             {
-                throw new InvalidOperationException("El mazo está vacío.");
+                if (cards.Count == 0)
+                {
+                    throw new InvalidOperationException("El mazo está vacío.");
+                }
+                var card = cards[0];
+                cards.RemoveAt(0);
+                return card;
             }
-            var card = cards[0];
-            cards.RemoveAt(0);
-            return card;
+            catch (InvalidOperationException ex)
+            {
+                LogManager.LogWarn(ex.Message, nameof(DrawCard));
+                throw;
+            }
+            catch (ArgumentOutOfRangeException ex) 
+            {
+                LogManager.LogError(ex, nameof(DrawCard));
+                return null;
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError(ex, nameof(DrawCard));
+                return null;
+            }
         }
     }
 
@@ -86,14 +158,30 @@ namespace TrucoServer
 
     public class DefaultDeckShuffler : IDeckShuffler
     {
-        private readonly Random _random = new Random();
+        private readonly Random random = new Random();
 
         public void Shuffle<T>(IList<T> list)
         {
-            for (int i = list.Count - 1; i > 0; i--)
+            try
             {
-                int j = _random.Next(i + 1);
-                (list[i], list[j]) = (list[j], list[i]);
+                if (list == null)
+                {
+                    throw new ArgumentNullException(nameof(list), "La lista a barajar no puede ser nula.");
+                }
+
+                for (int i = list.Count - 1; i > 0; i--)
+                {
+                    int j = random.Next(i + 1);
+                    (list[i], list[j]) = (list[j], list[i]);
+                }
+            }
+            catch (ArgumentNullException ex)
+            {
+                LogManager.LogError(ex, nameof(Shuffle));
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError(ex, nameof(Shuffle));
             }
         }
     }

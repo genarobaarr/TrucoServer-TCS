@@ -1,5 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data.Entity.Infrastructure;
+using System.Data.Entity.Validation;
+using System.Data.SqlClient;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -21,8 +24,8 @@ namespace TrucoServer
                 {
                     var match = new Match
                     {
-                        lobbyID = 1,
-                        versionID = 1,
+                        lobbyID = 1, // TODO: Ajustar esto al ID correspondiente
+                        versionID = 1, // Esto también
                         status = "InProgress",
                         startedAt = DateTime.Now
                     };
@@ -62,6 +65,26 @@ namespace TrucoServer
 
                     return match.matchID;
                 }
+            }
+            catch (DbEntityValidationException ex)
+            {
+                LogManager.LogError(ex, nameof(SaveRoundResult));
+                return -1;
+            }
+            catch (DbUpdateException ex)
+            {
+                LogManager.LogError(ex, nameof(SaveRoundResult));
+                return -1;
+            }
+            catch (SqlException ex)
+            {
+                LogManager.LogError(ex, nameof(SaveRoundResult));
+                return -1;
+            }
+            catch (InvalidOperationException ex)
+            {
+                LogManager.LogError(ex, nameof(SaveRoundResult));
+                return -1;
             }
             catch (Exception ex)
             {
@@ -111,6 +134,22 @@ namespace TrucoServer
                     context.SaveChanges();
                 }
             }
+            catch (DbEntityValidationException ex)
+            {
+                LogManager.LogError(ex, nameof(SaveRoundResult));
+            }
+            catch (DbUpdateException ex)
+            {
+                LogManager.LogError(ex, nameof(SaveRoundResult));
+            }
+            catch (SqlException ex)
+            {
+                LogManager.LogError(ex, nameof(SaveRoundResult));
+            }
+            catch (InvalidOperationException ex)
+            {
+                LogManager.LogError(ex, nameof(SaveRoundResult));
+            }
             catch (Exception ex)
             {
                 LogManager.LogError(ex, nameof(SaveDealtCards));
@@ -141,6 +180,22 @@ namespace TrucoServer
 
                     context.SaveChanges();
                 }
+            }
+            catch (DbEntityValidationException ex)
+            {
+                LogManager.LogError(ex, nameof(SaveRoundResult));
+            }
+            catch (DbUpdateException ex)
+            {
+                LogManager.LogError(ex, nameof(SaveRoundResult));
+            }
+            catch (SqlException ex)
+            {
+                LogManager.LogError(ex, nameof(SaveRoundResult));
+            }
+            catch (InvalidOperationException ex)
+            {
+                LogManager.LogError(ex, nameof(SaveRoundResult));
             }
             catch (Exception ex)
             {
@@ -193,6 +248,22 @@ namespace TrucoServer
                     match.endedAt = DateTime.Now;
                     context.SaveChanges();
                 }
+            }
+            catch (DbEntityValidationException ex)
+            {
+                LogManager.LogError(ex, nameof(SaveRoundResult));
+            }
+            catch (DbUpdateException ex)
+            {
+                LogManager.LogError(ex, nameof(SaveRoundResult));
+            }
+            catch (SqlException ex)
+            {
+                LogManager.LogError(ex, nameof(SaveRoundResult));
+            }
+            catch (InvalidOperationException ex)
+            {
+                LogManager.LogError(ex, nameof(SaveRoundResult));
             }
             catch (Exception ex)
             {
