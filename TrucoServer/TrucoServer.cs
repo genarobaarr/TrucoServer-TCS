@@ -35,6 +35,7 @@
         private const string FINISHED_STATUS = "Finished";
         private const string TEAM_1 = "Team 1";
         private const string TEAM_2 = "Team 2";
+        private const string GUEST_PREFIX = "Guest_";
         private static readonly Random randomNumberGenerator = new Random();
         private static readonly ConcurrentDictionary<string, string> verificationCodes = new ConcurrentDictionary<string, string>();
         private static readonly ConcurrentDictionary<string, ITrucoCallback> onlineUsers = new ConcurrentDictionary<string, ITrucoCallback>();
@@ -1115,7 +1116,7 @@
                             return false;
                         }
 
-                        bool isGuest = player.StartsWith("Guest_");
+                        bool isGuest = player.StartsWith("GUEST_PREFIX");
                         if (isGuest)
                         {
                             if (!freshLobby.status.Equals(PUBLIC_STATUS, StringComparison.OrdinalIgnoreCase))
@@ -1129,7 +1130,7 @@
                             if (matchCallbacks.TryGetValue(matchCode, out var callbacks))
                             {
                                 guestCount = callbacks.Select(cb => GetPlayerInfoFromCallback(cb))
-                                                        .Count(info => info != null && info.Username.StartsWith("Guest_"));
+                                                        .Count(info => info != null && info.Username.StartsWith("GUEST_PREFIX"));
                             }
 
                             if ((currentDbPlayers + guestCount) >= freshLobby.maxPlayers)
@@ -1242,7 +1243,7 @@
                 {
                     foreach (var pInfo in playersList)
                     {
-                        if (pInfo.Username.StartsWith("Guest_"))
+                        if (pInfo.Username.StartsWith("GUEST_PREFIX"))
                         {
                             LogManager.LogWarn($"Skipping Guest player {pInfo.Username} for match {matchCode}", nameof(StartMatch));
                             continue;
@@ -1316,7 +1317,7 @@
                 {
                     guestInfos = callbacks
                         .Select(cb => GetPlayerInfoFromCallback(cb))
-                        .Where(info => info != null && info.Username != null && info.Username.StartsWith("Guest_"))
+                        .Where(info => info != null && info.Username != null && info.Username.StartsWith("GUEST_PREFIX"))
                         .ToList();
 
                     guestCount = guestInfos.Count;
@@ -1517,7 +1518,7 @@
                     {
                         var guestInfos = callbacks
                             .Select(cb => GetPlayerInfoFromCallback(cb))
-                            .Where(info => info != null && info.Username.StartsWith("Guest_"))
+                            .Where(info => info != null && info.Username.StartsWith("GUEST_PREFIX"))
                             .ToList();
 
                         foreach (var g in guestInfos)
@@ -1721,7 +1722,7 @@
 
                     if (!matchCallbacks[matchCode].Any(cb => ReferenceEquals(cb, callback)))
                     {
-                        if (player.StartsWith("Guest_"))
+                        if (player.StartsWith("GUEST_PREFIX"))
                         {
                             string assignedTeam = TEAM_1;
                             using (var context = new baseDatosTrucoEntities())
@@ -1734,11 +1735,11 @@
 
                                     int team1MemCount = matchCallbacks[matchCode]
                                         .Select(cb => GetPlayerInfoFromCallback(cb))
-                                        .Count(info => info != null && info.Username.StartsWith("Guest_") && info.Team == TEAM_1);
+                                        .Count(info => info != null && info.Username.StartsWith("GUEST_PREFIX") && info.Team == TEAM_1);
 
                                     int team2MemCount = matchCallbacks[matchCode]
                                         .Select(cb => GetPlayerInfoFromCallback(cb))
-                                        .Count(info => info != null && info.Username.StartsWith("Guest_") && info.Team == TEAM_2);
+                                        .Count(info => info != null && info.Username.StartsWith("GUEST_PREFIX") && info.Team == TEAM_2);
 
                                     if ((team1DbCount + team1MemCount) >= (team2DbCount + team2MemCount))
                                     {
@@ -2350,7 +2351,7 @@
         {
             try
             {
-                if (username.StartsWith("Guest_"))
+                if (username.StartsWith("GUEST_PREFIX"))
                 {
                     PlayerInfo guestInfo = null;
                     if (matchCallbacks.TryGetValue(matchCode, out var callbacks))
@@ -2378,7 +2379,7 @@
                         int dbCount = context.LobbyMember.Count(lm => lm.lobbyID == lobby.lobbyID && lm.team == newTeam);
                         int memCount = matchCallbacks[matchCode]
                             .Select(cb => GetPlayerInfoFromCallback(cb))
-                            .Count(info => info != null && info.Username.StartsWith("Guest_") && info.Team == newTeam);
+                            .Count(info => info != null && info.Username.StartsWith("GUEST_PREFIX") && info.Team == newTeam);
 
                         if ((dbCount + memCount) >= maxPerTeam)
                         {
@@ -2431,7 +2432,7 @@
                     if (matchCallbacks.TryGetValue(matchCode, out var callbacks))
                     {
                         newTeamCount += callbacks.Select(cb => GetPlayerInfoFromCallback(cb))
-                                               .Count(info => info != null && info.Username.StartsWith("Guest_") && info.Team == newTeam);
+                                               .Count(info => info != null && info.Username.StartsWith("GUEST_PREFIX") && info.Team == newTeam);
                     }
 
                     if (newTeamCount >= maxPerTeam)
@@ -2789,10 +2790,6 @@
             {
                 LogManager.LogError(ex, nameof(PlayCard));
             }
-            catch (NullReferenceException ex)
-            {
-                LogManager.LogError(ex, nameof(PlayCard));
-            }
             catch (Exception ex)
             {
                 LogManager.LogError(ex, nameof(PlayCard));
@@ -2812,10 +2809,6 @@
             {
                 LogManager.LogError(ex, nameof(CallTruco));
             }
-            catch (NullReferenceException ex)
-            {
-                LogManager.LogError(ex, nameof(CallTruco));
-            }
             catch (Exception ex)
             {
                 LogManager.LogError(ex, nameof(CallTruco));
@@ -2832,10 +2825,6 @@
                 }
             }
             catch (InvalidOperationException ex)
-            {
-                LogManager.LogError(ex, nameof(CallTruco));
-            }
-            catch (NullReferenceException ex)
             {
                 LogManager.LogError(ex, nameof(CallTruco));
             }
@@ -2915,10 +2904,6 @@
             {
                 LogManager.LogError(ex, nameof(CallEnvido));
             }
-            catch (NullReferenceException ex)
-            {
-                LogManager.LogError(ex, nameof(CallEnvido));
-            }
             catch (Exception ex)
             {
                 LogManager.LogError(ex, nameof(CallEnvido));
@@ -2935,10 +2920,6 @@
                 }
             }
             catch (InvalidOperationException ex)
-            {
-                LogManager.LogError(ex, nameof(CallEnvido));
-            }
-            catch (NullReferenceException ex)
             {
                 LogManager.LogError(ex, nameof(CallEnvido));
             }

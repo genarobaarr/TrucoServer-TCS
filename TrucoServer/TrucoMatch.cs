@@ -2,8 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.ServiceModel;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace TrucoServer
 {
@@ -48,9 +46,9 @@ namespace TrucoServer
 
         private readonly ITrucoDeck deck;
         private readonly IGameManager gameManager;
-        private Dictionary<int, List<TrucoCard>> playerHands;
-        private Dictionary<int, List<TrucoCard>> playedCards;
-        private Dictionary<int, TrucoCard> cardsOnTable;
+        private readonly Dictionary<int, List<TrucoCard>> playerHands;
+        private readonly Dictionary<int, List<TrucoCard>> playedCards;
+        private readonly Dictionary<int, TrucoCard> cardsOnTable;
 
         private string[] roundWinners;
         private int currentRound;
@@ -109,11 +107,6 @@ namespace TrucoServer
                 LogManager.LogWarn(ex.Message, nameof(TrucoMatch));
                 throw;
             }
-            catch (NullReferenceException ex)
-            {
-                LogManager.LogWarn(ex.Message, nameof(TrucoMatch));
-                throw;
-            }
             catch (Exception ex)
             {
                 LogManager.LogError(ex, nameof(TrucoMatch));
@@ -121,7 +114,7 @@ namespace TrucoServer
             }
         }
 
-        private int GetPointsForBet(TrucoBet bet)
+        private static int GetPointsForBet(TrucoBet bet)
         {
             switch (bet)
             {
@@ -167,11 +160,6 @@ namespace TrucoServer
                     }
                 }
                 return Players[nextOpponentIndex];
-            }
-            catch (NullReferenceException ex)
-            {
-                LogManager.LogWarn(ex.Message, nameof(GetOpponentToRespond));
-                return null;
             }
             catch (ArgumentOutOfRangeException ex)
             {
@@ -233,10 +221,6 @@ namespace TrucoServer
             {
                 LogManager.LogWarn(ex.Message, nameof(EndHandWithPoints));
             }
-            catch (NullReferenceException ex)
-            {
-                LogManager.LogWarn(ex.Message, nameof(EndHandWithPoints));
-            }
             catch (Exception ex)
             {
                 LogManager.LogError(ex, nameof(EndHandWithPoints));
@@ -288,10 +272,6 @@ namespace TrucoServer
                 NotifyTurnChange();
             }
             catch (InvalidOperationException ex)
-            {
-                LogManager.LogWarn(ex.Message, nameof(StartNewHand));
-            }
-            catch (NullReferenceException ex)
             {
                 LogManager.LogWarn(ex.Message, nameof(StartNewHand));
             }
@@ -348,11 +328,6 @@ namespace TrucoServer
                 LogManager.LogWarn(ex.Message, nameof(PlayCard));
                 return false;
             }
-            catch (NullReferenceException ex)
-            {
-                LogManager.LogWarn(ex.Message, nameof(PlayCard));
-                return false;
-            }
             catch (Exception ex)
             {
                 LogManager.LogError(ex, nameof(PlayCard));
@@ -374,10 +349,6 @@ namespace TrucoServer
                 {
                     NotifyTurnChange();
                 }
-            }
-            catch (NullReferenceException ex)
-            {
-                LogManager.LogWarn(ex.Message, nameof(AdvanceTurn));
             }
             catch (Exception ex)
             {
@@ -528,11 +499,6 @@ namespace TrucoServer
 
                 return false;
             }
-            catch (NullReferenceException ex)
-            {
-                LogManager.LogWarn(ex.Message, nameof(CheckHandWinner));
-                return false;
-            }
             catch (IndexOutOfRangeException ex)
             {
                 LogManager.LogWarn(ex.Message, nameof(CheckHandWinner));
@@ -596,11 +562,6 @@ namespace TrucoServer
                 LogManager.LogWarn(ex.Message, nameof(CallTruco));
                 return false;
             }
-            catch (NullReferenceException ex)
-            {
-                LogManager.LogWarn(ex.Message, nameof(CallTruco));
-                return false;
-            }
             catch (Exception ex)
             {
                 LogManager.LogError(ex, nameof(CallTruco));
@@ -638,10 +599,6 @@ namespace TrucoServer
                 }
             }
             catch (InvalidOperationException ex)
-            {
-                LogManager.LogWarn(ex.Message, nameof(RespondToCall));
-            }
-            catch (NullReferenceException ex)
             {
                 LogManager.LogWarn(ex.Message, nameof(RespondToCall));
             }
@@ -696,11 +653,6 @@ namespace TrucoServer
                 LogManager.LogWarn(ex.Message, nameof(CallEnvido));
                 return false;
             }
-            catch (NullReferenceException ex)
-            {
-                LogManager.LogWarn(ex.Message, nameof(CallEnvido));
-                return false;
-            }
             catch (Exception ex)
             {
                 LogManager.LogError(ex, nameof(CallEnvido));
@@ -744,10 +696,6 @@ namespace TrucoServer
             {
                 LogManager.LogWarn(ex.Message, nameof(RespondToEnvido));
             }
-            catch (NullReferenceException ex)
-            {
-                LogManager.LogWarn(ex.Message, nameof(RespondToEnvido));
-            }
             catch (Exception ex)
             {
                 LogManager.LogError(ex, nameof(RespondToEnvido));
@@ -780,10 +728,6 @@ namespace TrucoServer
             {
                 LogManager.LogWarn(ex.Message, nameof(ResolveEnvido));
             }
-            catch (NullReferenceException ex)
-            {
-                LogManager.LogWarn(ex.Message, nameof(ResolveEnvido));
-            }
             catch (KeyNotFoundException ex)
             {
                 LogManager.LogWarn(ex.Message, nameof(ResolveEnvido));
@@ -809,10 +753,6 @@ namespace TrucoServer
                 NotifyScoreUpdate();
             }
             catch (InvalidOperationException ex)
-            {
-                LogManager.LogWarn(ex.Message, nameof(AwardEnvidoPoints));
-            }
-            catch (NullReferenceException ex)
             {
                 LogManager.LogWarn(ex.Message, nameof(AwardEnvidoPoints));
             }
@@ -851,11 +791,6 @@ namespace TrucoServer
                         return 0;
                 }
             }
-            catch (NullReferenceException ex)
-            {
-                LogManager.LogWarn(ex.Message, nameof(GetPointsForEnvidoBet));
-                return 0;
-            }
             catch (Exception ex)
             {
                 LogManager.LogError(ex, nameof(GetPointsForEnvidoBet));
@@ -882,11 +817,6 @@ namespace TrucoServer
                     turnIndex = 0;
                     return Players[0];
                 }
-                return null;
-            }
-            catch (NullReferenceException ex)
-            {
-                LogManager.LogWarn(ex.Message, nameof(GetCurrentTurnPlayer));
                 return null;
             }
             catch (Exception ex)
@@ -952,10 +882,6 @@ namespace TrucoServer
                     NotifyAll(callback => callback.NotifyTurnChange(nextPlayer.Username));
                 }
             }
-            catch (NullReferenceException ex)
-            {
-                LogManager.LogWarn(ex.Message, nameof(NotifyTurnChange));
-            }
             catch (Exception ex)
             {
                 LogManager.LogError(ex, nameof(NotifyTurnChange));
@@ -967,10 +893,6 @@ namespace TrucoServer
             try
             {
                 NotifyAll(callback => callback.NotifyScoreUpdate(Team1Score, Team2Score));
-            }
-            catch (NullReferenceException ex)
-            {
-                LogManager.LogWarn(ex.Message, nameof(NotifyScoreUpdate));
             }
             catch (Exception ex)
             {
@@ -1005,10 +927,6 @@ namespace TrucoServer
             try
             {
                 NotifyAll(callback => callback.NotifyResponse(callerName, response, newBetState));
-            }
-            catch (NullReferenceException ex)
-            {
-                LogManager.LogWarn(ex.Message, nameof(NotifyResponse));
             }
             catch (Exception ex)
             {

@@ -1,9 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Security.Cryptography.Pkcs;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace TrucoServer
 {
@@ -166,11 +163,6 @@ namespace TrucoServer
                 LogManager.LogError(new InvalidOperationException($"Carta no mapeada: {card.FileName}"), nameof(GetTrucoValue));
                 return 0;
             }
-            catch (NullReferenceException ex)
-            {
-                LogManager.LogWarn(ex.Message, nameof(GetTrucoValue));
-                return 0;
-            }
             catch (Exception ex)
             {
                 LogManager.LogError(ex, nameof(GetTrucoValue));
@@ -193,11 +185,6 @@ namespace TrucoServer
                 {
                     return -1;
                 }
-                return 0;
-            }
-            catch (NullReferenceException ex)
-            {
-                LogManager.LogWarn(ex.Message, nameof(CompareCards));
                 return 0;
             }
             catch (Exception ex)
@@ -254,11 +241,6 @@ namespace TrucoServer
                     return 0;
                 }
                 return (int)card.CardRank;
-            }
-            catch (NullReferenceException ex)
-            {
-                LogManager.LogWarn(ex.Message, nameof(GetEnvidoValue));
-                return 0;
             }
             catch (Exception ex)
             {

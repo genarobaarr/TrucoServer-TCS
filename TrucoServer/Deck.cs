@@ -17,7 +17,7 @@ namespace TrucoServer
 
     public class Deck : ITrucoDeck
     {
-        private List<TrucoCard> cards;
+        private readonly List<TrucoCard> cards;
         private readonly IDeckShuffler shuffler;
         public int RemainingCards => cards.Count;
 
@@ -27,9 +27,9 @@ namespace TrucoServer
             cards = InitializeDeck();
         }
 
-        private List<TrucoCard> InitializeDeck()
+        private static List<TrucoCard> InitializeDeck()
         {
-            var cards = new List<TrucoCard>();
+            var newCards = new List<TrucoCard>();
             Rank[] validRanks = {
                 Rank.Uno, Rank.Dos, Rank.Tres, Rank.Cuatro, Rank.Cinco,
                 Rank.Seis, Rank.Siete, Rank.Diez, Rank.Once, Rank.Doce
@@ -39,10 +39,10 @@ namespace TrucoServer
             {
                 foreach (Rank rank in validRanks)
                 {
-                    cards.Add(new TrucoCard(rank, suit));
+                    newCards.Add(new TrucoCard(rank, suit));
                 }
             }
-            return cards;
+            return newCards;
         }
 
         public void Reset()
@@ -74,10 +74,6 @@ namespace TrucoServer
                 shuffler.Shuffle(cards);
             }
             catch (ArgumentNullException ex)
-            {
-                LogManager.LogError(ex, nameof(Shuffle));
-            }
-            catch (NullReferenceException ex)
             {
                 LogManager.LogError(ex, nameof(Shuffle));
             }

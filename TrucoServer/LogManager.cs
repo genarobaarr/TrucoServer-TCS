@@ -1,10 +1,6 @@
 ﻿using log4net;
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace TrucoServer
 {
@@ -17,18 +13,24 @@ namespace TrucoServer
             log4net.Config.XmlConfigurator.Configure();
         }
         public static void LogFatal(Exception exception, string methodName)
-        { 
-            log.Fatal($"Error crítico en el sistema al ejecutar {methodName}.", exception);
+        {
+            string formattedMessage = string.Format("Error crítico en el sistema al ejecutar {0}.", methodName);
+
+            log.Fatal(formattedMessage, exception);
         }
 
         public static void LogError(Exception exception, string methodName)
         {
-            log.Error($"Error operativo o de negocio al ejecutar {methodName}.", exception);
+            string formattedMessage = string.Format("Error operativo o de negocio al ejecutar {0}.", methodName);
+
+            log.Error(formattedMessage, exception);
         }
 
         public static void LogWarn(string message, string methodName)
         {
-            log.Warn($"Advertencia en {methodName}: {message}");
+            string formattedMessage = string.Format("Advertencia en {0}: {1}", methodName, message);
+
+            log.Warn(formattedMessage);
         }
     }
 }

@@ -11,7 +11,7 @@ namespace TrucoServer
 {
     public class TrucoGameManager : IGameManager
     {
-        private baseDatosTrucoEntities GetContext()
+        private static baseDatosTrucoEntities GetContext()
         {
             return new baseDatosTrucoEntities();
         }
@@ -156,7 +156,7 @@ namespace TrucoServer
             }
         }
 
-        public void SaveRoundResult(string matchCode, string winnerUsername)
+        public void SaveRoundResult(string matchCode, string winner)
         {
             try
             {
@@ -172,11 +172,11 @@ namespace TrucoServer
                     {
                         return;
                     }
-                    var winner = context.User.FirstOrDefault(u => u.username == winnerUsername);
+                    var winnerUsername = context.User.FirstOrDefault(u => u.username == winner);
 
                     round.status = "Finished";
                     round.isActive = false;
-                    round.winnerID = winner?.userID;
+                    round.winnerID = winnerUsername?.userID;
 
                     context.SaveChanges();
                 }
@@ -233,7 +233,7 @@ namespace TrucoServer
                         var userStats = context.User.FirstOrDefault(u => u.userID == mp.userID);
                         if (userStats != null)
                         {
-                            if (mp.isWinner == true)
+                            if (mp.isWinner)
                             {
                                 userStats.wins++;
                             }
