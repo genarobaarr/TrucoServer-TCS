@@ -42,6 +42,7 @@ namespace TrucoServer
                     newCards.Add(new TrucoCard(rank, suit));
                 }
             }
+            
             return newCards;
         }
 
@@ -91,8 +92,10 @@ namespace TrucoServer
                 {
                     throw new InvalidOperationException("No hay suficientes cartas para repartir una mano.");
                 }
+                
                 var hand = cards.Take(3).ToList();
                 cards.RemoveRange(0, 3);
+                
                 return hand;
             }
             catch (InvalidOperationException ex)
@@ -125,8 +128,10 @@ namespace TrucoServer
                 {
                     throw new InvalidOperationException("El mazo está vacío.");
                 }
+
                 var card = cards[0];
                 cards.RemoveAt(0);
+                
                 return card;
             }
             catch (InvalidOperationException ex)

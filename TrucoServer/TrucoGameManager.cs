@@ -14,6 +14,7 @@ namespace TrucoServer
         private const string ROUND_INPROGRESS = "InProgress";
         private const string ROUND_FINISHED = "Finished";
         private const string ROUND_PLAYING = "Playing";
+        private const int INITIAL_SCORE = 0;
 
         private static baseDatosTrucoEntities GetContext()
         {
@@ -33,12 +34,14 @@ namespace TrucoServer
                         status = ROUND_INPROGRESS,
                         startedAt = DateTime.Now
                     };
+
                     context.Match.Add(match);
                     context.SaveChanges();
 
                     foreach (var p in players)
                     {
                         var user = context.User.FirstOrDefault(u => u.username == p.Username);
+
                         if (user == null)
                         {
                             continue;
@@ -49,7 +52,7 @@ namespace TrucoServer
                             matchID = match.matchID,
                             userID = user.userID,
                             team = p.Team,
-                            score = 0,
+                            score = INITIAL_SCORE,
                             isWinner = false
                         });
                     }
@@ -59,7 +62,7 @@ namespace TrucoServer
                     var round = new Round
                     {
                         matchID = match.matchID,
-                        number = 1,
+                        number = 1, // TODO: Ajustar si es necesario
                         status = ROUND_PLAYING,
                         isActive = true
                     };
@@ -104,20 +107,26 @@ namespace TrucoServer
                 using (var context = GetContext())
                 {
                     var match = context.Match.FirstOrDefault(m => m.status == ROUND_INPROGRESS);
+                    
                     if (match == null)
                     {
                         return;
                     }
+                    
                     var round = context.Round.FirstOrDefault(r => r.matchID == match.matchID && r.isActive == true);
+                    
                     if (round == null)
                     {
                         return;
                     }
+                    
                     var user = context.User.FirstOrDefault(u => u.username == player.Username);
+                    
                     if (user == null)
                     {
                         return;
                     }
+                    
                     foreach (var card in player.Hand)
                     {
                         var cardEntity = context.Card.FirstOrDefault(c =>
@@ -167,15 +176,19 @@ namespace TrucoServer
                 using (var context = GetContext())
                 {
                     var match = context.Match.FirstOrDefault(m => m.status == ROUND_INPROGRESS);
+                    
                     if (match == null)
                     {
                         return;
                     }
+                    
                     var round = context.Round.FirstOrDefault(r => r.matchID == match.matchID && r.isActive == true);
+                    
                     if (round == null)
                     {
                         return;
                     }
+                    
                     var winnerUsername = context.User.FirstOrDefault(u => u.username == winner);
 
                     round.status = ROUND_FINISHED;
@@ -214,6 +227,7 @@ namespace TrucoServer
                 using (var context = GetContext())
                 {
                     var match = context.Match.FirstOrDefault(m => m.status == ROUND_INPROGRESS);
+                    
                     if (match == null)
                     {
                         return;
@@ -223,6 +237,7 @@ namespace TrucoServer
 
                     foreach (var mp in players)
                     {
+                        
                         if (mp.team == loserTeam)
                         {
                             mp.isWinner = false;
@@ -235,8 +250,10 @@ namespace TrucoServer
                         }
 
                         var userStats = context.User.FirstOrDefault(u => u.userID == mp.userID);
+                        
                         if (userStats != null)
                         {
+                        
                             if (mp.isWinner)
                             {
                                 userStats.wins++;

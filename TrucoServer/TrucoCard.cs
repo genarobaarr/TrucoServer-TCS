@@ -30,13 +30,16 @@ namespace TrucoServer
         [EnumMember] Once = 11,
         [EnumMember] Doce = 12
     }
+
     [DataContract]
     public class TrucoCard
     {
         [DataMember]
         public Rank CardRank { get; private set; }
+        
         [DataMember]
         public Suit CardSuit { get; private set; }
+        
         [DataMember]
         public string FileName { get; private set; }
 

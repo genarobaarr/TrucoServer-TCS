@@ -39,6 +39,11 @@ namespace TrucoServer
         private const string DRAW_STATUS = "Draw";
         private const string NO_QUIERO_STATUS = "NoQuiero";
         private const string QUIERO_STATUS = "Quiero";
+        private const int INITIAL_SCORE = 0;
+        private const int POINT = 1;
+        private const int CURRENT_ROUND = 0;
+        private const int CURRENT_ENVIDO_POINT = 0;
+        private const int INDEX_VALUE = 0;
 
         public string MatchCode { get; private set; }
         public List<PlayerInformation> Players { get; private set; }
@@ -89,12 +94,12 @@ namespace TrucoServer
                 this.playedCards = new Dictionary<int, List<TrucoCard>>();
                 this.cardsOnTable = new Dictionary<int, TrucoCard>();
                 this.roundWinners = new string[MAX_ROUNDS];
-                this.Team1Score = 0;
-                this.Team2Score = 0;
+                this.Team1Score = INITIAL_SCORE;
+                this.Team2Score = INITIAL_SCORE;
                 this.CurrentState = GameState.Deal;
                 this.TrucoBetValue = TrucoBet.None;
-                this.currentTrucoPoints = 1;
-                this.handStartingPlayerIndex = 0;
+                this.currentTrucoPoints = POINT;
+                this.handStartingPlayerIndex = 0; // Acá se debería modificar para q inicie uno al azar
                 this.turnIndex = 0;
 
                 foreach (var player in players)
@@ -131,6 +136,7 @@ namespace TrucoServer
                     return 4;
                 
                 case TrucoBet.None:
+                
                 default:
                     return 1;
             }
@@ -166,6 +172,7 @@ namespace TrucoServer
                         return null;
                     }
                 }
+
                 return Players[nextOpponentIndex];
             }
             catch (ArgumentOutOfRangeException ex)
@@ -216,6 +223,7 @@ namespace TrucoServer
                         loserScore = Team1Score;
                         matchWinnerName = Players.First(p => p.Team == TEAM_2).Username;
                     }
+
                     gameManager.SaveMatchResult(MatchCode, loserTeamString, winnerScore, loserScore);
                     NotifyAll(callback => callback.OnMatchEnded(MatchCode, matchWinnerName));
                 }
@@ -245,10 +253,10 @@ namespace TrucoServer
                 cardsOnTable.Clear();
 
                 roundWinners = new string[MAX_ROUNDS];
-                currentRound = 0;
+                currentRound = CURRENT_ROUND;
 
                 TrucoBetValue = TrucoBet.None;
-                currentTrucoPoints = 1;
+                currentTrucoPoints = POINT;
                 bettingPlayerId = null;
                 waitingForResponseToId = null;
 
@@ -264,6 +272,7 @@ namespace TrucoServer
                     gameManager.SaveDealtCards(MatchCode, player);
                     NotifyPlayer(player.PlayerID, callback => callback.ReceiveCards(hand.ToArray()));
                 }
+
                 playerEnvidoScores = new Dictionary<int, int>();
 
                 foreach (var player in Players)
@@ -273,7 +282,7 @@ namespace TrucoServer
                 
                 EnvidoBetValue = EnvidoBet.None;
                 proposedEnvidoBet = EnvidoBet.None;
-                currentEnvidoPoints = 0;
+                currentEnvidoPoints = CURRENT_ENVIDO_POINT;
                 envidoBettorId = null;
                 waitingForEnvidoResponseId = null;
                 envidoWasPlayed = false;
@@ -332,6 +341,7 @@ namespace TrucoServer
                 NotifyAll(callback => callback.NotifyCardPlayed(player.Username, cardFileName, isLastCardOfRound));
 
                 AdvanceTurn();
+
                 return true;
             }
             catch (KeyNotFoundException ex)
@@ -399,6 +409,7 @@ namespace TrucoServer
                         }
                     }
                 }
+
                 string winnerTeam = (roundWinner == null) ? null : roundWinner.Team;
                 roundWinners[currentRound] = winnerTeam;
                 cardsOnTable.Clear();
@@ -406,6 +417,7 @@ namespace TrucoServer
                 string winnerName = roundWinner?.Username ?? DRAW_STATUS;
                 gameManager.SaveRoundResult(MatchCode, winnerName);
                 NotifyAll(callback => callback.NotifyRoundEnd(winnerName, Team1Score, Team2Score));
+
                 if (CheckHandWinner())
                 {
                     int teamAWins = roundWinners.Count(w => w == TEAM_1);
@@ -428,6 +440,7 @@ namespace TrucoServer
                     {
                         Team2Score += pointsAwarded;
                     }
+
                     NotifyAll(callback => callback.NotifyScoreUpdate(Team1Score, Team2Score));
 
                     if (CheckMatchEnd())
@@ -451,6 +464,7 @@ namespace TrucoServer
                             loserScore = Team1Score;
                             matchWinnerName = Players.First(p => p.Team == TEAM_2).Username;
                         }
+
                         gameManager.SaveMatchResult(MatchCode, loserTeamString, winnerScore, loserScore);
                         NotifyAll(callback => callback.OnMatchEnded(MatchCode, matchWinnerName));
                     }
@@ -531,24 +545,31 @@ namespace TrucoServer
                 {
                     return false;
                 }
+
                 if (waitingForResponseToId.HasValue)
                 {
                     return false;
                 }
+
                 if (CurrentState != GameState.Envido && CurrentState != GameState.Truco)
                 {
                     return false;
                 }
+
                 var caller = Players.FirstOrDefault(p => p.PlayerID == playerID);
+                
                 if (caller == null)
                 {
                     return false;
                 }
+                
                 TrucoBet newBet;
+                
                 if (!Enum.TryParse(betType, out newBet))
                 {
                     return false;
                 }
+                
                 if ((newBet == TrucoBet.Truco && TrucoBetValue != TrucoBet.None) ||
                     (newBet == TrucoBet.Retruco && TrucoBetValue != TrucoBet.Truco) ||
                     (newBet == TrucoBet.ValeCuatro && TrucoBetValue != TrucoBet.Retruco))
@@ -557,16 +578,19 @@ namespace TrucoServer
                 }
 
                 var opponent = GetOpponentToRespond(caller);
+                
                 if (opponent == null)
                 {
                     return false;
                 }
+                
                 CurrentState = GameState.Truco;
                 bettingPlayerId = playerID;
                 waitingForResponseToId = opponent.PlayerID;
                 proposedBetValue = newBet;
                 currentTrucoPoints = GetPointsForBet(newBet);
                 NotifyTrucoCall(playerID, betType, opponent.PlayerID);
+                
                 return true;
             }
             catch (ArgumentException ex)
@@ -589,6 +613,7 @@ namespace TrucoServer
                 {
                     return;
                 }
+                
                 var responder = Players.First(p => p.PlayerID == playerID);
                 var caller = Players.First(p => p.PlayerID == bettingPlayerId.Value);
                 
@@ -698,6 +723,7 @@ namespace TrucoServer
                 if (response == NO_QUIERO_STATUS)
                 {
                     int pointsToAward = (currentEnvidoPoints == 0) ? 1 : (currentEnvidoPoints - GetPointsForEnvidoBet(proposedEnvidoBet));
+                    
                     if (pointsToAward == 0)
                     {
                         pointsToAward = 1;
@@ -744,6 +770,7 @@ namespace TrucoServer
                         envidoWinner = player;
                     }
                 }
+                
                 NotifyAll(cb => cb.NotifyEnvidoResult(envidoWinner.Username, highestScore, currentEnvidoPoints));
                 AwardEnvidoPoints(envidoWinner.Team, currentEnvidoPoints);
                 ResetEnvidoState();
@@ -774,6 +801,7 @@ namespace TrucoServer
                 {
                     Team2Score += points;
                 }
+                
                 NotifyScoreUpdate();
             }
             catch (InvalidOperationException ex)
@@ -790,7 +818,7 @@ namespace TrucoServer
         {
             EnvidoBetValue = EnvidoBet.None;
             proposedEnvidoBet = EnvidoBet.None;
-            currentEnvidoPoints = 0;
+            currentEnvidoPoints = CURRENT_ENVIDO_POINT;
             envidoBettorId = null;
             waitingForEnvidoResponseId = null;
             
@@ -840,11 +868,13 @@ namespace TrucoServer
             catch (ArgumentOutOfRangeException ex)
             {
                 LogManager.LogWarn(ex.Message, nameof(GetCurrentTurnPlayer));
+                
                 if (Players != null && Players.Count > 0)
                 {
-                    turnIndex = 0;
+                    turnIndex = INDEX_VALUE;
                     return Players[0];
                 }
+                
                 return null;
             }
             catch (Exception ex)
