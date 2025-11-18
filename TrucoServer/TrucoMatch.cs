@@ -34,8 +34,8 @@ namespace TrucoServer
         private const int MAX_SCORE = 30;
         private const int CARDS_IN_HAND = 3;
         private const int MAX_ROUNDS = 3;
-        private const string TEAM_A = "Team 1";
-        private const string TEAM_B = "Team 2";
+        private const string TEAM_1 = "Team 1";
+        private const string TEAM_2 = "Team 2";
 
         public string MatchCode { get; private set; }
         public List<PlayerInformation> Players { get; private set; }
@@ -177,7 +177,7 @@ namespace TrucoServer
         {
             try
             {
-                if (winningTeam == TEAM_A)
+                if (winningTeam == TEAM_1)
                 {
                     Team1Score += pointsToAward;
                 }
@@ -197,17 +197,17 @@ namespace TrucoServer
 
                     if (Team1Score > Team2Score)
                     {
-                        loserTeamString = TEAM_B;
+                        loserTeamString = TEAM_2;
                         winnerScore = Team1Score;
                         loserScore = Team2Score;
-                        matchWinnerName = Players.First(p => p.Team == TEAM_A).Username;
+                        matchWinnerName = Players.First(p => p.Team == TEAM_1).Username;
                     }
                     else
                     {
-                        loserTeamString = TEAM_A;
+                        loserTeamString = TEAM_1;
                         winnerScore = Team2Score;
                         loserScore = Team1Score;
-                        matchWinnerName = Players.First(p => p.Team == TEAM_B).Username;
+                        matchWinnerName = Players.First(p => p.Team == TEAM_2).Username;
                     }
                     gameManager.SaveMatchResult(MatchCode, loserTeamString, winnerScore, loserScore);
                     NotifyAll(callback => callback.OnMatchEnded(MatchCode, matchWinnerName));
@@ -396,8 +396,8 @@ namespace TrucoServer
                 NotifyAll(callback => callback.NotifyRoundEnd(winnerName, Team1Score, Team2Score));
                 if (CheckHandWinner())
                 {
-                    int teamAWins = roundWinners.Count(w => w == TEAM_A);
-                    int teamBWins = roundWinners.Count(w => w == TEAM_B);
+                    int teamAWins = roundWinners.Count(w => w == TEAM_1);
+                    int teamBWins = roundWinners.Count(w => w == TEAM_2);
                     int pointsAwarded = GetPointsForBet(TrucoBetValue);
 
                     if (teamAWins > teamBWins)
@@ -408,11 +408,11 @@ namespace TrucoServer
                     {
                         Team2Score += pointsAwarded;
                     }
-                    else if (roundWinners[0] == TEAM_A)
+                    else if (roundWinners[0] == TEAM_1)
                     {
                         Team1Score += pointsAwarded;
                     }
-                    else if (roundWinners[0] == TEAM_B)
+                    else if (roundWinners[0] == TEAM_2)
                     {
                         Team2Score += pointsAwarded;
                     }
@@ -427,17 +427,17 @@ namespace TrucoServer
 
                         if (Team1Score > Team2Score)
                         {
-                            loserTeamString = TEAM_B;
+                            loserTeamString = TEAM_2;
                             winnerScore = Team1Score;
                             loserScore = Team2Score;
-                            matchWinnerName = Players.First(p => p.Team == TEAM_A).Username;
+                            matchWinnerName = Players.First(p => p.Team == TEAM_1).Username;
                         }
                         else
                         {
-                            loserTeamString = TEAM_A;
+                            loserTeamString = TEAM_1;
                             winnerScore = Team2Score;
                             loserScore = Team1Score;
-                            matchWinnerName = Players.First(p => p.Team == TEAM_B).Username;
+                            matchWinnerName = Players.First(p => p.Team == TEAM_2).Username;
                         }
                         gameManager.SaveMatchResult(MatchCode, loserTeamString, winnerScore, loserScore);
                         NotifyAll(callback => callback.OnMatchEnded(MatchCode, matchWinnerName));
@@ -474,8 +474,8 @@ namespace TrucoServer
         {
             try
             {
-                int team1Wins = roundWinners.Count(w => w == TEAM_A);
-                int team2Wins = roundWinners.Count(w => w == TEAM_B);
+                int team1Wins = roundWinners.Count(w => w == TEAM_1);
+                int team2Wins = roundWinners.Count(w => w == TEAM_2);
 
                 if (team1Wins >= 2 || team2Wins >= 2)
                 {
@@ -742,7 +742,7 @@ namespace TrucoServer
         {
             try
             {
-                if (winningTeam == TEAM_A)
+                if (winningTeam == TEAM_1)
                 {
                     Team1Score += points;
                 }
