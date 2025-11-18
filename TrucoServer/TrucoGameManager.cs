@@ -11,6 +11,10 @@ namespace TrucoServer
 {
     public class TrucoGameManager : IGameManager
     {
+        private const string ROUND_INPROGRESS = "InProgress";
+        private const string ROUND_FINISHED = "Finished";
+        private const string ROUND_PLAYING = "Playing";
+
         private static baseDatosTrucoEntities GetContext()
         {
             return new baseDatosTrucoEntities();
@@ -26,7 +30,7 @@ namespace TrucoServer
                     {
                         lobbyID = 1, // TODO: Ajustar esto al ID correspondiente
                         versionID = 1, // Esto también
-                        status = "InProgress",
+                        status = ROUND_INPROGRESS,
                         startedAt = DateTime.Now
                     };
                     context.Match.Add(match);
@@ -56,7 +60,7 @@ namespace TrucoServer
                     {
                         matchID = match.matchID,
                         number = 1,
-                        status = "Playing",
+                        status = ROUND_PLAYING,
                         isActive = true
                     };
 
@@ -99,7 +103,7 @@ namespace TrucoServer
             {
                 using (var context = GetContext())
                 {
-                    var match = context.Match.FirstOrDefault(m => m.status == "InProgress");
+                    var match = context.Match.FirstOrDefault(m => m.status == ROUND_INPROGRESS);
                     if (match == null)
                     {
                         return;
@@ -162,7 +166,7 @@ namespace TrucoServer
             {
                 using (var context = GetContext())
                 {
-                    var match = context.Match.FirstOrDefault(m => m.status == "InProgress");
+                    var match = context.Match.FirstOrDefault(m => m.status == ROUND_INPROGRESS);
                     if (match == null)
                     {
                         return;
@@ -174,7 +178,7 @@ namespace TrucoServer
                     }
                     var winnerUsername = context.User.FirstOrDefault(u => u.username == winner);
 
-                    round.status = "Finished";
+                    round.status = ROUND_FINISHED;
                     round.isActive = false;
                     round.winnerID = winnerUsername?.userID;
 
@@ -209,7 +213,7 @@ namespace TrucoServer
             {
                 using (var context = GetContext())
                 {
-                    var match = context.Match.FirstOrDefault(m => m.status == "InProgress");
+                    var match = context.Match.FirstOrDefault(m => m.status == ROUND_INPROGRESS);
                     if (match == null)
                     {
                         return;
@@ -244,7 +248,7 @@ namespace TrucoServer
                         }
                     }
 
-                    match.status = "Finished";
+                    match.status = ROUND_FINISHED;
                     match.endedAt = DateTime.Now;
                     context.SaveChanges();
                 }
