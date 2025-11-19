@@ -2957,5 +2957,20 @@
                 LogManager.LogError(ex, nameof(GoToDeck));
             }
         }
+
+        public void CallFlor(string matchCode, string betType)
+        {
+            try
+            {
+                if (GetMatchAndPlayerID(matchCode, out TrucoMatch match, out int playerID))
+                {
+                    match.CallFlor(playerID, betType);
+                }
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError(ex, nameof(CallFlor));
+            }
+        }
     }
 }

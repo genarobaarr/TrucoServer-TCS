@@ -20,6 +20,7 @@ namespace TrucoServer
         private const int TWELVE = 12;
         private const int THIRTEEN = 13;
         private const int FOURTEEN = 14;
+        private const int FLOR_POINTS = 20;
 
         private static readonly Dictionary<(Rank, Suit), int> trucoValueMap = new Dictionary<(Rank, Suit), int>
         {
@@ -237,7 +238,54 @@ namespace TrucoServer
             }
         }
 
-        // TODO: Aquí iría la lógica para calcular el Envido/Flor/Truco
+        public static bool HasFlor(List<TrucoCard> hand)
+        {
+            try
+            {
+                if (hand == null || hand.Count < 3)
+                {
+                    return false;
+                }
+
+                return hand.GroupBy(card => card.CardSuit).Any(g => g.Count() >= 3);
+            }
+            catch (ArgumentNullException ex)
+            {
+                LogManager.LogWarn(ex.Message, nameof(HasFlor));
+                return false;
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError(ex, nameof(HasFlor));
+                return false;
+            }
+        }
+
+        public static int CalculateFlorScore(List<TrucoCard> hand)
+        {
+            try
+            {
+                if (!HasFlor(hand))
+                {
+                    return 0;
+                }
+
+                int sumValues = hand.Sum(card => GetEnvidoValue(card));
+                
+                return sumValues + FLOR_POINTS;
+            }
+            catch (NullReferenceException ex)
+            {
+                LogManager.LogWarn(ex.Message, nameof(CalculateFlorScore));
+                return 0;
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError(ex, nameof(CalculateFlorScore));
+                return 0;
+            }
+        }
+
         public static int GetEnvidoValue(TrucoCard card)
         {
             try

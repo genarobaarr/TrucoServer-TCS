@@ -56,5 +56,8 @@ namespace TrucoServer
 
         [OperationContract(IsOneWay = true)]
         void NotifyEnvidoResult(string winnerName, int score, int totalPointsAwarded);
+
+        [OperationContract(IsOneWay = true)]
+        void NotifyFlorCall(string callerName, string betName, int currentPoints, bool needsResponse);
     }
 }
