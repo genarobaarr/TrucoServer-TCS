@@ -58,12 +58,13 @@ namespace TrucoServer
         private readonly Dictionary<int, List<TrucoCard>> playerHands;
         private readonly Dictionary<int, List<TrucoCard>> playedCards;
         private readonly Dictionary<int, TrucoCard> cardsOnTable;
+        private readonly object matchLock = new object();
 
         private string[] roundWinners;
         private int currentRound;
         private int handStartingPlayerIndex;
         private int turnIndex;
-
+        
         public TrucoBet TrucoBetValue { get; private set; }
         private int currentTrucoPoints;
         private int? bettingPlayerId;
@@ -75,6 +76,7 @@ namespace TrucoServer
         private int? envidoBettorId;
         private int? waitingForEnvidoResponseId;
         private bool envidoWasPlayed;
+        private bool matchEnded = false;
         private Dictionary<int, int> playerEnvidoScores;
 
         public TrucoMatch(
@@ -190,6 +192,13 @@ namespace TrucoServer
 
         private void EndHandWithPoints(string winningTeam, int pointsToAward)
         {
+            lock (matchLock)
+            {
+                if (matchEnded)
+                {
+                    return;
+                }
+            }
             try
             {
                 if (winningTeam == TEAM_1)
@@ -1028,6 +1037,55 @@ namespace TrucoServer
             catch (Exception ex)
             {
                 LogManager.LogError(ex, nameof(PlayerGoesToDeck));
+            }
+        }
+
+        public void AbortMatch(string playerUsername)
+        {
+            lock (matchLock)
+            {
+                if (matchEnded)
+                {
+                    return;
+                }
+                matchEnded = true;
+            }
+
+            try
+            {
+                var leaver = Players.FirstOrDefault(p => p.Username == playerUsername);
+                
+                if (leaver == null)
+                {
+                    return;
+                }
+
+                var winnerPlayer = Players.FirstOrDefault(p => p.Team != leaver.Team);
+                
+                if (winnerPlayer == null)
+                {
+                    return;
+                }
+
+                string winnerTeam = winnerPlayer.Team;
+                string loserTeam = leaver.Team;
+                string matchWinnerName = winnerPlayer.Username;
+                int winnerScore = MAX_SCORE;
+                int loserScore = (loserTeam == TEAM_1) ? Team1Score : Team2Score;
+                gameManager.SaveMatchResult(MatchCode, loserTeam, winnerScore, loserScore);
+                NotifyAll(callback => callback.OnMatchEnded(MatchCode, matchWinnerName));
+            }
+            catch (InvalidOperationException ex)
+            {
+                LogManager.LogError(ex, nameof(AbortMatch));
+            }
+            catch (NullReferenceException ex)
+            {
+                LogManager.LogError(ex, nameof(AbortMatch));
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError(ex, nameof(AbortMatch));
             }
         }
     }

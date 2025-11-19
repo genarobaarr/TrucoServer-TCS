@@ -227,18 +227,19 @@ namespace TrucoServer
                 using (var context = GetContext())
                 {
                     var match = context.Match.FirstOrDefault(m => m.status == ROUND_INPROGRESS);
-                    
+
                     if (match == null)
                     {
                         return;
                     }
-                    
+
                     var players = context.MatchPlayer.Where(mp => mp.matchID == match.matchID).ToList();
 
                     foreach (var mp in players)
                     {
-                        
-                        if (mp.team == loserTeam)
+                        bool isLoser = string.Equals(mp.team.Trim(), loserTeam.Trim(), StringComparison.OrdinalIgnoreCase);
+
+                        if (isLoser)
                         {
                             mp.isWinner = false;
                             mp.score = loserScore;
@@ -250,10 +251,9 @@ namespace TrucoServer
                         }
 
                         var userStats = context.User.FirstOrDefault(u => u.userID == mp.userID);
-                        
+
                         if (userStats != null)
                         {
-                        
                             if (mp.isWinner)
                             {
                                 userStats.wins++;
@@ -272,19 +272,19 @@ namespace TrucoServer
             }
             catch (DbEntityValidationException ex)
             {
-                LogManager.LogError(ex, nameof(SaveRoundResult));
+                LogManager.LogError(ex, nameof(SaveMatchResult));
             }
             catch (DbUpdateException ex)
             {
-                LogManager.LogError(ex, nameof(SaveRoundResult));
+                LogManager.LogError(ex, nameof(SaveMatchResult));
             }
             catch (SqlException ex)
             {
-                LogManager.LogError(ex, nameof(SaveRoundResult));
+                LogManager.LogError(ex, nameof(SaveMatchResult));
             }
             catch (InvalidOperationException ex)
             {
-                LogManager.LogError(ex, nameof(SaveRoundResult));
+                LogManager.LogError(ex, nameof(SaveMatchResult));
             }
             catch (Exception ex)
             {

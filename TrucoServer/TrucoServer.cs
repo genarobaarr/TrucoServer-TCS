@@ -1817,6 +1817,12 @@
                     });
                 }
                 Console.WriteLine($"[CHAT] {player} left the lobby {matchCode}.");
+
+                if (runningGames.TryGetValue(matchCode, out TrucoMatch match))
+                {
+                    match.AbortMatch(player);
+                    runningGames.TryRemove(matchCode, out _);
+                }
             }
             catch (InvalidOperationException ex)
             {
