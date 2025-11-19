@@ -15,10 +15,56 @@ namespace TrucoServer
         private const string ROUND_FINISHED = "Finished";
         private const string ROUND_PLAYING = "Playing";
         private const int INITIAL_SCORE = 0;
+        private const int LOBBY_ID_DEFAULT = 1;
+        private const int VERSION_1V1 = 1;
+        private const int VERSION_2V2 = 2;
+        private const int HASH_MODULUS = 999999;
+        private const int HASH_MULTIPLIER = 31;
+        private const int HASH_SEED = 17;
 
         private static baseDatosTrucoEntities GetContext()
         {
             return new baseDatosTrucoEntities();
+        }
+
+        private static int GenerateNumericCodeFromString(string code)
+        {
+            unchecked
+            {
+                int hash = HASH_SEED;
+                foreach (char c in code)
+                {
+                    hash = hash * HASH_MULTIPLIER + c;
+                }
+                return Math.Abs(hash % HASH_MODULUS);
+            }
+        }
+
+        private Match GetMatchByCode(baseDatosTrucoEntities context, string matchCode)
+        {
+            int numericCode = GenerateNumericCodeFromString(matchCode);
+
+            var invitation = context.Invitation
+                .Where(i => i.code == numericCode)
+                .OrderByDescending(i => i.expiresAt)
+                .FirstOrDefault();
+
+            if (invitation == null)
+            {
+                return null;
+            }
+
+            var lobby = context.Lobby
+                .Where(l => l.ownerID == invitation.senderID)
+                .OrderByDescending(l => l.createdAt)
+                .FirstOrDefault();
+
+            if (lobby == null)
+            {
+                return null;
+            }
+            
+            return context.Match.FirstOrDefault(m => m.lobbyID == lobby.lobbyID && m.status == ROUND_INPROGRESS);
         }
 
         public int SaveMatchToDatabase(string matchCode, List<PlayerInformation> players)
@@ -27,10 +73,34 @@ namespace TrucoServer
             {
                 using (var context = GetContext())
                 {
+                    int lobbyId = LOBBY_ID_DEFAULT;
+                    int versionId = VERSION_1V1;
+
+                    if (players != null && players.Count == 4)
+                    {
+                        versionId = VERSION_2V2;
+                    }
+
+                    int numericCode = GenerateNumericCodeFromString(matchCode);
+                    var invitation = context.Invitation.FirstOrDefault(i => i.code == numericCode);
+
+                    if (invitation != null)
+                    {
+                        var realLobby = context.Lobby
+                            .Where(l => l.ownerID == invitation.senderID && l.status != ROUND_FINISHED)
+                            .OrderByDescending(l => l.createdAt)
+                            .FirstOrDefault();
+
+                        if (realLobby != null)
+                        {
+                            lobbyId = realLobby.lobbyID;
+                        }
+                    }
+
                     var match = new Match
                     {
-                        lobbyID = 1, // TODO: Ajustar esto al ID correspondiente
-                        versionID = 1, // Esto también
+                        lobbyID = lobbyId,
+                        versionID = versionId,
                         status = ROUND_INPROGRESS,
                         startedAt = DateTime.Now
                     };

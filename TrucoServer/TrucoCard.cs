@@ -35,13 +35,13 @@ namespace TrucoServer
     public class TrucoCard
     {
         [DataMember]
-        public Rank CardRank { get; private set; }
+        public Rank CardRank { get; set; }
         
         [DataMember]
-        public Suit CardSuit { get; private set; }
+        public Suit CardSuit { get; set; }
         
         [DataMember]
-        public string FileName { get; private set; }
+        public string FileName { get; set; }
 
         public TrucoCard(Rank rank, Suit suit)
         {

@@ -2972,5 +2972,28 @@
                 LogManager.LogError(ex, nameof(CallFlor));
             }
         }
+
+        public void RespondToFlor(string matchCode, string response)
+        {
+            try
+            {
+                if (GetMatchAndPlayerID(matchCode, out TrucoMatch match, out int playerID))
+                {
+                    match.RespondToFlor(playerID, response);
+                }
+            }
+            catch (InvalidOperationException ex)
+            {
+                LogManager.LogError(ex, nameof(RespondToFlor));
+            }
+            catch (NullReferenceException ex)
+            {
+                LogManager.LogError(ex, nameof(RespondToFlor));
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError(ex, nameof(RespondToFlor));
+            }
+        }
     }
 }

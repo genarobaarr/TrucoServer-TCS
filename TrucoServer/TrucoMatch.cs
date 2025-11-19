@@ -55,6 +55,7 @@ namespace TrucoServer
         private const int CURRENT_ENVIDO_POINT = 0;
         private const int INDEX_VALUE = 0;
         private const int CURRENT_FLOR_SCORE = 0;
+        private const int CURRENT_FLOR_POINT = 0;
 
         public string MatchCode { get; private set; }
         public List<PlayerInformation> Players { get; private set; }
@@ -282,10 +283,10 @@ namespace TrucoServer
                 cardsOnTable.Clear();
 
                 roundWinners = new string[MAX_ROUNDS];
-                currentRound = 0;
+                currentRound = CURRENT_ROUND;
 
                 TrucoBetValue = TrucoBet.None;
-                currentTrucoPoints = 1;
+                currentTrucoPoints = POINT;
                 bettingPlayerId = null;
                 waitingForResponseToId = null;
 
@@ -296,10 +297,9 @@ namespace TrucoServer
                 {
                     var hand = deck.DealHand();
                     playerHands[player.PlayerID] = hand;
-
                     player.Hand = hand;
-                    gameManager.SaveDealtCards(MatchCode, player);
                     NotifyPlayer(player.PlayerID, callback => callback.ReceiveCards(hand.ToArray()));
+                    gameManager.SaveDealtCards(MatchCode, player);
                 }
 
                 playerEnvidoScores = new Dictionary<int, int>();
@@ -311,7 +311,7 @@ namespace TrucoServer
 
                 EnvidoBetValue = EnvidoBet.None;
                 proposedEnvidoBet = EnvidoBet.None;
-                currentEnvidoPoints = 0;
+                currentEnvidoPoints = CURRENT_ENVIDO_POINT;
                 envidoBettorId = null;
                 waitingForEnvidoResponseId = null;
                 envidoWasPlayed = false;
@@ -331,7 +331,7 @@ namespace TrucoServer
 
                 FlorBetValue = FlorBet.None;
                 proposedFlorBet = FlorBet.None;
-                currentFlorPoints = 0;
+                currentFlorPoints = CURRENT_FLOR_POINT;
                 florBettorId = null;
                 waitingForFlorResponseId = null;
                 florWasPlayed = false;
@@ -353,6 +353,11 @@ namespace TrucoServer
         {
             try
             {
+                if (waitingForFlorResponseId.HasValue)
+                {
+                    return false;
+                }
+
                 if (waitingForEnvidoResponseId.HasValue)
                 {
                     return false;
@@ -360,7 +365,7 @@ namespace TrucoServer
                 
                 var player = GetCurrentTurnPlayer();
 
-                if (player.PlayerID != playerID || (CurrentState != GameState.Truco && CurrentState != GameState.Envido))
+                if (player.PlayerID != playerID || (CurrentState != GameState.Truco && CurrentState != GameState.Envido && CurrentState != GameState.Flor))
                 {
                     return false;
                 }

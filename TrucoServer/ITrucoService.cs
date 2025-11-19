@@ -126,5 +126,8 @@ namespace TrucoServer
 
         [OperationContract(IsOneWay = true)]
         void CallFlor(string matchCode, string betType);
+
+        [OperationContract(IsOneWay = true)]
+        void RespondToFlor(string matchCode, string response);
     }
 }
