@@ -120,5 +120,8 @@ namespace TrucoServer
 
         [OperationContract(IsOneWay = true)]
         void RespondToEnvido(string matchCode, string response);
+
+        [OperationContract(IsOneWay = true)]
+        void GoToDeck(string matchCode);
     }
 }

@@ -2928,5 +2928,28 @@
                 LogManager.LogError(ex, nameof(CallEnvido));
             }
         }
+
+        public void GoToDeck(string matchCode)
+        {
+            try
+            {
+                if (GetMatchAndPlayerID(matchCode, out TrucoMatch match, out int playerID))
+                {
+                    match.PlayerGoesToDeck(playerID);
+                }
+            }
+            catch (InvalidOperationException ex)
+            {
+                LogManager.LogError(ex, nameof(GoToDeck));
+            }
+            catch (NullReferenceException ex)
+            {
+                LogManager.LogError(ex, nameof(GoToDeck));
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError(ex, nameof(GoToDeck));
+            }
+        }
     }
 }

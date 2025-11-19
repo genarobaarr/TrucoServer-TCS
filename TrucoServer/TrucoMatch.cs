@@ -39,6 +39,7 @@ namespace TrucoServer
         private const string DRAW_STATUS = "Draw";
         private const string NO_QUIERO_STATUS = "NoQuiero";
         private const string QUIERO_STATUS = "Quiero";
+        private const string AL_MAZO = "Me voy al mazo";
         private const int INITIAL_SCORE = 0;
         private const int POINT = 1;
         private const int CURRENT_ROUND = 0;
@@ -990,6 +991,43 @@ namespace TrucoServer
             catch (Exception ex)
             {
                 LogManager.LogError(ex, nameof(NotifyResponse));
+            }
+        }
+
+        public void PlayerGoesToDeck(int playerID)
+        {
+            try
+            {
+                var player = Players.FirstOrDefault(p => p.PlayerID == playerID);
+                
+                if (player == null)
+                {
+                    return;
+                }
+
+                if (waitingForEnvidoResponseId.HasValue && waitingForEnvidoResponseId.Value == playerID)
+                {
+                    RespondToEnvido(playerID, NO_QUIERO_STATUS);
+                }
+
+                var opponent = GetOpponentToRespond(player);
+
+                if (opponent == null)
+                {
+                    return;
+                }
+
+                int pointsToAward = GetPointsForBet(TrucoBetValue);
+                NotifyResponse(AL_MAZO, player.Username, TrucoBetValue.ToString());
+                EndHandWithPoints(opponent.Team, pointsToAward);
+            }
+            catch (InvalidOperationException ex)
+            {
+                LogManager.LogWarn(ex.Message, nameof(PlayerGoesToDeck));
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError(ex, nameof(PlayerGoesToDeck));
             }
         }
     }
