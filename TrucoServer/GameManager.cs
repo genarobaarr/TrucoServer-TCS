@@ -11,6 +11,6 @@ namespace TrucoServer
         int SaveMatchToDatabase(string matchCode, List<PlayerInformation> players);
         void SaveDealtCards(string matchCode, PlayerInformation player);
         void SaveRoundResult(string matchCode, string winner);
-        void SaveMatchResult(string matchCode, string loserTeam, int winnerScore, int loserScore);
+        void SaveMatchResult(string matchCode, string winnerTeam, int winnerScore, int loserScore);
     }
 }

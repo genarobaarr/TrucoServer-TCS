@@ -1236,6 +1236,7 @@
                 if (!matchCallbacks.TryGetValue(matchCode, out var playerCallbacks))
                 {
                     LogManager.LogError(new Exception($"No callbacks found for starting match {matchCode}"), nameof(StartMatch));
+                    
                     return;
                 }
 
@@ -1250,6 +1251,7 @@
                         }
 
                         var user = context.User.FirstOrDefault(u => u.username == pInfo.Username);
+                        
                         if (user != null)
                         {                       
                             var pData = new PlayerInformation(user.userID, user.username, pInfo.Team);
@@ -1260,7 +1262,14 @@
 
                             if (playerCb != null)
                             {
-                                gameCallbacks[user.userID] = playerCb;
+                                if (((ICommunicationObject)playerCb).State == CommunicationState.Opened)
+                                {
+                                    gameCallbacks[user.userID] = playerCb;
+                                }
+                                else
+                                {
+                                    LogManager.LogError(new Exception($"Canal cerrado para {pInfo.Username}"), nameof(StartMatch));
+                                }
                             }
                             else
                             {
@@ -1268,6 +1277,12 @@
                             }
                         }
                     }
+                }
+
+                if (gamePlayers.Count != gameCallbacks.Count)
+                {
+                    LogManager.LogError(new Exception($"Discrepancia de jugadores: {gamePlayers.Count} jugadores vs {gameCallbacks.Count} conexiones."), nameof(StartMatch));
+                    return;
                 }
 
                 var newDeck = new Deck(shuffler);

@@ -131,7 +131,7 @@ namespace TrucoServer
                     playedCards[player.PlayerID] = new List<TrucoCard>();
                 }
 
-                gameManager.SaveMatchToDatabase(matchCode, players);
+                gameManager.SaveMatchToDatabase(MatchCode, players);
             }
             catch (ArgumentNullException ex)
             {
@@ -299,7 +299,15 @@ namespace TrucoServer
                     playerHands[player.PlayerID] = hand;
                     player.Hand = hand;
                     NotifyPlayer(player.PlayerID, callback => callback.ReceiveCards(hand.ToArray()));
-                    gameManager.SaveDealtCards(MatchCode, player);
+                    
+                    try
+                    {
+                        gameManager.SaveDealtCards(MatchCode, player);
+                    }
+                    catch (Exception dbEx) 
+                    { 
+                        LogManager.LogError(dbEx, "DB_SaveDealtCards"); 
+                    }
                 }
 
                 playerEnvidoScores = new Dictionary<int, int>();
@@ -500,27 +508,26 @@ namespace TrucoServer
 
                     if (CheckMatchEnd())
                     {
-                        string loserTeamString;
                         string matchWinnerName;
                         int winnerScore;
                         int loserScore;
 
                         if (Team1Score > Team2Score)
                         {
-                            loserTeamString = TEAM_2;
+                            winnerTeam = TEAM_1;
                             winnerScore = Team1Score;
                             loserScore = Team2Score;
                             matchWinnerName = Players.First(p => p.Team == TEAM_1).Username;
                         }
                         else
                         {
-                            loserTeamString = TEAM_1;
+                            winnerTeam = TEAM_2;
                             winnerScore = Team2Score;
                             loserScore = Team1Score;
                             matchWinnerName = Players.First(p => p.Team == TEAM_2).Username;
                         }
 
-                        gameManager.SaveMatchResult(MatchCode, loserTeamString, winnerScore, loserScore);
+                        gameManager.SaveMatchResult(MatchCode, winnerTeam, winnerScore, loserScore);
                         NotifyAll(callback => callback.OnMatchEnded(MatchCode, matchWinnerName));
                     }
                     else
@@ -1120,7 +1127,7 @@ namespace TrucoServer
                 int winnerScore = MAX_SCORE;
                 int loserScore = (loserTeam == TEAM_1) ? Team1Score : Team2Score;
 
-                gameManager.SaveMatchResult(MatchCode, loserTeam, winnerScore, loserScore);
+                gameManager.SaveMatchResult(MatchCode, winnerTeam, winnerScore, loserScore);
                 NotifyAll(callback => callback.OnMatchEnded(MatchCode, matchWinnerName));
             }
             catch (Exception ex)
@@ -1220,7 +1227,7 @@ namespace TrucoServer
                 waitingForFlorResponseId = opponent.PlayerID;
                 proposedFlorBet = newBet;
                 currentFlorPoints = GetPointsForFlorBet(newBet);
-                NotifyAll(cb => cb.NotifyFlorCall(caller.Username, betType, currentFlorPoints, true));
+                NotifyFlorCallHelper(playerID, betType, currentFlorPoints, opponent.PlayerID);
 
                 return true;
             }
@@ -1338,6 +1345,17 @@ namespace TrucoServer
             if (markAsPlayed)
             {
                 florWasPlayed = true;
+            }
+        }
+
+        private void NotifyFlorCallHelper(int callerId, string betName, int currentPoints, int responderId)
+        {
+            var caller = Players.First(p => p.PlayerID == callerId);
+            NotifyPlayer(responderId, callback => callback.NotifyFlorCall(caller.Username, betName, currentPoints, true));
+
+            foreach (var player in Players.Where(p => p.PlayerID != responderId))
+            {
+                NotifyPlayer(player.PlayerID, callback => callback.NotifyFlorCall(caller.Username, betName, currentPoints, false));
             }
         }
     }

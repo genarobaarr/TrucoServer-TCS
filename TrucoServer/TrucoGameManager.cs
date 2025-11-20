@@ -32,6 +32,7 @@ namespace TrucoServer
             unchecked
             {
                 int hash = HASH_SEED;
+                
                 foreach (char c in code)
                 {
                     hash = hash * HASH_MULTIPLIER + c;
@@ -63,8 +64,11 @@ namespace TrucoServer
             {
                 return null;
             }
-            
-            return context.Match.FirstOrDefault(m => m.lobbyID == lobby.lobbyID && m.status == ROUND_INPROGRESS);
+
+            return context.Match
+                .Where(m => m.lobbyID == lobby.lobbyID && m.status == ROUND_INPROGRESS)
+                .OrderByDescending(m => m.startedAt)
+                .FirstOrDefault();
         }
 
         public int SaveMatchToDatabase(string matchCode, List<PlayerInformation> players)
@@ -73,6 +77,14 @@ namespace TrucoServer
             {
                 using (var context = GetContext())
                 {
+
+                    var existingMatch = GetMatchByCode(context, matchCode);
+
+                    if (existingMatch != null)
+                    {
+                        return existingMatch.matchID;
+                    }
+
                     int lobbyId = LOBBY_ID_DEFAULT;
                     int versionId = VERSION_1V1;
 
@@ -176,7 +188,7 @@ namespace TrucoServer
             {
                 using (var context = GetContext())
                 {
-                    var match = context.Match.FirstOrDefault(m => m.status == ROUND_INPROGRESS);
+                    var match = GetMatchByCode(context, matchCode);
                     
                     if (match == null)
                     {
@@ -245,8 +257,8 @@ namespace TrucoServer
             {
                 using (var context = GetContext())
                 {
-                    var match = context.Match.FirstOrDefault(m => m.status == ROUND_INPROGRESS);
-                    
+                    var match = GetMatchByCode(context, matchCode);
+
                     if (match == null)
                     {
                         return;
@@ -290,13 +302,13 @@ namespace TrucoServer
             }
         }
 
-        public void SaveMatchResult(string matchCode, string loserTeam, int winnerScore, int loserScore)
+        public void SaveMatchResult(string matchCode, string winnerTeam, int winnerScore, int loserScore)
         {
             try
             {
                 using (var context = GetContext())
                 {
-                    var match = context.Match.FirstOrDefault(m => m.status == ROUND_INPROGRESS);
+                    var match = GetMatchByCode(context, matchCode);
 
                     if (match == null)
                     {
@@ -307,21 +319,21 @@ namespace TrucoServer
 
                     foreach (var mp in players)
                     {
-                        bool isLoser = string.Equals(mp.team.Trim(), loserTeam.Trim(), StringComparison.OrdinalIgnoreCase);
+                        bool isWinnerTeam = string.Equals(mp.team.Trim(), winnerTeam.Trim(), StringComparison.OrdinalIgnoreCase);
 
-                        if (isLoser)
-                        {
-                            mp.isWinner = false;
-                            mp.score = loserScore;
-                        }
-                        else
+                        if (isWinnerTeam)
                         {
                             mp.isWinner = true;
                             mp.score = winnerScore;
                         }
+                        else
+                        {
+                            mp.isWinner = false;
+                            mp.score = loserScore;
+                        }
 
                         var userStats = context.User.FirstOrDefault(u => u.userID == mp.userID);
-
+                        
                         if (userStats != null)
                         {
                             if (mp.isWinner)
