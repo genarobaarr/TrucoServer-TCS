@@ -237,27 +237,32 @@ namespace TrucoServer
 
                 if (CheckMatchEnd())
                 {
-                    string loserTeamString;
+                    lock (matchLock)
+                    {
+                        matchEnded = true;
+                    }
+
+                    string winnerTeamString;
                     string matchWinnerName;
                     int winnerScore;
                     int loserScore;
 
                     if (Team1Score > Team2Score)
                     {
-                        loserTeamString = TEAM_2;
+                        winnerTeamString = TEAM_1;
                         winnerScore = Team1Score;
                         loserScore = Team2Score;
                         matchWinnerName = Players.First(p => p.Team == TEAM_1).Username;
                     }
                     else
                     {
-                        loserTeamString = TEAM_1;
+                        winnerTeamString = TEAM_2;
                         winnerScore = Team2Score;
                         loserScore = Team1Score;
                         matchWinnerName = Players.First(p => p.Team == TEAM_2).Username;
                     }
 
-                    gameManager.SaveMatchResult(this.DbMatchId, loserTeamString, winnerScore, loserScore);
+                    gameManager.SaveMatchResult(this.DbMatchId, winnerTeamString, winnerScore, loserScore);
                     NotifyAll(callback => callback.OnMatchEnded(MatchCode, matchWinnerName));
                 }
                 else
@@ -871,8 +876,39 @@ namespace TrucoServer
                 {
                     Team2Score += points;
                 }
-                
+
                 NotifyScoreUpdate();
+
+                if (CheckMatchEnd())
+                {
+                    lock (matchLock)
+                    {
+                        matchEnded = true;
+                    }
+
+                    string winnerTeamString;
+                    string matchWinnerName;
+                    int winnerScore;
+                    int loserScore;
+
+                    if (Team1Score > Team2Score)
+                    {
+                        winnerTeamString = TEAM_1;
+                        winnerScore = Team1Score;
+                        loserScore = Team2Score;
+                        matchWinnerName = Players.First(p => p.Team == TEAM_1).Username;
+                    }
+                    else
+                    {
+                        winnerTeamString = TEAM_2;
+                        winnerScore = Team2Score;
+                        loserScore = Team1Score;
+                        matchWinnerName = Players.First(p => p.Team == TEAM_2).Username;
+                    }
+
+                    gameManager.SaveMatchResult(this.DbMatchId, winnerTeamString, winnerScore, loserScore);
+                    NotifyAll(callback => callback.OnMatchEnded(MatchCode, matchWinnerName));
+                }
             }
             catch (InvalidOperationException ex)
             {
@@ -1372,33 +1408,44 @@ namespace TrucoServer
 
         private void AwardFlorPoints(string winningTeam, int points)
         {
-            if (winningTeam == TEAM_1) Team1Score += points;
-            else Team2Score += points;
+            if (winningTeam == TEAM_1)
+            {
+                Team1Score += points;
+            }
+            else
+            {
+                Team2Score += points;
+            }
+
             NotifyScoreUpdate();
 
             if (CheckMatchEnd())
             {
-                string loserTeamString;
+                lock (matchLock)
+                {
+                    matchEnded = true;
+                }
+                string winnerTeamString;
                 string matchWinnerName;
                 int winnerScore;
                 int loserScore;
 
                 if (Team1Score > Team2Score)
                 {
-                    loserTeamString = TEAM_2;
+                    winnerTeamString = TEAM_1;
                     winnerScore = Team1Score;
                     loserScore = Team2Score;
                     matchWinnerName = Players.First(p => p.Team == TEAM_1).Username;
                 }
                 else
                 {
-                    loserTeamString = TEAM_1;
+                    winnerTeamString = TEAM_2;
                     winnerScore = Team2Score;
                     loserScore = Team1Score;
                     matchWinnerName = Players.First(p => p.Team == TEAM_2).Username;
                 }
 
-                gameManager.SaveMatchResult(this.DbMatchId, loserTeamString, winnerScore, loserScore);
+                gameManager.SaveMatchResult(this.DbMatchId, winnerTeamString, winnerScore, loserScore);
                 NotifyAll(callback => callback.OnMatchEnded(MatchCode, matchWinnerName));
             }
         }
