@@ -105,7 +105,7 @@
       <DependentUpon>baseDatosTruco.tt</DependentUpon>
     </Compile>
     <Compile Include="FriendShipMapping.cs" />
-    <Compile Include="GameManager.cs" />
+    <Compile Include="IGameManager.cs" />
     <Compile Include="Invitation.cs">
       <DependentUpon>baseDatosTruco.tt</DependentUpon>
     </Compile>
