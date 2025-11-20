@@ -1218,11 +1218,13 @@
             try
             {
                 ValidatedLobbyData validatedData = null;
+
                 List<PlayerInfo> playersList = GetLobbyPlayers(matchCode);
 
                 using (var context = new baseDatosTrucoEntities())
                 {
                     validatedData = GetAndValidateLobbyForStart(context, matchCode);
+
                     if (validatedData == null)
                     {
                         LogManager.LogWarn($"StartMatch validation failed for {matchCode}", nameof(StartMatch));
@@ -1230,13 +1232,14 @@
                     }
                 }
 
+                int realLobbyId = validatedData.Lobby.lobbyID;
+
                 var gamePlayers = new List<PlayerInformation>();
                 var gameCallbacks = new Dictionary<int, ITrucoCallback>();
 
                 if (!matchCallbacks.TryGetValue(matchCode, out var playerCallbacks))
                 {
                     LogManager.LogError(new Exception($"No callbacks found for starting match {matchCode}"), nameof(StartMatch));
-                    
                     return;
                 }
 
@@ -1246,34 +1249,32 @@
                     {
                         if (pInfo.Username.StartsWith("GUEST_PREFIX"))
                         {
-                            LogManager.LogWarn($"Skipping Guest player {pInfo.Username} for match {matchCode}", nameof(StartMatch));
+                            int guestTempId = -Math.Abs(pInfo.Username.GetHashCode());
+
+                            var pData = new PlayerInformation(guestTempId, pInfo.Username, pInfo.Team);
+                            gamePlayers.Add(pData);
+
+                            var guestCb = matchCallbackToPlayer
+                                .FirstOrDefault(kvp => kvp.Value.Username == pInfo.Username).Key;
+
+                            if (guestCb != null) gameCallbacks[guestTempId] = guestCb;
+
                             continue;
                         }
 
                         var user = context.User.FirstOrDefault(u => u.username == pInfo.Username);
-                        
+
                         if (user != null)
-                        {                       
+                        {
                             var pData = new PlayerInformation(user.userID, user.username, pInfo.Team);
                             gamePlayers.Add(pData);
 
                             var playerCb = matchCallbackToPlayer
                             .FirstOrDefault(kvp => kvp.Value.Username == pInfo.Username).Key;
 
-                            if (playerCb != null)
+                            if (playerCb != null && ((ICommunicationObject)playerCb).State == CommunicationState.Opened)
                             {
-                                if (((ICommunicationObject)playerCb).State == CommunicationState.Opened)
-                                {
-                                    gameCallbacks[user.userID] = playerCb;
-                                }
-                                else
-                                {
-                                    LogManager.LogError(new Exception($"Canal cerrado para {pInfo.Username}"), nameof(StartMatch));
-                                }
-                            }
-                            else
-                            {
-                                LogManager.LogWarn($"No callback found for user {pInfo.Username} in match {matchCode}", nameof(StartMatch));
+                                gameCallbacks[user.userID] = playerCb;
                             }
                         }
                     }
@@ -1281,25 +1282,23 @@
 
                 if (gamePlayers.Count != gameCallbacks.Count)
                 {
-                    LogManager.LogError(new Exception($"Discrepancia de jugadores: {gamePlayers.Count} jugadores vs {gameCallbacks.Count} conexiones."), nameof(StartMatch));
+                    LogManager.LogError(new Exception($"Discrepancia: {gamePlayers.Count} jugadores vs {gameCallbacks.Count} conexiones."), nameof(StartMatch));
                     return;
                 }
 
                 var newDeck = new Deck(shuffler);
-                var newGame = new TrucoMatch(matchCode, gamePlayers, gameCallbacks, newDeck, gameManager);
+                var newGame = new TrucoMatch(matchCode, realLobbyId, gamePlayers, gameCallbacks, newDeck, gameManager);
 
                 if (!runningGames.TryAdd(matchCode, newGame))
                 {
-                    LogManager.LogError(new Exception($"Failed to add running game {matchCode} to dictionary"), nameof(StartMatch));
+                    LogManager.LogError(new Exception($"Failed to add running game {matchCode}"), nameof(StartMatch));
                     return;
                 }
 
                 NotifyMatchStart(matchCode, playersList);
-
                 HandleMatchStartupCleanup(matchCode);
 
                 Task.Delay(500).Wait();
-
                 newGame.StartNewHand();
             }
             catch (CommunicationException ex)
@@ -1380,117 +1379,6 @@
             {
                 LogManager.LogError(ex, nameof(GetAndValidateLobbyForStart));
                 return null;
-            }
-        }
-
-        private bool CreateMatchFromLobby(baseDatosTrucoEntities context, ValidatedLobbyData data)
-        {
-            try
-            {
-                var existingMatch = context.Match.FirstOrDefault(m => m.lobbyID == data.Lobby.lobbyID);
-
-                int matchId;
-                if (existingMatch != null)
-                {
-                    matchId = existingMatch.matchID;
-                    Console.WriteLine($"[MATCH] Match already exists for lobby {data.Lobby.lobbyID} (matchID={matchId}). Will ensure players exist.");
-                }
-                else
-                {
-                    var newMatch = new Match
-                    {
-                        lobbyID = data.Lobby.lobbyID,
-                        versionID = data.Lobby.versionID,
-                        status = INPROGRESS_STATUS,
-                        startedAt = DateTime.Now
-                    };
-
-                    context.Match.Add(newMatch);
-                    context.SaveChanges();
-                    matchId = newMatch.matchID;
-                    Console.WriteLine($"[MATCH] Created match {matchId} for lobby {data.Lobby.lobbyID}.");
-                }
-
-                var existingPlayerUserIds = context.MatchPlayer
-                    .Where(mp => mp.matchID == matchId)
-                    .Select(mp => mp.userID)
-                    .ToHashSet();
-
-                var distinctMembers = data.Members
-                    .GroupBy(m => m.userID)
-                    .Select(g => g.First())
-                    .ToList();
-
-                int team1Count = context.MatchPlayer.Count(mp => mp.matchID == matchId && mp.team == TEAM_1);
-                int team2Count = context.MatchPlayer.Count(mp => mp.matchID == matchId && mp.team == TEAM_2);
-
-                foreach (var member in distinctMembers)
-                {
-                    if (existingPlayerUserIds.Contains(member.userID))
-                    {
-                        Console.WriteLine($"[MATCH] Skipping already added userID={member.userID} for match {matchId}.");
-                        continue;
-                    }
-
-                    string rawTeam = (member.team ?? string.Empty).Trim();
-                    string correctTeam;
-
-                    if (string.Equals(rawTeam, TEAM_1, StringComparison.OrdinalIgnoreCase))
-                    {
-                        correctTeam = TEAM_1;
-                    }
-                    else if (string.Equals(rawTeam, TEAM_2, StringComparison.OrdinalIgnoreCase))
-                    {
-                        correctTeam = TEAM_2;
-                    }
-                    else
-                    {
-                        correctTeam = (team1Count <= team2Count) ? TEAM_1 : TEAM_2;
-                        Console.WriteLine($"[MATCH WARNING] Invalid or empty team '{rawTeam}' detected for userID={member.userID}. Assigned {correctTeam} instead.");
-                    }
-
-                    if (correctTeam == TEAM_1)
-                    {
-                        team1Count++;
-                    }
-                    else
-                    {
-                        team2Count++;
-                    }
-
-                    Console.WriteLine($"[MATCH] Adding userID={member.userID} with team='{correctTeam}'.");
-
-                    context.MatchPlayer.Add(new MatchPlayer
-                    {
-                        matchID = matchId,
-                        userID = member.userID,
-                        team = correctTeam,
-                        score = 0,
-                        isWinner = false
-                    });
-
-                    existingPlayerUserIds.Add(member.userID);
-                }
-
-                Console.WriteLine($"[MATCH DEBUG] About to SaveChanges() for match {matchId}. Teams inserted: T1={team1Count}, T2={team2Count}");
-
-                context.SaveChanges();
-                return true;
-            }
-            catch (DbUpdateException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(CreateMatchFromLobby)} - Database Error (Possible duplicate key)");
-                return false;
-            }
-            catch (SqlException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(CreateMatchFromLobby)} - SQL Server Error");
-                return false;
-            }
-            catch (Exception ex)
-            {
-                LogManager.LogError(ex, nameof(CreateMatchFromLobby));
-                return false;
             }
         }
 

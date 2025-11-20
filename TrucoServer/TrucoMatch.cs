@@ -58,6 +58,8 @@ namespace TrucoServer
         private const int CURRENT_FLOR_POINT = 0;
 
         public string MatchCode { get; private set; }
+        public int DbMatchId { get; private set; }
+        public int LobbyID { get; private set; }
         public List<PlayerInformation> Players { get; private set; }
         public Dictionary<int, ITrucoCallback> PlayerCallbacks { get; private set; }
         public int Team1Score { get; private set; }
@@ -99,20 +101,20 @@ namespace TrucoServer
         private bool florWasPlayed;
         private Dictionary<int, int> playerFlorScores;
         
-        public TrucoMatch(
-            string matchCode,
-            List<PlayerInformation> players,
-            Dictionary<int, ITrucoCallback> callbacks,
-            ITrucoDeck deck,
-            IGameManager gameManager)
+        public TrucoMatch(string matchCode, int lobbyId, List<PlayerInformation> players, Dictionary<int, 
+            ITrucoCallback> callbacks, ITrucoDeck deck, IGameManager gameManager)
         {
             try
             {
                 this.MatchCode = matchCode;
+                this.LobbyID = lobbyId;
+                this.DbMatchId = gameManager.SaveMatchToDatabase(MatchCode, lobbyId, players);
+
                 this.Players = players;
                 this.PlayerCallbacks = callbacks;
                 this.deck = deck;
                 this.gameManager = gameManager;
+
                 this.playerHands = new Dictionary<int, List<TrucoCard>>();
                 this.playedCards = new Dictionary<int, List<TrucoCard>>();
                 this.cardsOnTable = new Dictionary<int, TrucoCard>();
@@ -122,7 +124,7 @@ namespace TrucoServer
                 this.CurrentState = GameState.Deal;
                 this.TrucoBetValue = TrucoBet.None;
                 this.currentTrucoPoints = POINT;
-                this.handStartingPlayerIndex = 0; // Acá se debería modificar para q inicie uno al azar
+                this.handStartingPlayerIndex = 0;
                 this.turnIndex = 0;
 
                 foreach (var player in players)
@@ -131,7 +133,7 @@ namespace TrucoServer
                     playedCards[player.PlayerID] = new List<TrucoCard>();
                 }
 
-                gameManager.SaveMatchToDatabase(MatchCode, players);
+                gameManager.SaveMatchToDatabase(MatchCode, LobbyID, players);
             }
             catch (ArgumentNullException ex)
             {
@@ -254,7 +256,7 @@ namespace TrucoServer
                         matchWinnerName = Players.First(p => p.Team == TEAM_2).Username;
                     }
 
-                    gameManager.SaveMatchResult(MatchCode, loserTeamString, winnerScore, loserScore);
+                    gameManager.SaveMatchResult(this.DbMatchId, loserTeamString, winnerScore, loserScore);
                     NotifyAll(callback => callback.OnMatchEnded(MatchCode, matchWinnerName));
                 }
                 else
@@ -527,7 +529,7 @@ namespace TrucoServer
                             matchWinnerName = Players.First(p => p.Team == TEAM_2).Username;
                         }
 
-                        gameManager.SaveMatchResult(MatchCode, winnerTeam, winnerScore, loserScore);
+                        gameManager.SaveMatchResult(this.DbMatchId, winnerTeam, winnerScore, loserScore);
                         NotifyAll(callback => callback.OnMatchEnded(MatchCode, matchWinnerName));
                     }
                     else
@@ -1100,34 +1102,28 @@ namespace TrucoServer
                 {
                     return;
                 }
-
                 matchEnded = true;
             }
 
             try
             {
                 var leaver = Players.FirstOrDefault(p => p.Username == playerUsername);
-
                 if (leaver == null)
                 {
                     return;
                 }
 
-                var winnerPlayer = Players.FirstOrDefault(p => p.Team != leaver.Team);
+                string loserTeam = leaver.Team;
+                string winnerTeam = (loserTeam == TEAM_1) ? TEAM_2 : TEAM_1;
 
-                if (winnerPlayer == null)
-                {
-                    return;
-                }
-
-                string winnerTeam = winnerPlayer.Team;
-                string loserTeam = leaver.Team; 
-                string matchWinnerName = winnerPlayer.Username;
-
-                int winnerScore = MAX_SCORE;
+                int winnerScore = (winnerTeam == TEAM_1) ? Team1Score : Team2Score;
                 int loserScore = (loserTeam == TEAM_1) ? Team1Score : Team2Score;
 
-                gameManager.SaveMatchResult(MatchCode, winnerTeam, winnerScore, loserScore);
+                var winnerPlayer = Players.FirstOrDefault(p => p.Team == winnerTeam);
+                string matchWinnerName = winnerPlayer != null ? winnerPlayer.Username : "Oponente";
+
+                gameManager.SaveMatchResult(this.DbMatchId, winnerTeam, winnerScore, loserScore);
+
                 NotifyAll(callback => callback.OnMatchEnded(MatchCode, matchWinnerName));
             }
             catch (Exception ex)

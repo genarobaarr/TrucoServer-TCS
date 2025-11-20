@@ -4,8 +4,6 @@ using System.Data.Entity.Infrastructure;
 using System.Data.Entity.Validation;
 using System.Data.SqlClient;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace TrucoServer
 {
@@ -71,43 +69,21 @@ namespace TrucoServer
                 .FirstOrDefault();
         }
 
-        public int SaveMatchToDatabase(string matchCode, List<PlayerInformation> players)
+        public int SaveMatchToDatabase(string matchCode, int lobbyId, List<PlayerInformation> players)
         {
             try
             {
                 using (var context = GetContext())
                 {
-
-                    var existingMatch = GetMatchByCode(context, matchCode);
+                    var existingMatch = context.Match
+                        .FirstOrDefault(m => m.lobbyID == lobbyId && m.status == ROUND_INPROGRESS);
 
                     if (existingMatch != null)
                     {
                         return existingMatch.matchID;
                     }
 
-                    int lobbyId = LOBBY_ID_DEFAULT;
-                    int versionId = VERSION_1V1;
-
-                    if (players != null && players.Count == 4)
-                    {
-                        versionId = VERSION_2V2;
-                    }
-
-                    int numericCode = GenerateNumericCodeFromString(matchCode);
-                    var invitation = context.Invitation.FirstOrDefault(i => i.code == numericCode);
-
-                    if (invitation != null)
-                    {
-                        var realLobby = context.Lobby
-                            .Where(l => l.ownerID == invitation.senderID && l.status != ROUND_FINISHED)
-                            .OrderByDescending(l => l.createdAt)
-                            .FirstOrDefault();
-
-                        if (realLobby != null)
-                        {
-                            lobbyId = realLobby.lobbyID;
-                        }
-                    }
+                    int versionId = (players != null && players.Count == 4) ? VERSION_2V2 : VERSION_1V1;
 
                     var match = new Match
                     {
@@ -120,31 +96,33 @@ namespace TrucoServer
                     context.Match.Add(match);
                     context.SaveChanges();
 
-                    foreach (var p in players)
+                    if (players != null)
                     {
-                        var user = context.User.FirstOrDefault(u => u.username == p.Username);
-
-                        if (user == null)
+                        foreach (var p in players)
                         {
-                            continue;
+                            var user = context.User.FirstOrDefault(u => u.username == p.Username);
+
+                            if (user == null)
+                            {
+                                continue;
+                            }
+
+                            context.MatchPlayer.Add(new MatchPlayer
+                            {
+                                matchID = match.matchID,
+                                userID = user.userID,
+                                team = p.Team,
+                                score = INITIAL_SCORE,
+                                isWinner = false
+                            });
                         }
-
-                        context.MatchPlayer.Add(new MatchPlayer
-                        {
-                            matchID = match.matchID,
-                            userID = user.userID,
-                            team = p.Team,
-                            score = INITIAL_SCORE,
-                            isWinner = false
-                        });
+                        context.SaveChanges();
                     }
-
-                    context.SaveChanges();
 
                     var round = new Round
                     {
                         matchID = match.matchID,
-                        number = 1, // TODO: Ajustar si es necesario
+                        number = 1,
                         status = ROUND_PLAYING,
                         isActive = true
                     };
@@ -302,22 +280,26 @@ namespace TrucoServer
             }
         }
 
-        public void SaveMatchResult(string matchCode, string winnerTeam, int winnerScore, int loserScore)
+        public void SaveMatchResult(int matchId, string winnerTeam, int winnerScore, int loserScore)
         {
             try
             {
                 using (var context = GetContext())
                 {
-                    var match = GetMatchByCode(context, matchCode);
+                    var match = context.Match.Find(matchId);
 
                     if (match == null)
                     {
+                        LogManager.LogError(new Exception($"Match ID {matchId} not found in DB"), nameof(SaveMatchResult));
                         return;
                     }
 
-                    var players = context.MatchPlayer.Where(mp => mp.matchID == match.matchID).ToList();
+                    match.status = "Finished";
+                    match.endedAt = DateTime.Now;
 
-                    foreach (var mp in players)
+                    var dbPlayers = context.MatchPlayer.Where(mp => mp.matchID == matchId).ToList();
+
+                    foreach (var mp in dbPlayers)
                     {
                         bool isWinnerTeam = string.Equals(mp.team.Trim(), winnerTeam.Trim(), StringComparison.OrdinalIgnoreCase);
 
@@ -329,14 +311,13 @@ namespace TrucoServer
                         else
                         {
                             mp.isWinner = false;
-                            mp.score = loserScore;
+                            mp.score = loserScore; 
                         }
 
                         var userStats = context.User.FirstOrDefault(u => u.userID == mp.userID);
-                        
                         if (userStats != null)
                         {
-                            if (mp.isWinner)
+                            if (isWinnerTeam)
                             {
                                 userStats.wins++;
                             }
@@ -347,9 +328,8 @@ namespace TrucoServer
                         }
                     }
 
-                    match.status = ROUND_FINISHED;
-                    match.endedAt = DateTime.Now;
                     context.SaveChanges();
+                    Console.WriteLine($"[DB] Match {matchId} finalizado correctamente. Ganador: {winnerTeam}.");
                 }
             }
             catch (DbEntityValidationException ex)
