@@ -75,23 +75,38 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="ConfigurationReader.cs" />
+    <Compile Include="ActiveMatchSTests.cs" />
+    <Compile Include="ActiveMatchTests.cs" />
+    <Compile Include="ConfigurationFileWrapperSTests.cs" />
+    <Compile Include="ConfigurationFileWrapperTests.cs" />
+    <Compile Include="ConfigurationReaderTests.cs" />
     <Compile Include="EfHelpersTests.cs" />
     <Compile Include="EmailSettingsTests.cs" />
+    <Compile Include="EmmailSettingsSTests.cs" />
     <Compile Include="FriendDataSTests.cs" />
     <Compile Include="FriendDataTests.cs" />
+    <Compile Include="FriendShipMappingSTests.cs" />
+    <Compile Include="FriendShipMappingTests.cs" />
+    <Compile Include="LogManagerTests.cs" />
     <Compile Include="MatchResultSTests.cs" />
     <Compile Include="MatchResultTests.cs" />
     <Compile Include="PasswordHasherTests.cs" />
+    <Compile Include="PlayerInformationSTests.cs" />
+    <Compile Include="PlayerInformationTests.cs" />
+    <Compile Include="PlayerInfoSTests.cs" />
+    <Compile Include="PlayerInfoTests.cs" />
     <Compile Include="PlayerStatsSTests.cs" />
     <Compile Include="PlayerStatsTests.cs" />
+    <Compile Include="PublicLobyInfoSTests.cs" />
+    <Compile Include="PublicLobyInfoTests.cs" />
     <Compile Include="SocialLinksSTests.cs" />
     <Compile Include="SocialLinksTests.cs" />
     <Compile Include="TrucoServerTests.cs" />
-    <Compile Include="UnitTest1.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="UserProfileDataSTest.cs" />
-    <Compile Include="UserProfileDataTest.cs" />
+    <Compile Include="UserProfileDataSTests.cs" />
+    <Compile Include="UserProfileDataTests.cs" />
+    <Compile Include="ValidatedLobbyDataSTests.cs" />
+    <Compile Include="ValidatedLobbyDataTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />

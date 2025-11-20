@@ -37,7 +37,6 @@ namespace TrucoServer.Tests
             FieldInfo field = type.GetField("emailSettings", BindingFlags.NonPublic | BindingFlags.Static);
             field?.SetValue(null, null);
 
-            // Eliminar el archivo de configuración de prueba si existe
             if (File.Exists(TestFilePath))
             {
                 File.Delete(TestFilePath);

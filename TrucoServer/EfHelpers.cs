@@ -5,7 +5,7 @@ using System.Text;
 
 namespace TrucoServer
 {
-    static class EfHelpers //El static se cambia a public para poder probarlo y viceversa para correr el server
+    public static class EfHelpers //El static se cambia a public para poder probarlo y viceversa para correr el server
     {
         private const BindingFlags REFLECTIONFLAGS = BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase;
 

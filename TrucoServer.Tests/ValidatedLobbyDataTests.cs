@@ -1,0 +1,84 @@
+﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace TrucoServer.Tests
+{
+    [TestClass]
+    public class ValidatedLobbyDataTests
+    {
+        [TestMethod]
+        public void TestLobbyPropertySetReturnsCorrectObject()
+        {
+            var validatedLobby = new ValidatedLobbyData();
+            var lobby = new Lobby();
+
+            validatedLobby.Lobby = lobby;
+
+            Assert.AreEqual(lobby, validatedLobby.Lobby);
+        }
+
+        [TestMethod]
+        public void TestMembersListInitializeReturnsEmptyList()
+        {
+            var validatedLobby = new ValidatedLobbyData();
+            var members = new List<LobbyMember>();
+
+            validatedLobby.Members = members;
+
+            Assert.AreEqual(0, validatedLobby.Members.Count);
+        }
+
+        [TestMethod]
+        public void TestGuestsListInitializeReturnsNull()
+        {
+            var validatedLobby = new ValidatedLobbyData();
+
+            Assert.IsNull(validatedLobby.Guests);
+        }
+
+        [TestMethod]
+        public void TestGuestsListSetReturnsCorrectCount()
+        {
+            var validatedLobby = new ValidatedLobbyData();
+            var guests = new List<PlayerInfo> { new PlayerInfo(), new PlayerInfo() };
+
+            validatedLobby.Guests = guests;
+
+            Assert.AreEqual(2, validatedLobby.Guests.Count);
+        }
+
+        [TestMethod]
+        public void TestLobbySetNullReturnsNull()
+        {
+            var validatedLobby = new ValidatedLobbyData();
+
+            validatedLobby.Lobby = null;
+
+            Assert.IsNull(validatedLobby.Lobby);
+        }
+
+        [TestMethod]
+        public void TestMembersSetNullReturnsNull()
+        {
+            var validatedLobby = new ValidatedLobbyData();
+
+            validatedLobby.Members = null;
+
+            Assert.IsNull(validatedLobby.Members);
+        }
+
+        [TestMethod]
+        public void TestGuestsSetNullReturnsNull()
+        {
+            var validatedLobby = new ValidatedLobbyData();
+
+            validatedLobby.Guests = null;
+
+            Assert.IsNull(validatedLobby.Guests);
+        }
+    }
+}
