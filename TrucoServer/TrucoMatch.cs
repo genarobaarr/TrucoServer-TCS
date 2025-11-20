@@ -34,8 +34,7 @@ namespace TrucoServer
     {
         None,
         Flor,
-        ContraFlor,
-        ContraFlorAlResto
+        ContraFlor
     }
 
     public class TrucoMatch
@@ -56,6 +55,8 @@ namespace TrucoServer
         private const int INDEX_VALUE = 0;
         private const int CURRENT_FLOR_SCORE = 0;
         private const int CURRENT_FLOR_POINT = 0;
+        private const int POINTS_FLOR_DIRECT = 3;
+        private const int POINTS_CONTRA_FLOR = 4;
 
         public string MatchCode { get; private set; }
         public int DbMatchId { get; private set; }
@@ -283,6 +284,11 @@ namespace TrucoServer
                 deck.Shuffle();
                 playerHands.Clear();
                 cardsOnTable.Clear();
+
+                foreach (var key in playedCards.Keys.ToList())
+                {
+                    playedCards[key].Clear();
+                }
 
                 roundWinners = new string[MAX_ROUNDS];
                 currentRound = CURRENT_ROUND;
@@ -1144,11 +1150,6 @@ namespace TrucoServer
                     case FlorBet.ContraFlor:
                         return 6; 
 
-                    case FlorBet.ContraFlorAlResto:
-                        int leaderScore = (Team1Score > Team2Score) ? Team1Score : Team2Score;
-                    
-                        return MAX_SCORE - leaderScore;
-                    
                     default:
                         return 0;
                 }
@@ -1164,30 +1165,23 @@ namespace TrucoServer
         {
             try
             {
-                if (florWasPlayed)
+                bool anyCardPlayed = playedCards.Values.Any(list => list.Count > 0);
+                if (anyCardPlayed)
                 {
                     return false;
                 }
 
-                if (waitingForFlorResponseId.HasValue)
+                if (florWasPlayed || waitingForFlorResponseId.HasValue)
                 {
                     return false;
                 }
 
-                if (CurrentState != GameState.Envido && CurrentState != GameState.Flor && CurrentState != GameState.Truco)
+                if (CurrentState == GameState.Truco)
                 {
-                    if (CurrentState == GameState.Truco)
-                    {
-                        if (waitingForResponseToId.HasValue) return false;
-                    }
-                    else
-                    {
-                        return false;
-                    }
+                    return false;
                 }
 
                 var caller = Players.FirstOrDefault(p => p.PlayerID == playerID);
-                
                 if (caller == null)
                 {
                     return false;
@@ -1199,33 +1193,42 @@ namespace TrucoServer
                     return false;
                 }
 
-                FlorBet newBet;
-                
-                if (!Enum.TryParse(betType, out newBet))
-                {
-                    return false;
-                }
-
                 var opponent = GetOpponentToRespond(caller);
-                
                 if (opponent == null)
                 {
                     return false;
                 }
 
-                if (CurrentState == GameState.Envido)
+                bool opponentHasFlor = playerFlorScores[opponent.PlayerID] > -1;
+
+                if (!opponentHasFlor)
                 {
-                    ResetEnvidoState(false);
+                    AwardFlorPoints(caller.Team, POINTS_FLOR_DIRECT);
+
+                    NotifyAll(cb => cb.NotifyFlorCall(caller.Username, "Flor", POINTS_FLOR_DIRECT, false));
+                    NotifyAll(cb => cb.NotifyEnvidoResult(caller.Username, POINTS_FLOR_DIRECT, POINTS_FLOR_DIRECT));
+
+                    florWasPlayed = true;
+                    CurrentState = GameState.Truco;
+                    NotifyTurnChange();
+                    return true;
                 }
+                else
+                {
+                    if (CurrentState == GameState.Envido)
+                    {
+                        ResetEnvidoState(false);
+                    }
 
-                CurrentState = GameState.Flor;
-                florBettorId = playerID;
-                waitingForFlorResponseId = opponent.PlayerID;
-                proposedFlorBet = newBet;
-                currentFlorPoints = GetPointsForFlorBet(newBet);
-                NotifyFlorCallHelper(playerID, betType, currentFlorPoints, opponent.PlayerID);
+                    CurrentState = GameState.Flor;
+                    florBettorId = playerID;
+                    waitingForFlorResponseId = opponent.PlayerID;
+                    FlorBetValue = FlorBet.Flor;
 
-                return true;
+                    NotifyFlorCallHelper(playerID, "Flor", POINTS_FLOR_DIRECT, opponent.PlayerID);
+
+                    return true;
+                }
             }
             catch (Exception ex)
             {
@@ -1244,39 +1247,22 @@ namespace TrucoServer
                 }
 
                 var responder = Players.First(p => p.PlayerID == playerID);
-                var caller = Players.First(p => p.PlayerID == florBettorId.Value);
 
-                florWasPlayed = true;
 
-                if (response == NO_QUIERO_STATUS)
+                if (response == "ContraFlor")
                 {
-                    int pointsToAward = (FlorBetValue == FlorBet.None) ? 3 : GetPointsForFlorBet(FlorBetValue);
+                    FlorBetValue = FlorBet.ContraFlor;
                     NotifyResponse(response, responder.Username, FlorBetValue.ToString());
-                    AwardEnvidoPoints(caller.Team, pointsToAward);
+
+                    ResolveContraFlor();
+                }
+                else if (response == NO_QUIERO_STATUS)
+                {
+                    var caller = Players.First(p => p.PlayerID == florBettorId.Value);
+                    AwardFlorPoints(caller.Team, POINTS_FLOR_DIRECT);
                     ResetFlorState();
                     CurrentState = GameState.Truco;
                     NotifyTurnChange();
-                }
-                else if (response == QUIERO_STATUS)
-                {
-                    FlorBetValue = proposedFlorBet;
-
-                    NotifyResponse(response, responder.Username, FlorBetValue.ToString());
-                    ResolveFlor();
-
-                    CurrentState = GameState.Truco;
-                    NotifyTurnChange();
-                }
-                else
-                {
-                    if (playerFlorScores[playerID] == -1)
-                    {
-                        LogManager.LogWarn($"Jugador {responder.Username} intentó Contra-flor sin tener Flor.", nameof(RespondToFlor));
-                        return;
-                    }
-
-                    ResetFlorState(false);
-                    CallFlor(playerID, response);
                 }
             }
             catch (InvalidOperationException ex)
@@ -1327,6 +1313,93 @@ namespace TrucoServer
             catch (Exception ex)
             {
                 LogManager.LogError(ex, nameof(ResolveFlor));
+            }
+        }
+
+        private void ResolveContraFlor()
+        {
+            try
+            {
+                int id1 = florBettorId.Value;
+                int id2 = waitingForFlorResponseId.Value;
+
+                int score1 = playerFlorScores[id1];
+                int score2 = playerFlorScores[id2];
+
+                int winnerId = -1;
+
+                if (score1 > score2)
+                {
+                    winnerId = id1;
+                }
+                else if (score2 > score1)
+                {
+                    winnerId = id2;
+                }
+                else
+                {
+                    var manoPlayer = Players[handStartingPlayerIndex];
+
+                    if (Players.Count == 2)
+                    {
+                        winnerId = (manoPlayer.PlayerID == id1) ? id1 : id2;
+                    }
+                    else
+                    {
+                        var team1 = Players.First(p => p.PlayerID == id1).Team;
+                        if (manoPlayer.Team == team1) winnerId = id1;
+                        else winnerId = id2;
+                    }
+                }
+
+                var winner = Players.First(p => p.PlayerID == winnerId);
+
+                string message = $"Contra Flor: {winner.Username} gana con {Math.Max(score1, score2)} vs {Math.Min(score1, score2)}";
+
+                NotifyAll(cb => cb.NotifyEnvidoResult(winner.Username, Math.Max(score1, score2), POINTS_CONTRA_FLOR));
+
+                AwardFlorPoints(winner.Team, POINTS_CONTRA_FLOR);
+
+                ResetFlorState();
+                CurrentState = GameState.Truco;
+                NotifyTurnChange();
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError(ex, nameof(ResolveContraFlor));
+            }
+        }
+
+        private void AwardFlorPoints(string winningTeam, int points)
+        {
+            if (winningTeam == TEAM_1) Team1Score += points;
+            else Team2Score += points;
+            NotifyScoreUpdate();
+
+            if (CheckMatchEnd())
+            {
+                string loserTeamString;
+                string matchWinnerName;
+                int winnerScore;
+                int loserScore;
+
+                if (Team1Score > Team2Score)
+                {
+                    loserTeamString = TEAM_2;
+                    winnerScore = Team1Score;
+                    loserScore = Team2Score;
+                    matchWinnerName = Players.First(p => p.Team == TEAM_1).Username;
+                }
+                else
+                {
+                    loserTeamString = TEAM_1;
+                    winnerScore = Team2Score;
+                    loserScore = Team1Score;
+                    matchWinnerName = Players.First(p => p.Team == TEAM_2).Username;
+                }
+
+                gameManager.SaveMatchResult(this.DbMatchId, loserTeamString, winnerScore, loserScore);
+                NotifyAll(callback => callback.OnMatchEnded(MatchCode, matchWinnerName));
             }
         }
 

@@ -37,17 +37,17 @@ namespace TrucoServer
                     throw new InvalidOperationException("La clave 'EmailSettings' no se encontró o no pudo ser deserializada.");
                 }
             }
-            catch (FileNotFoundException)
+            catch (FileNotFoundException ex)
             {
-                throw new FileNotFoundException($"El archivo de configuración '{filePath}' no se encuentra en el directorio de ejecución (bin/Debug).");
+                LogManager.LogFatal(ex, nameof(LoadConfiguration));
             }
             catch (JsonException ex)
             {
-                throw new InvalidOperationException($"Error al parsear el archivo JSON {ex.Message}");
+                LogManager.LogFatal(ex, nameof(LoadConfiguration));
             }
             catch (Exception ex)
             {
-                throw new InvalidOperationException($"Error al cargar la configuración: {ex.Message}");
+                LogManager.LogFatal(ex, nameof(LoadConfiguration));
             }
         }
     }
