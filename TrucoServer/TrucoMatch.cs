@@ -171,16 +171,8 @@ namespace TrucoServer
                     var hand = deck.DealHand();
                     playerHands[player.PlayerID] = hand;
                     player.Hand = hand;
-                    NotifyPlayer(player.PlayerID, callback => callback.ReceiveCards(hand.ToArray()));
 
-                    try
-                    {
-                        gameManager.SaveDealtCards(MatchCode, player);
-                    }
-                    catch (Exception dbEx)
-                    {
-                        LogManager.LogError(dbEx, "DB_SaveDealtCards");
-                    }
+                    NotifyPlayer(player.PlayerID, callback => callback.ReceiveCards(hand.ToArray()));
                 }
 
                 playerEnvidoScores = Players.ToDictionary(
@@ -1019,7 +1011,6 @@ namespace TrucoServer
 
             string winnerName = roundWinner?.Username ?? DRAW_STATUS;
 
-            gameManager.SaveRoundResult(MatchCode, winnerName);
             NotifyAll(callback => callback.NotifyRoundEnd(winnerName, Team1Score, Team2Score));
         }
 

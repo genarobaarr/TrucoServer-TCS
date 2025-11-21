@@ -10,9 +10,9 @@ namespace TrucoServer
 {
     public class TrucoGameManager : IGameManager
     {
-        private const string ROUND_INPROGRESS = "InProgress";
-        private const string ROUND_FINISHED = "Finished";
-        private const string ROUND_PLAYING = "Playing";
+        private const string STATUS_INPROGRESS = "InProgress";
+        private const string STATUS_FINISHED = "Finished";
+        private const string STATUS_PLAYING = "Playing";
 
         private const int INITIAL_SCORE = 0;
         private const int VERSION_1V1 = 1;
@@ -40,8 +40,6 @@ namespace TrucoServer
                     {
                         AddPlayersToMatch(context, match.matchID, players);
                     }
-                    
-                    CreateInitialRound(context, match.matchID);
 
                     return match.matchID;
                 }
@@ -73,118 +71,6 @@ namespace TrucoServer
             }
         }
 
-        public void SaveDealtCards(string matchCode, PlayerInformation player)
-        {
-            try
-            {
-                using (var context = GetContext())
-                {
-                    var match = GetMatchByCode(context, matchCode);
-
-                    if (match == null)
-                    {
-                        return;
-                    }
-
-                    var round = context.Round.FirstOrDefault(r => r.matchID == match.matchID && r.isActive == true);
-
-                    if (round == null)
-                    {
-                        return;
-                    }
-
-                    var user = context.User.FirstOrDefault(u => u.username == player.Username);
-
-                    if (user == null)
-                    {
-                        return;
-                    }
-
-                    foreach (var card in player.Hand)
-                    {
-                        var cardEntity = context.Card.FirstOrDefault(c =>
-                            c.suit == card.CardSuit.ToString() &&
-                            c.rank == card.CardRank.ToString());
-
-                        if (cardEntity != null)
-                        {
-                            context.DealtCard.Add(new DealtCard
-                            {
-                                roundID = round.roundID,
-                                playerID = user.userID,
-                                cardID = cardEntity.cardID
-                            });
-                        }
-                    }
-
-                    context.SaveChanges();
-                }
-            }
-            catch (DbUpdateException ex)
-            {
-                LogManager.LogError(ex, nameof(SaveDealtCards));
-            }
-            catch (SqlException ex)
-            {
-                LogManager.LogError(ex, nameof(SaveDealtCards));
-            }
-            catch (InvalidOperationException ex)
-            {
-                LogManager.LogError(ex, nameof(SaveDealtCards));
-            }
-            catch (Exception ex)
-            {
-                LogManager.LogError(ex, nameof(SaveDealtCards));
-            }
-        }
-
-        public void SaveRoundResult(string matchCode, string winner)
-        {
-            try
-            {
-                using (var context = GetContext())
-                {
-                    var match = GetMatchByCode(context, matchCode);
-
-                    if (match == null)
-                    {
-                        return;
-                    }
-
-                    var round = context.Round.FirstOrDefault(r => r.matchID == match.matchID && r.isActive == true);
-
-                    if (round == null)
-                    {
-                        return;
-                    }
-
-                    var winnerUsername = context.User.FirstOrDefault(u => u.username == winner);
-
-                    round.status = ROUND_FINISHED;
-                    round.isActive = false;
-                    round.winnerID = winnerUsername?.userID;
-
-                    context.SaveChanges();
-                }
-            }
-            catch (DbUpdateException ex)
-            {
-                LogManager.LogError(ex, nameof(SaveRoundResult));
-            }
-            catch (SqlException ex)
-            {
-                LogManager.LogError(ex, nameof(SaveRoundResult));
-            }
-            catch (InvalidOperationException ex)
-            {
-                LogManager.LogError(ex, nameof(SaveRoundResult));
-            }
-            catch (Exception ex)
-            {
-                LogManager.LogError(ex, nameof(SaveRoundResult));
-            }
-        }
-
         public void SaveMatchResult(int matchId, string winnerTeam, int winnerScore, int loserScore)
         {
             try
@@ -199,7 +85,7 @@ namespace TrucoServer
                         return;
                     }
 
-                    match.status = "Finished";
+                    match.status = STATUS_FINISHED;
                     match.endedAt = DateTime.Now;
 
                     var dbPlayers = context.MatchPlayer.Where(mp => mp.matchID == matchId).ToList();
@@ -269,7 +155,7 @@ namespace TrucoServer
             {
                 lobbyID = lobbyId,
                 versionID = versionId,
-                status = ROUND_INPROGRESS,
+                status = STATUS_INPROGRESS,
                 startedAt = DateTime.Now
             };
 
@@ -284,7 +170,10 @@ namespace TrucoServer
             {
                 var user = context.User.FirstOrDefault(u => u.username == p.Username);
 
-                if (user == null) continue;
+                if (user == null)
+                {
+                    continue;
+                }
 
                 context.MatchPlayer.Add(new MatchPlayer
                 {
@@ -298,85 +187,10 @@ namespace TrucoServer
             context.SaveChanges();
         }
 
-        private void CreateInitialRound(baseDatosTrucoEntities context, int matchId)
-        {
-            var round = new Round
-            {
-                matchID = matchId,
-                number = 1,
-                status = ROUND_PLAYING,
-                isActive = true
-            };
-
-            context.Round.Add(round);
-            context.SaveChanges();
-        }
-
-        private static int GenerateNumericCodeFromString(string code)
-        {
-            unchecked
-            {
-                int hash = HASH_SEED;
-                
-                foreach (char c in code)
-                {
-                    hash = hash * HASH_MULTIPLIER + c;
-                }
-                return Math.Abs(hash % HASH_MODULUS);
-            }
-        }
-
-        private static Match GetMatchByCode(baseDatosTrucoEntities context, string matchCode)
-        {
-            try {
-                int numericCode = GenerateNumericCodeFromString(matchCode);
-
-                var invitation = context.Invitation
-                    .Where(i => i.code == numericCode)
-                    .OrderByDescending(i => i.expiresAt)
-                    .FirstOrDefault();
-
-                if (invitation == null)
-                {
-                    return null;
-                }
-
-                var lobby = context.Lobby
-                    .Where(l => l.ownerID == invitation.senderID)
-                    .OrderByDescending(l => l.createdAt)
-                    .FirstOrDefault();
-
-                if (lobby == null)
-                {
-                    return null;
-                }
-
-                return context.Match
-                    .Where(m => m.lobbyID == lobby.lobbyID && m.status == ROUND_INPROGRESS)
-                    .OrderByDescending(m => m.startedAt)
-                    .FirstOrDefault();
-            }
-            catch (SqlException ex)
-            {
-                LogManager.LogError(ex, nameof(GetMatchByCode));
-                return new Match();
-            }
-            catch (InvalidOperationException ex)
-            {
-                LogManager.LogError(ex, nameof(GetMatchByCode));
-                return new Match();
-            }
-            catch (Exception ex)
-            {
-                LogManager.LogError(ex, nameof(GetMatchByCode));
-                return new Match();
-            }
-        }
-
         private static Match GetExistingInProgressMatch(baseDatosTrucoEntities context, int lobbyId)
         {
             return context.Match
-                .FirstOrDefault(m => m.lobbyID == lobbyId && m.status == ROUND_INPROGRESS);
+                .FirstOrDefault(m => m.lobbyID == lobbyId && m.status == STATUS_INPROGRESS);
         }
     }
 }
