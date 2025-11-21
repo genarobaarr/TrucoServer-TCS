@@ -10,11 +10,16 @@ namespace TrucoServer.Tests
     [TestClass]
     public class PlayerInfoTests
     {
+        private const string TEST_USERNAME = "Makelele";
+        private const string TEST_TEAM_1 = "Team 1";
+        private const string TEST_AVATAR_ID = "avatar_aaa_default";
+        private const string TEST_OWNER_USERNAME = "Raphina";
+
         [TestMethod]
         public void TestUsernameSetReturnsCorrectString()
         {
             var playerInfo = new PlayerInfo();
-            string expected = "Gamer123";
+            string expected = TEST_USERNAME;
 
             playerInfo.Username = expected;
 
@@ -25,7 +30,7 @@ namespace TrucoServer.Tests
         public void TestAvatarIdSetReturnsCorrectString()
         {
             var playerInfo = new PlayerInfo();
-            string expected = "avatar_aaa_default";
+            string expected = TEST_AVATAR_ID;
 
             playerInfo.AvatarId = expected;
 
@@ -36,7 +41,7 @@ namespace TrucoServer.Tests
         public void TestOwnerUsernameSetReturnsCorrectString()
         {
             var playerInfo = new PlayerInfo();
-            string expected = "AdminUser";
+            string expected = TEST_OWNER_USERNAME;
 
             playerInfo.OwnerUsername = expected;
 
@@ -47,7 +52,7 @@ namespace TrucoServer.Tests
         public void TestTeamSetReturnsCorrectString()
         {
             var playerInfo = new PlayerInfo();
-            string expected = "Team 1";
+            string expected = TEST_TEAM_1;
 
             playerInfo.Team = expected;
 

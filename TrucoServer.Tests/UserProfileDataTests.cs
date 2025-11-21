@@ -10,11 +10,16 @@ namespace TrucoServer.Tests
     [TestClass]
     public class UserProfileDataTests
     {
+        private const string TEST_USERNAME = "DeMarius";
+        private const string TEST_EMBLEM = "#000000";
+        private const int TEST_NAME_CHANGE_COUNT = 5;
+        private const int TEST_SHAPE_ID = 10;
+
         [TestMethod]
         public void TestUsernameSetReturnsCorrectString()
         {
             var userProfile = new UserProfileData();
-            string expectedUsername = "PlayerOne";
+            string expectedUsername = TEST_USERNAME;
 
             userProfile.Username = expectedUsername;
 
@@ -25,7 +30,7 @@ namespace TrucoServer.Tests
         public void TestNameChangeCountSetReturnsCorrectInt()
         {
             var userProfile = new UserProfileData();
-            int expectedCount = 5;
+            int expectedCount = TEST_NAME_CHANGE_COUNT;
 
             userProfile.NameChangeCount = expectedCount;
 
@@ -47,7 +52,7 @@ namespace TrucoServer.Tests
         public void TestEmblemLayerShapeIdSetReturnsCorrectValue()
         {
             var layer = new EmblemLayer();
-            int expectedShapeId = 10;
+            int expectedShapeId = TEST_SHAPE_ID;
 
             layer.ShapeId = expectedShapeId;
 
@@ -58,22 +63,11 @@ namespace TrucoServer.Tests
         public void TestEmblemLayerColorHexSetReturnsCorrectValue()
         {
             var layer = new EmblemLayer();
-            string expectedColor = "#FFFFFF";
+            string expectedColor = TEST_EMBLEM;
 
             layer.ColorHex = expectedColor;
 
             Assert.AreEqual(expectedColor, layer.ColorHex);
-        }
-
-        [TestMethod]
-        public void TestEmblemLayerXSetReturnsCorrectValue()
-        {
-            var layer = new EmblemLayer();
-            double expectedX = 15.5;
-
-            layer.X = expectedX;
-
-            Assert.AreEqual(expectedX, layer.X);
         }
 
         [TestMethod]

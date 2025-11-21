@@ -12,14 +12,20 @@ namespace TrucoServer.Tests
     [TestClass]
     public class MatchResultSTests
     {
+        private const string TEST_PLAYER1 = "test";
+        private const string TEST_PLAYER2 = "test2";
+        private const string TEST_WINNER = "test2";
+        private const string TEST_DATE = "2025-10-22";
+        private const int TEST_POSITION_ZERO = 0;
+
         private MatchResult GetSampleMatchResultS()
         {
             return new MatchResult
             {
-                Player1 = "test",
-                Player2 = "test2",
-                Winner = "test2",
-                Date = "2025-10-22"
+                Player1 = TEST_PLAYER1,
+                Player2 = TEST_PLAYER2,
+                Winner = TEST_WINNER,
+                Date = TEST_DATE
             };
         }
 
@@ -29,7 +35,7 @@ namespace TrucoServer.Tests
             using (var ms = new MemoryStream())
             {
                 serializer.WriteObject(ms, original);
-                ms.Position = 0;
+                ms.Position = TEST_POSITION_ZERO;
                 return (MatchResult)serializer.ReadObject(ms);
             }
         }

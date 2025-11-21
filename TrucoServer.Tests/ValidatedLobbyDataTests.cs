@@ -10,6 +10,9 @@ namespace TrucoServer.Tests
     [TestClass]
     public class ValidatedLobbyDataTests
     {
+        private const int TEST_EMPTY_LIST_LENGTH = 0;
+        private const int TEST_CORRECT_LIST_COUNT = 2;
+
         [TestMethod]
         public void TestLobbyPropertySetReturnsCorrectObject()
         {
@@ -29,7 +32,7 @@ namespace TrucoServer.Tests
 
             validatedLobby.Members = members;
 
-            Assert.AreEqual(0, validatedLobby.Members.Count);
+            Assert.AreEqual(TEST_EMPTY_LIST_LENGTH, validatedLobby.Members.Count);
         }
 
         [TestMethod]
@@ -48,7 +51,7 @@ namespace TrucoServer.Tests
 
             validatedLobby.Guests = guests;
 
-            Assert.AreEqual(2, validatedLobby.Guests.Count);
+            Assert.AreEqual(TEST_CORRECT_LIST_COUNT, validatedLobby.Guests.Count);
         }
 
         [TestMethod]

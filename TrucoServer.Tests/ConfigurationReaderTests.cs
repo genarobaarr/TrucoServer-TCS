@@ -13,9 +13,9 @@ namespace TrucoServer.Tests
     [TestClass]
     public class ConfigurationReaderTests
     {
-        private const string TestFilePath = "appSettings.private.json";
-
-        private const string ValidJsonContent = @"
+        private const string TEST_FILE_PATH = "appSettings.private.json";
+        private const string TEST_EMAIL_ADDRESS = "test@truco.com";
+        private const string TEST_VALID_JSON_CONTENT = @"
         {
             ""EmailSettings"": {
                 ""FromAddress"": ""test@truco.com"",
@@ -27,39 +27,39 @@ namespace TrucoServer.Tests
             }
         }";
 
-        private const string JsonMissingKey = @"{ ""OtherSettings"": { ""Key"": ""Value"" } }";
-        private const string InvalidJsonFormat = @"{ ""EmailSettings"": { ""FromAddress"": ""test"" "; 
+        private const string TEST_JSON_MISSING_KEY = @"{ ""OtherSettings"": { ""Key"": ""Value"" } }";
+        private const string TEST_INVALID_JSON_FORMAT = @"{ ""EmailSettings"": { ""FromAddress"": ""test"" "; 
 
         [TestCleanup]
         public void TestCleanup()
         {
             Type type = typeof(ConfigurationReader);
-            FieldInfo field = type.GetField("emailSettings", BindingFlags.NonPublic | BindingFlags.Static);
+            FieldInfo field = type.GetField(TEST_EMAIL_ADDRESS, BindingFlags.NonPublic | BindingFlags.Static);
             field?.SetValue(null, null);
 
-            if (File.Exists(TestFilePath))
+            if (File.Exists(TEST_FILE_PATH))
             {
-                File.Delete(TestFilePath);
+                File.Delete(TEST_FILE_PATH);
             }
         }
 
         private void WriteFile(string content)
         {
-            File.WriteAllText(TestFilePath, content);
+            File.WriteAllText(TEST_FILE_PATH, content);
         }
 
         [TestMethod]
         public void TestEmailSettingsLoadCorrectly()
         {
-            WriteFile(ValidJsonContent);
+            WriteFile(TEST_VALID_JSON_CONTENT);
             var settings = ConfigurationReader.EmailSettings;
-            Assert.AreEqual("test@truco.com", settings.FromAddress);
+            Assert.AreEqual(TEST_EMAIL_ADDRESS, settings.FromAddress);
         }
 
         [TestMethod]
         public void TestEmailSettingsReturnsCachedInstance()
         {
-            WriteFile(ValidJsonContent);
+            WriteFile(TEST_VALID_JSON_CONTENT);
             var settings1 = ConfigurationReader.EmailSettings;
             var settings2 = ConfigurationReader.EmailSettings;
             Assert.AreSame(settings1, settings2);

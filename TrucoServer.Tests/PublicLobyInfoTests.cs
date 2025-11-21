@@ -10,11 +10,17 @@ namespace TrucoServer.Tests
     [TestClass]
     public class PublicLobyInfoTests
     {
+        private const string TEST_MATCH_USERNAME = "Test";
+        private const string TEST_MATCH_CODE = "XYZ999";
+        private const string TEST_MATCH_NAME = "Paleolitic";
+        private const int TEST_MAX_PLAYERS = 4;
+        private const int TEST_CURRENT_PLAYERS = 2;
+
         [TestMethod]
         public void TestMatchNameSetReturnsCorrectString()
         {
             var lobby = new PublicLobbyInfo();
-            string expected = "Fun Match";
+            string expected = TEST_MATCH_NAME;
 
             lobby.MatchName = expected;
 
@@ -25,7 +31,7 @@ namespace TrucoServer.Tests
         public void TestMatchCodeSetReturnsCorrectString()
         {
             var lobby = new PublicLobbyInfo();
-            string expected = "CODE123";
+            string expected = TEST_MATCH_CODE;
 
             lobby.MatchCode = expected;
 
@@ -36,7 +42,7 @@ namespace TrucoServer.Tests
         public void TestCurrentPlayersSetReturnsCorrectInt()
         {
             var lobby = new PublicLobbyInfo();
-            int expected = 2;
+            int expected = TEST_CURRENT_PLAYERS;
 
             lobby.CurrentPlayers = expected;
 
@@ -47,7 +53,7 @@ namespace TrucoServer.Tests
         public void TestMaxPlayersSetReturnsCorrectInt()
         {
             var lobby = new PublicLobbyInfo();
-            int expected = 4;
+            int expected = TEST_MAX_PLAYERS;
 
             lobby.MaxPlayers = expected;
 

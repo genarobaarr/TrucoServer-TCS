@@ -10,13 +10,16 @@ namespace TrucoServer.Tests
     [TestClass]
     public class PlayerStatsTests
     {
+        private const string TEST_USERNAME = "TestUser";
+        private const int TEST_USER_WINS = 10;
+        private const int TEST_USER_LOSSES = 3;
         private PlayerStats GetSamplePlayerStats()
         {
             return new PlayerStats
             {
-                PlayerName = "test",
-                Wins = 10,
-                Losses = 3
+                PlayerName = TEST_USERNAME,
+                Wins = TEST_USER_WINS,
+                Losses = TEST_USER_LOSSES
             };
         }
 
@@ -24,21 +27,21 @@ namespace TrucoServer.Tests
         public void TestPlayerStatsPlayerNameBeTest()
         {
             var stats = GetSamplePlayerStats();
-            Assert.AreEqual("test", stats.PlayerName);
+            Assert.AreEqual(TEST_USERNAME, stats.PlayerName);
         }
 
         [TestMethod]
         public void TestPlayerStatsWinsBe10()
         {
             var stats = GetSamplePlayerStats();
-            Assert.AreEqual(10, stats.Wins);
+            Assert.AreEqual(TEST_USER_WINS, stats.Wins);
         }
 
         [TestMethod]
         public void TestPlayerStatsLossesBe3()
         {
             var stats = GetSamplePlayerStats();
-            Assert.AreEqual(3, stats.Losses);
+            Assert.AreEqual(TEST_USER_LOSSES, stats.Losses);
         }
     }
 }

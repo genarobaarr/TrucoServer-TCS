@@ -10,23 +10,23 @@ namespace TrucoServer.Tests
     [TestClass]
     public class EmailSettingsTests
     {
-        private const string TestAddress = "test@example.com";
-        private const string TestDisplayName = "Truco Test Server";
-        private const string TestPassword = "a_secure_test_password";
-        private const string TestHost = "smtp.test.com";
-        private const int TestPort = 465;
-        private const bool TestSsl = true;
+        private const string TEST_ADDRESS = "test@example.com";
+        private const string TEST_DISPLAY_NAME = "Truco Test Server";
+        private const string TEST_PASSWORD = "a_secure_test_password";
+        private const string TEST_HOST = "smtp.test.com";
+        private const int TEST_PORT = 465;
+        private const bool TEST_SSL = true;
 
         private EmailSettings GetSampleSettings()
         {
             return new EmailSettings
             {
-                FromAddress = TestAddress,
-                FromDisplayName = TestDisplayName,
-                FromPassword = TestPassword,
-                SmtpHost = TestHost,
-                SmtpPort = TestPort,
-                EnableSsl = TestSsl
+                FromAddress = TEST_ADDRESS,
+                FromDisplayName = TEST_DISPLAY_NAME,
+                FromPassword = TEST_PASSWORD,
+                SmtpHost = TEST_HOST,
+                SmtpPort = TEST_PORT,
+                EnableSsl = TEST_SSL
             };
         }
 
@@ -34,42 +34,42 @@ namespace TrucoServer.Tests
         public void TestEmailSettingsFromAddressIsAssignedCorrectly()
         {
             var settings = GetSampleSettings();
-            Assert.AreEqual(TestAddress, settings.FromAddress);
+            Assert.AreEqual(TEST_ADDRESS, settings.FromAddress);
         }
 
         [TestMethod]
         public void TestEmailSettingsFromDisplayNameIsAssignedCorrectly()
         {
             var settings = GetSampleSettings();
-            Assert.AreEqual(TestDisplayName, settings.FromDisplayName);
+            Assert.AreEqual(TEST_DISPLAY_NAME, settings.FromDisplayName);
         }
 
         [TestMethod]
         public void TestEmailSettingsFromPasswordIsAssignedCorrectly()
         {
             var settings = GetSampleSettings();
-            Assert.AreEqual(TestPassword, settings.FromPassword);
+            Assert.AreEqual(TEST_PASSWORD, settings.FromPassword);
         }
 
         [TestMethod]
         public void TestEmailSettingsSmtpHostIsAssignedCorrectly()
         {
             var settings = GetSampleSettings();
-            Assert.AreEqual(TestHost, settings.SmtpHost);
+            Assert.AreEqual(TEST_HOST, settings.SmtpHost);
         }
 
         [TestMethod]
         public void TestEmailSettingsSmtpPortIsAssignedCorrectly()
         {
             var settings = GetSampleSettings();
-            Assert.AreEqual(TestPort, settings.SmtpPort);
+            Assert.AreEqual(TEST_PORT, settings.SmtpPort);
         }
 
         [TestMethod]
         public void TestEmailSettingsEnableSslIsAssignedCorrectly()
         {
             var settings = GetSampleSettings();
-            Assert.AreEqual(TestSsl, settings.EnableSsl);
+            Assert.AreEqual(TEST_SSL, settings.EnableSsl);
         }
 
         [TestMethod]

@@ -12,17 +12,21 @@ namespace TrucoServer.Tests
     [TestClass]
     public class EmmailSettingsSTests
     {
+        private const string TEST_EMAIL_ADDRESS = "test@test.com";
+        private const int TEST_EMPTY_STREAM_LENGTH = 0;
+        private const int TEST_SMTP_PORT = 587;
+
         [TestMethod]
         public void TestSerializationReturnsNotEmptyStream()
         {
-            var settings = new EmailSettings { FromAddress = "test@test.com" };
+            var settings = new EmailSettings { FromAddress = TEST_EMAIL_ADDRESS };
             var serializer = new DataContractJsonSerializer(typeof(EmailSettings));
 
             using (var stream = new MemoryStream())
             {
                 serializer.WriteObject(stream, settings);
 
-                Assert.IsTrue(stream.Length > 0);
+                Assert.IsTrue(stream.Length > TEST_EMPTY_STREAM_LENGTH);
             }
         }
 
@@ -36,7 +40,7 @@ namespace TrucoServer.Tests
             {
                 var result = (EmailSettings)serializer.ReadObject(stream);
 
-                Assert.AreEqual("test@test.com", result.FromAddress);
+                Assert.AreEqual(TEST_EMAIL_ADDRESS, result.FromAddress);
             }
         }
 
@@ -50,7 +54,7 @@ namespace TrucoServer.Tests
             {
                 var result = (EmailSettings)serializer.ReadObject(stream);
 
-                Assert.AreEqual(587, result.SmtpPort);
+                Assert.AreEqual(TEST_SMTP_PORT, result.SmtpPort);
             }
         }
     }

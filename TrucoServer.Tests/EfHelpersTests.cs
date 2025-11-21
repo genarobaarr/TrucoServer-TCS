@@ -8,6 +8,19 @@ namespace TrucoServer.Tests
     [TestClass]
     public class EfHelpersTests
     {
+        private const int TEST_ENTITY_ID_INT = 10;
+        private const int TEST_ENTITY_SECOND_ID_INT = 99;
+        private const int TEST_ENTITY_IS_NULL = 0;
+        private const string TEST_ENTITY_ID_STRING= "Id";
+        private const string TEST_ENTITY_TEST_NAME_STRING = "TestName";
+        private const string TEST_ENTITY_NAME_STRING = "Name";
+        private const string TEST_ENTITY_PARENT = "Parent";
+        private const string TEST_ENTITY_BYTE_DATA = "ByteData";
+        private const string TEST_ENTITY_DATA = "Data";
+        private const string TEST_ENTITY_NON_EXISTENT_PROP = "NonExistentProp";
+        private const string TEST_ENTITY_FOUND_ME = "FoundMe";
+        private const string TEST_ENTITY_WRONG_NAME = "WrongName";
+
         private class TestEntity
         {
             public int Id { get; set; }
@@ -19,9 +32,9 @@ namespace TrucoServer.Tests
         [TestMethod]
         public void TestGetPropValueReturnsCorrectInt()
         {
-            var entity = new TestEntity { Id = 10 };
+            var entity = new TestEntity { Id = TEST_ENTITY_ID_INT };
 
-            var result = EfHelpers.GetPropValue<int>(entity, "Id");
+            var result = EfHelpers.GetPropValue<int>(entity, TEST_ENTITY_ID_STRING);
 
             Assert.AreEqual(10, result);
         }
@@ -29,30 +42,30 @@ namespace TrucoServer.Tests
         [TestMethod]
         public void TestGetPropValueReturnsCorrectString()
         {
-            var entity = new TestEntity { Name = "TestName" };
+            var entity = new TestEntity { Name = TEST_ENTITY_TEST_NAME_STRING };
 
-            var result = EfHelpers.GetPropValue<string>(entity, "Name");
+            var result = EfHelpers.GetPropValue<string>(entity, TEST_ENTITY_NAME_STRING);
 
-            Assert.AreEqual("TestName", result);
+            Assert.AreEqual(TEST_ENTITY_TEST_NAME_STRING, result);
         }
 
         [TestMethod]
         public void TestGetPropValueConvertsByteArrayToString()
         {
-            var bytes = System.Text.Encoding.UTF8.GetBytes("ByteData");
+            var bytes = System.Text.Encoding.UTF8.GetBytes(TEST_ENTITY_BYTE_DATA);
             var entity = new TestEntity { Data = bytes };
 
-            var result = EfHelpers.GetPropValue<string>(entity, "Data");
+            var result = EfHelpers.GetPropValue<string>(entity, TEST_ENTITY_DATA);
 
-            Assert.AreEqual("ByteData", result);
+            Assert.AreEqual(TEST_ENTITY_BYTE_DATA, result);
         }
 
         [TestMethod]
         public void TestGetPropValueReturnsDefaultWhenEntityIsNull()
         {
-            var result = EfHelpers.GetPropValue<int>(null, "Id");
+            var result = EfHelpers.GetPropValue<int>(null, TEST_ENTITY_ID_STRING);
 
-            Assert.AreEqual(0, result);
+            Assert.AreEqual(TEST_ENTITY_IS_NULL, result);
         }
 
         [TestMethod]
@@ -60,7 +73,7 @@ namespace TrucoServer.Tests
         {
             var entity = new TestEntity();
 
-            var result = EfHelpers.GetPropValue<int>(entity, "NonExistentProp");
+            var result = EfHelpers.GetPropValue<int>(entity, TEST_ENTITY_NON_EXISTENT_PROP);
 
             Assert.AreEqual(0, result);
         }
@@ -68,20 +81,20 @@ namespace TrucoServer.Tests
         [TestMethod]
         public void TestGetPropValueReturnsFirstValidProperty()
         {
-            var entity = new TestEntity { Name = "FoundMe" };
+            var entity = new TestEntity { Name = TEST_ENTITY_FOUND_ME };
 
-            var result = EfHelpers.GetPropValue<string>(entity, "WrongName", "Name");
+            var result = EfHelpers.GetPropValue<string>(entity, TEST_ENTITY_WRONG_NAME, TEST_ENTITY_NAME_STRING);
 
-            Assert.AreEqual("FoundMe", result);
+            Assert.AreEqual(TEST_ENTITY_FOUND_ME, result);
         }
 
         [TestMethod]
         public void TestGetNavigationReturnsCorrectObject()
         {
-            var parent = new TestEntity { Id = 99 };
+            var parent = new TestEntity { Id = TEST_ENTITY_SECOND_ID_INT };
             var entity = new TestEntity { Parent = parent };
 
-            var result = EfHelpers.GetNavigation(entity, "Parent");
+            var result = EfHelpers.GetNavigation(entity, TEST_ENTITY_PARENT);
 
             Assert.AreEqual(parent, result);
         }
@@ -89,7 +102,7 @@ namespace TrucoServer.Tests
         [TestMethod]
         public void TestGetNavigationReturnsNullWhenEntityIsNull()
         {
-            var result = EfHelpers.GetNavigation(null, "Parent");
+            var result = EfHelpers.GetNavigation(null, TEST_ENTITY_PARENT);
 
             Assert.IsNull(result);
         }
@@ -99,7 +112,7 @@ namespace TrucoServer.Tests
         {
             var entity = new TestEntity();
 
-            var result = EfHelpers.GetNavigation(entity, "NonExistent");
+            var result = EfHelpers.GetNavigation(entity, TEST_ENTITY_NON_EXISTENT_PROP);
 
             Assert.IsNull(result);
         }

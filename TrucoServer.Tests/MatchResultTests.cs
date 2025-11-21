@@ -12,14 +12,20 @@ namespace TrucoServer.Tests
     [TestClass]
     public class MatchResultTests
     {
+        private const string TEST_PLAYER1 = "test";
+        private const string TEST_PLAYER2 = "test2";
+        private const string TEST_WINNER = "test2";
+        private const string TEST_DATE = "2025-10-22";
+        private const int TEST_POSITION_ZERO = 0;
+
         private MatchResult GetSampleMatchResult()
         {
             return new MatchResult
             {
-                Player1 = "test",
-                Player2 = "test2",
-                Winner = "test2",
-                Date = "2025-10-22"
+                Player1 = TEST_PLAYER1,
+                Player2 = TEST_PLAYER2,
+                Winner = TEST_WINNER,
+                Date = TEST_DATE
             };
         }
 
@@ -27,28 +33,28 @@ namespace TrucoServer.Tests
         public void TestMatchResultPlayer1BeTestTrue()
         {
             var match = GetSampleMatchResult();
-            Assert.AreEqual("test", match.Player1);
+            Assert.AreEqual(TEST_PLAYER1, match.Player1);
         }
 
         [TestMethod]
         public void TestMatchResultPlayer2BeTest2True()
         {
             var match = GetSampleMatchResult();
-            Assert.AreEqual("test2", match.Player2);
+            Assert.AreEqual(TEST_PLAYER2, match.Player2);
         }
 
         [TestMethod]
         public void TestMatchResultWinnerBeTest2True()
         {
             var match = GetSampleMatchResult();
-            Assert.AreEqual("test2", match.Winner);
+            Assert.AreEqual(TEST_WINNER, match.Winner);
         }
 
         [TestMethod]
         public void TestMatchResultDateBe20251022True()
         {
             var match = GetSampleMatchResult();
-            Assert.AreEqual("2025-10-22", match.Date);
+            Assert.AreEqual(TEST_DATE, match.Date);
         }
     }
 }

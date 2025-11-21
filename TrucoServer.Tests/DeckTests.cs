@@ -11,6 +11,12 @@ namespace TrucoServer.Tests
     [TestClass]
     public class DeckTests
     {
+        private const int TEST_TOTAL_CARDS_IN_DECK = 40;
+        private const int TEST_CARDS_IN_HAND = 3;
+        private const int TEST_INVALID_CARDS_NUMBER = 2;
+        private const int TEST_MIN_CARDS_TO_DRAW = 1;
+        private const int TEST_INVALID_CARDS_TO_DRAW = 0;
+
         private Mock<IDeckShuffler> mockShuffler;
         private Deck deck;
 
@@ -24,7 +30,7 @@ namespace TrucoServer.Tests
         [TestMethod]
         public void TestConstructorInitializesCorrectCardCount()
         {
-            int expectedCount = 40;
+            int expectedCount = TEST_TOTAL_CARDS_IN_DECK;
 
             Assert.AreEqual(expectedCount, deck.RemainingCards);
         }
@@ -42,7 +48,7 @@ namespace TrucoServer.Tests
         {
             var hand = deck.DealHand();
 
-            Assert.AreEqual(3, hand.Count);
+            Assert.AreEqual(TEST_CARDS_IN_HAND, hand.Count);
         }
 
         [TestMethod]
@@ -52,17 +58,17 @@ namespace TrucoServer.Tests
 
             deck.DealHand();
 
-            Assert.AreEqual(initialCount - 3, deck.RemainingCards);
+            Assert.AreEqual(initialCount - TEST_CARDS_IN_HAND, deck.RemainingCards);
         }
 
         [TestMethod]
         public void TestDealHandThrowsInvalidOperationExceptionWhenDeckIsLow()
         {
-            while (deck.RemainingCards > 2)
+            while (deck.RemainingCards > TEST_INVALID_CARDS_NUMBER)
             {
                 deck.DealHand();
             }
-            if (deck.RemainingCards > 0)
+            if (deck.RemainingCards > TEST_INVALID_CARDS_TO_DRAW)
             {
                 deck.DrawCard();
             }
@@ -88,13 +94,13 @@ namespace TrucoServer.Tests
 
             deck.DrawCard();
 
-            Assert.AreEqual(initialCount - 1, deck.RemainingCards);
+            Assert.AreEqual(initialCount - TEST_MIN_CARDS_TO_DRAW, deck.RemainingCards);
         }
 
         [TestMethod]
         public void TestDrawCardThrowsInvalidOperationExceptionWhenDeckIsEmpty()
         {
-            while (deck.RemainingCards > 0)
+            while (deck.RemainingCards > TEST_INVALID_CARDS_TO_DRAW)
             {
                 deck.DrawCard();
             }
@@ -112,7 +118,7 @@ namespace TrucoServer.Tests
 
             deck.Reset();
 
-            Assert.AreEqual(40, deck.RemainingCards);
+            Assert.AreEqual(TEST_TOTAL_CARDS_IN_DECK, deck.RemainingCards);
         }
 
         [TestMethod]

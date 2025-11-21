@@ -12,6 +12,8 @@ namespace TrucoServer.Tests
     [TestClass]
     public class ValidatedLobbyDataSTests
     {
+        private const int TEST_EMPTY_STREAM_LENGTH = 0;
+
         [TestMethod]
         public void TestSerializationReturnsNotEmptyStream()
         {
@@ -28,7 +30,7 @@ namespace TrucoServer.Tests
                 serializer.Serialize(stream, validatedData);
                 byte[] data = stream.ToArray();
 
-                Assert.IsTrue(data.Length > 0);
+                Assert.IsTrue(data.Length > TEST_EMPTY_STREAM_LENGTH);
             }
         }
 

@@ -12,6 +12,9 @@ namespace TrucoServer.Tests
     [TestClass]
     public class ConfigurationFileWrapperSTests
     {
+        private const string TEST_EMAIL_ADDRESS = "test@test.com";
+        private const int TEST_EMPTY_STREAM_LENGTH = 0;
+
         [TestMethod]
         public void TestSerializationReturnsNotEmptyStream()
         {
@@ -22,7 +25,7 @@ namespace TrucoServer.Tests
             {
                 serializer.WriteObject(stream, wrapper);
 
-                Assert.IsTrue(stream.Length > 0);
+                Assert.IsTrue(stream.Length > TEST_EMPTY_STREAM_LENGTH);
             }
         }
 
@@ -50,7 +53,7 @@ namespace TrucoServer.Tests
             {
                 var result = (ConfigurationFileWrapper)serializer.ReadObject(stream);
 
-                Assert.AreEqual("test@test.com", result.EmailSettings.FromAddress);
+                Assert.AreEqual(TEST_EMAIL_ADDRESS, result.EmailSettings.FromAddress);
             }
         }
     }

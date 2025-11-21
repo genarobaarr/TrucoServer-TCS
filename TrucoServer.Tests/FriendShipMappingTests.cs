@@ -13,11 +13,18 @@ namespace TrucoServer.Tests
     [TestClass]
     public class FriendShipMappingTests
     {
+        private const int TEST_EXPECTED_CORRECT_VALUE = 5;
+        private const int TEST_EXPECTED_SECOND_CORRECT_VALUE = 10;
+        private const string TEST_USER_ID_PROPERTY_NAME = "userID";
+        private const string TEST_FRIEND_ID_PROPERTY_NAME = "friendID";
+        private const string TEST_USER_ID_COLUMN_NAME = "userID1";
+        private const string TEST_FRIEND_ID_COLUMN_NAME = "userID2";
+
         [TestMethod]
         public void TestUserIDSetReturnsCorrectValue()
         {
             var mapping = new FriendShipMapping();
-            int expected = 5;
+            int expected = TEST_EXPECTED_CORRECT_VALUE;
 
             mapping.userID = expected;
 
@@ -28,7 +35,7 @@ namespace TrucoServer.Tests
         public void TestFriendIDSetReturnsCorrectValue()
         {
             var mapping = new FriendShipMapping();
-            int expected = 10;
+            int expected = TEST_EXPECTED_SECOND_CORRECT_VALUE;
 
             mapping.friendID = expected;
 
@@ -57,7 +64,7 @@ namespace TrucoServer.Tests
         [TestMethod]
         public void TestUserIDPropertyHasColumnAttribute()
         {
-            var property = typeof(FriendShipMapping).GetProperty("userID");
+            var property = typeof(FriendShipMapping).GetProperty(TEST_USER_ID_PROPERTY_NAME);
 
             var attribute = property.GetCustomAttribute<ColumnAttribute>();
 
@@ -67,16 +74,16 @@ namespace TrucoServer.Tests
         [TestMethod]
         public void TestUserIDColumnAttributeHasCorrectName()
         {
-            var property = typeof(FriendShipMapping).GetProperty("userID");
+            var property = typeof(FriendShipMapping).GetProperty(TEST_USER_ID_PROPERTY_NAME);
             var attribute = property.GetCustomAttribute<ColumnAttribute>();
 
-            Assert.AreEqual("userID1", attribute.Name);
+            Assert.AreEqual(TEST_USER_ID_COLUMN_NAME, attribute.Name);
         }
 
         [TestMethod]
         public void TestFriendIDPropertyHasColumnAttribute()
         {
-            var property = typeof(FriendShipMapping).GetProperty("friendID");
+            var property = typeof(FriendShipMapping).GetProperty(TEST_FRIEND_ID_PROPERTY_NAME);
 
             var attribute = property.GetCustomAttribute<ColumnAttribute>();
 
@@ -86,10 +93,10 @@ namespace TrucoServer.Tests
         [TestMethod]
         public void TestFriendIDColumnAttributeHasCorrectName()
         {
-            var property = typeof(FriendShipMapping).GetProperty("friendID");
+            var property = typeof(FriendShipMapping).GetProperty(TEST_FRIEND_ID_PROPERTY_NAME);
             var attribute = property.GetCustomAttribute<ColumnAttribute>();
 
-            Assert.AreEqual("userID2", attribute.Name);
+            Assert.AreEqual(TEST_FRIEND_ID_COLUMN_NAME, attribute.Name);
         }
     }
 }

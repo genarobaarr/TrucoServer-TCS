@@ -11,13 +11,17 @@ namespace TrucoServer.Tests
     [TestClass]
     public class SocialLinksSTests
     {
+        private const string TEST_FACEBOOK_HANDLE = "testFB";
+        private const string TEST_X_HANDLE = "testX";
+        private const string TEST_INSTAGRAM_HANDLE = "testIG";
+
         private SocialLinks GetSampleSocialLinksS()
         {
             return new SocialLinks
             {
-                FacebookHandle = "testFB",
-                XHandle = "testX",
-                InstagramHandle = "testIG"
+                FacebookHandle = TEST_FACEBOOK_HANDLE,
+                XHandle = TEST_X_HANDLE,
+                InstagramHandle = TEST_INSTAGRAM_HANDLE
             };
         }
 

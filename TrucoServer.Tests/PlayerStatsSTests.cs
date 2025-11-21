@@ -11,13 +11,17 @@ namespace TrucoServer.Tests
     [TestClass]
     public class PlayerStatsSTests
     {
+        private const string TEST_USERNAME = "TestUser";
+        private const int TEST_USER_WINS = 10;
+        private const int TEST_USER_LOSSES = 3;
+
         private PlayerStats GetSamplePlayerStatsS()
         {
             return new PlayerStats
             {
-                PlayerName = "test",
-                Wins = 10,
-                Losses = 3
+                PlayerName = TEST_USERNAME,
+                Wins = TEST_USER_WINS,
+                Losses = TEST_USER_LOSSES
             };
         }
 

@@ -12,13 +12,19 @@ namespace TrucoServer.Tests
     [TestClass]
     public class FriendShipMappingSTests
     {
+        private const int TEST_USER_ID = 1;
+        private const int TEST_SECOND_USER_ID = 99;
+        private const int TEST_FRIEND_ID = 2;
+        private const int TEST_SECOND_FRIEND_ID = 100;
+        private const int TEST_EMPTY_STREAM_LENGTH = 0;
+
         [TestMethod]
         public void TestSerializationReturnsNotEmptyStream()
         {
             var mapping = new FriendShipMapping 
             { 
-                userID = 1, 
-                friendID = 2 
+                userID = TEST_USER_ID, 
+                friendID = TEST_FRIEND_ID
             };
             var serializer = new XmlSerializer(typeof(FriendShipMapping));
 
@@ -26,7 +32,7 @@ namespace TrucoServer.Tests
             {
                 serializer.Serialize(stream, mapping);
 
-                Assert.IsTrue(stream.Length > 0);
+                Assert.IsTrue(stream.Length > TEST_EMPTY_STREAM_LENGTH);
             }
         }
 
@@ -35,8 +41,8 @@ namespace TrucoServer.Tests
         {
             var original = new FriendShipMapping
             { 
-                userID = 99, 
-                friendID = 100 
+                userID = TEST_SECOND_USER_ID, 
+                friendID = TEST_SECOND_FRIEND_ID 
             };
             var serializer = new XmlSerializer(typeof(FriendShipMapping));
             byte[] data;
@@ -60,8 +66,8 @@ namespace TrucoServer.Tests
         {
             var original = new FriendShipMapping 
             { 
-                userID = 99, 
-                friendID = 100 
+                userID = TEST_SECOND_USER_ID, 
+                friendID = TEST_SECOND_FRIEND_ID 
             };
             var serializer = new XmlSerializer(typeof(FriendShipMapping));
             byte[] data;

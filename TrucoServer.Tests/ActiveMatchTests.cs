@@ -10,11 +10,18 @@ namespace TrucoServer.Tests
     [TestClass]
     public class ActiveMatchTests
     {
+        private const string TEST_CORRECT_STRING = "Truco";
+        private const string TEST_EXPECTED_STRING = "MATCH_123";
+        private const int TEST_EXPECTED_INT = 55;
+        private const int TEST_SECOND_EXPECTED_INT = 2;
+        private const int TEST_PLAYERS_EMPTY_LIST = 0;
+        private const int TEST_CARDS_EMPTY_LIST = 0;
+
         [TestMethod]
         public void TestCodeSetReturnsCorrectString()
         {
             var match = new ActiveMatch();
-            string expected = "MATCH_123";
+            string expected = TEST_EXPECTED_STRING;
 
             match.Code = expected;
 
@@ -34,7 +41,7 @@ namespace TrucoServer.Tests
         {
             var match = new ActiveMatch();
 
-            Assert.AreEqual(0, match.Players.Count);
+            Assert.AreEqual(TEST_PLAYERS_EMPTY_LIST, match.Players.Count);
         }
 
         [TestMethod]
@@ -50,7 +57,7 @@ namespace TrucoServer.Tests
         {
             var match = new ActiveMatch();
 
-            Assert.AreEqual(0, match.TableCards.Count);
+            Assert.AreEqual(TEST_CARDS_EMPTY_LIST, match.TableCards.Count);
         }
 
         [TestMethod]
@@ -67,7 +74,7 @@ namespace TrucoServer.Tests
         public void TestCurrentTurnIndexSetReturnsCorrectInt()
         {
             var match = new ActiveMatch();
-            int expected = 2;
+            int expected = TEST_SECOND_EXPECTED_INT;
 
             match.CurrentTurnIndex = expected;
 
@@ -78,7 +85,7 @@ namespace TrucoServer.Tests
         public void TestCurrentCallSetReturnsCorrectString()
         {
             var match = new ActiveMatch();
-            string expected = "Truco";
+            string expected = TEST_CORRECT_STRING;
 
             match.CurrentCall = expected;
 
@@ -89,7 +96,7 @@ namespace TrucoServer.Tests
         public void TestMatchDatabaseIdSetReturnsCorrectInt()
         {
             var match = new ActiveMatch();
-            int expected = 55;
+            int expected = TEST_EXPECTED_INT;
 
             match.MatchDatabaseId = expected;
 

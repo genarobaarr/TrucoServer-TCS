@@ -12,24 +12,31 @@ namespace TrucoServer.Tests
     [TestClass]
     public class PlayerInformationSTests
     {
+        private const string TEST_NAME = "Test";
+        private const string TEST_SUIT = "A";
+        private const int TEST_EMPTY_STREAM = 0;
+        private const int TEST_ID = 5;
+        private const int TEST_SECOND_ID = 99;
+        private const string TEST_UNIQUE_NAME = "UniqueName";
+
         [TestMethod]
         public void TestSerializationReturnsNotEmptyStream()
         {
-            var player = new PlayerInformation(5, "Test", "A");
+            var player = new PlayerInformation(TEST_ID, TEST_NAME, TEST_SUIT);
             var serializer = new DataContractSerializer(typeof(PlayerInformation));
 
             using (var stream = new MemoryStream())
             {
                 serializer.WriteObject(stream, player);
 
-                Assert.IsTrue(stream.Length > 0);
+                Assert.IsTrue(stream.Length > TEST_EMPTY_STREAM);
             }
         }
 
         [TestMethod]
         public void TestDeserializationReturnsCorrectPlayerID()
         {
-            var original = new PlayerInformation(99, "Test", "A");
+            var original = new PlayerInformation(TEST_SECOND_ID, TEST_NAME, TEST_SUIT);
             var serializer = new DataContractSerializer(typeof(PlayerInformation));
             byte[] data;
 
@@ -50,7 +57,7 @@ namespace TrucoServer.Tests
         [TestMethod]
         public void TestDeserializationReturnsCorrectUsername()
         {
-            var original = new PlayerInformation(99, "UniqueName", "A");
+            var original = new PlayerInformation(TEST_SECOND_ID, TEST_UNIQUE_NAME, TEST_SUIT);
             var serializer = new DataContractSerializer(typeof(PlayerInformation));
             byte[] data;
 
@@ -71,7 +78,7 @@ namespace TrucoServer.Tests
         [TestMethod]
         public void TestDeserializationReturnsNotNullHand()
         {
-            var original = new PlayerInformation(1, "Test", "A");
+            var original = new PlayerInformation(TEST_ID, TEST_NAME, TEST_SUIT);
             var serializer = new DataContractSerializer(typeof(PlayerInformation));
             byte[] data;
 

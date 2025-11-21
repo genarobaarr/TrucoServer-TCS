@@ -10,12 +10,15 @@ namespace TrucoServer.Tests
     [TestClass]
     public class FriendDataTests
     {
+        private const string TEST_USERNAME = "test";
+        private const string TEST_AVATAR_ID = "avatar_aaa_default";
+
         private FriendData GetSampleFriendData()
         {
             return new FriendData
             {
-                Username = "test",
-                AvatarId = "avatar_aaa_default"
+                Username = TEST_USERNAME,
+                AvatarId = TEST_AVATAR_ID
             };
         }
 
@@ -23,14 +26,14 @@ namespace TrucoServer.Tests
         public void TestFriendDataUsernameBeSame()
         {
             var friend = GetSampleFriendData();
-            Assert.AreEqual("test", friend.Username);
+            Assert.AreEqual(TEST_USERNAME, friend.Username);
         }
 
         [TestMethod]
         public void TestFriendDataAvatarIdBeAvatarAaaDefaultTrue()
         {
             var friend = GetSampleFriendData();
-            Assert.AreEqual("avatar_aaa_default", friend.AvatarId);
+            Assert.AreEqual(TEST_AVATAR_ID, friend.AvatarId);
         }
     }
 }

@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Serialization;
@@ -12,13 +13,18 @@ namespace TrucoServer.Tests
     [TestClass]
     public class ActiveMatchSTests
     {
+        private const string TEST_CODE = "EDYZ999";
+        private const int TEST_MATCH_DATABASE_ID = 42;
+        private const int TEST_MATCH_OTHER_DATABASE_ID = 100;
+        private const int TEST_EMPTY_LIST = 0;
+
         [TestMethod]
         public void TestSerializationReturnsNotEmptyStream()
         {
             var match = new ActiveMatch
             {
-                Code = "TESTCODE",
-                MatchDatabaseId = 1
+                Code = TEST_CODE,
+                MatchDatabaseId = TEST_MATCH_DATABASE_ID
             };
 
             var serializer = new XmlSerializer(typeof(ActiveMatch));
@@ -27,7 +33,7 @@ namespace TrucoServer.Tests
             {
                 serializer.Serialize(stream, match);
 
-                Assert.IsTrue(stream.Length > 0);
+                Assert.IsTrue(stream.Length > TEST_EMPTY_LIST);
             }
         }
 
@@ -36,7 +42,7 @@ namespace TrucoServer.Tests
         {
             var original = new ActiveMatch
             {
-                Code = "EDYZ999"
+                Code = TEST_CODE
             };
 
             var serializer = new XmlSerializer(typeof(ActiveMatch));
@@ -61,7 +67,7 @@ namespace TrucoServer.Tests
         {
             var original = new ActiveMatch 
             { 
-                MatchDatabaseId = 100 
+                MatchDatabaseId = TEST_MATCH_OTHER_DATABASE_ID 
             };
 
             var serializer = new XmlSerializer(typeof(ActiveMatch));

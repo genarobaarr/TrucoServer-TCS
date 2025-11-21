@@ -12,12 +12,16 @@ namespace TrucoServer.Tests
     [TestClass]
     public class FriendDataSTests
     {
+        private const string TEST_USERNAME = "test";
+        private const string TEST_AVATAR_ID = "avatar_aaa_default";
+        private const int TEST_POSITION_START = 0;
+
         private FriendData GetSampleFriendDataS()
         {
             return new FriendData
             {
-                Username = "test",
-                AvatarId = "avatar_aaa_default"
+                Username = TEST_USERNAME,
+                AvatarId = TEST_AVATAR_ID
             };
         }
 
@@ -27,7 +31,7 @@ namespace TrucoServer.Tests
             using (var ms = new MemoryStream())
             {
                 serializer.WriteObject(ms, original);
-                ms.Position = 0;
+                ms.Position = TEST_POSITION_START;
                 return (FriendData)serializer.ReadObject(ms);
             }
         }
