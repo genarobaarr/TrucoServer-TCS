@@ -655,7 +655,7 @@ namespace TrucoServer
                 {
                     AwardFlorPoints(caller.Team, POINTS_FLOR_DIRECT);
 
-                    NotifyAll(cb => cb.NotifyFlorCall(caller.Username, FLOR_BET, POINTS_FLOR_DIRECT, false));
+                    NotifyAll(cb => cb.NotifyFlorCall(caller.Username, FLOR_BET, false));
                     NotifyAll(cb => cb.NotifyEnvidoResult(caller.Username, POINTS_FLOR_DIRECT, POINTS_FLOR_DIRECT));
 
                     florWasPlayed = true;
@@ -1483,11 +1483,11 @@ namespace TrucoServer
             try
             {
                 var caller = Players.First(p => p.PlayerID == callerId);
-                NotifyPlayer(responderId, callback => callback.NotifyFlorCall(caller.Username, betName, currentPoints, true));
+                NotifyPlayer(responderId, callback => callback.NotifyFlorCall(caller.Username, betName, true));
 
                 foreach (var player in Players.Where(p => p.PlayerID != responderId))
                 {
-                    NotifyPlayer(player.PlayerID, callback => callback.NotifyFlorCall(caller.Username, betName, currentPoints, false));
+                    NotifyPlayer(player.PlayerID, callback => callback.NotifyFlorCall(caller.Username, betName, false));
                 }
             }
             catch (InvalidOperationException ex)
