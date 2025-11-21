@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography;
 
 namespace TrucoServer
 {
@@ -157,8 +158,6 @@ namespace TrucoServer
 
     public class DefaultDeckShuffler : IDeckShuffler
     {
-        private readonly Random random = new Random();
-
         public void Shuffle<T>(IList<T> list)
         {
             try
@@ -168,10 +167,14 @@ namespace TrucoServer
                     throw new ArgumentNullException(nameof(list), "The list to be shuffled cannot be null.");
                 }
 
-                for (int i = list.Count - 1; i > 0; i--)
+                using (var rng = new RNGCryptoServiceProvider())
                 {
-                    int j = random.Next(i + 1);
-                    (list[i], list[j]) = (list[j], list[i]);
+                    for (int i = list.Count - 1; i > 0; i--)
+                    {
+                        int j = GetSecureRandomInt(rng, i + 1);
+
+                        (list[i], list[j]) = (list[j], list[i]);
+                    }
                 }
             }
             catch (ArgumentNullException ex)
@@ -182,6 +185,16 @@ namespace TrucoServer
             {
                 LogManager.LogError(ex, nameof(Shuffle));
             }
+        }
+
+        private static int GetSecureRandomInt(RNGCryptoServiceProvider rng, int max)
+        {
+            byte[] buffer = new byte[4];
+            rng.GetBytes(buffer);
+
+            int result = BitConverter.ToInt32(buffer, 0);
+
+            return Math.Abs(result) % max;
         }
     }
 }

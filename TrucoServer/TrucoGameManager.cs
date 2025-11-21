@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data.Entity;
 using System.Data.Entity.Infrastructure;
 using System.Data.Entity.Validation;
 using System.Data.SqlClient;
@@ -26,60 +27,21 @@ namespace TrucoServer
             {
                 using (var context = GetContext())
                 {
-                    var existingMatch = context.Match
-                        .FirstOrDefault(m => m.lobbyID == lobbyId && m.status == ROUND_INPROGRESS);
+                    var existingMatch = GetExistingInProgressMatch(context, lobbyId);
 
                     if (existingMatch != null)
                     {
                         return existingMatch.matchID;
                     }
-
-                    int versionId = (players != null && players.Count == 4) ? VERSION_2V2 : VERSION_1V1;
-
-                    var match = new Match
+                    
+                    var match = CreateAndSaveMatch(context, lobbyId, players?.Count ?? 0);
+                    
+                    if (players != null && players.Any())
                     {
-                        lobbyID = lobbyId,
-                        versionID = versionId,
-                        status = ROUND_INPROGRESS,
-                        startedAt = DateTime.Now
-                    };
-
-                    context.Match.Add(match);
-                    context.SaveChanges();
-
-                    if (players != null)
-                    {
-                        foreach (var p in players)
-                        {
-                            var user = context.User.FirstOrDefault(u => u.username == p.Username);
-
-                            if (user == null)
-                            {
-                                continue;
-                            }
-
-                            context.MatchPlayer.Add(new MatchPlayer
-                            {
-                                matchID = match.matchID,
-                                userID = user.userID,
-                                team = p.Team,
-                                score = INITIAL_SCORE,
-                                isWinner = false
-                            });
-                        }
-                        context.SaveChanges();
+                        AddPlayersToMatch(context, match.matchID, players);
                     }
-
-                    var round = new Round
-                    {
-                        matchID = match.matchID,
-                        number = 1,
-                        status = ROUND_PLAYING,
-                        isActive = true
-                    };
-
-                    context.Round.Add(round);
-                    context.SaveChanges();
+                    
+                    CreateInitialRound(context, match.matchID);
 
                     return match.matchID;
                 }
@@ -244,31 +206,7 @@ namespace TrucoServer
 
                     foreach (var mp in dbPlayers)
                     {
-                        bool isWinnerTeam = string.Equals(mp.team.Trim(), winnerTeam.Trim(), StringComparison.OrdinalIgnoreCase);
-
-                        if (isWinnerTeam)
-                        {
-                            mp.isWinner = true;
-                            mp.score = winnerScore;
-                        }
-                        else
-                        {
-                            mp.isWinner = false;
-                            mp.score = loserScore;
-                        }
-
-                        var userStats = context.User.FirstOrDefault(u => u.userID == mp.userID);
-                        if (userStats != null)
-                        {
-                            if (isWinnerTeam)
-                            {
-                                userStats.wins++;
-                            }
-                            else
-                            {
-                                userStats.losses++;
-                            }
-                        }
+                        UpdatePlayerAndUserStats(context, mp, winnerTeam, winnerScore, loserScore);
                     }
 
                     context.SaveChanges();
@@ -302,6 +240,78 @@ namespace TrucoServer
             return new baseDatosTrucoEntities();
         }
 
+        private static void UpdatePlayerAndUserStats(baseDatosTrucoEntities context, MatchPlayer mp, string winnerTeam, int winnerScore, int loserScore)
+        {
+            bool isWinnerTeam = string.Equals(mp.team.Trim(), winnerTeam.Trim(), StringComparison.OrdinalIgnoreCase);
+
+            mp.isWinner = isWinnerTeam;
+            mp.score = isWinnerTeam ? winnerScore : loserScore;
+
+            var userStats = context.User.FirstOrDefault(u => u.userID == mp.userID);
+            if (userStats != null)
+            {
+                if (isWinnerTeam)
+                {
+                    userStats.wins++;
+                }
+                else
+                {
+                    userStats.losses++;
+                }
+            }
+        }
+
+        private Match CreateAndSaveMatch(baseDatosTrucoEntities context, int lobbyId, int playerCount)
+        {
+            int versionId = (playerCount == 4) ? VERSION_2V2 : VERSION_1V1;
+
+            var match = new Match
+            {
+                lobbyID = lobbyId,
+                versionID = versionId,
+                status = ROUND_INPROGRESS,
+                startedAt = DateTime.Now
+            };
+
+            context.Match.Add(match);
+            context.SaveChanges();
+            return match;
+        }
+
+        private void AddPlayersToMatch(baseDatosTrucoEntities context, int matchId, List<PlayerInformation> players)
+        {
+            foreach (var p in players)
+            {
+                var user = context.User.FirstOrDefault(u => u.username == p.Username);
+
+                if (user == null) continue;
+
+                context.MatchPlayer.Add(new MatchPlayer
+                {
+                    matchID = matchId,
+                    userID = user.userID,
+                    team = p.Team,
+                    score = INITIAL_SCORE,
+                    isWinner = false
+                });
+            }
+            context.SaveChanges();
+        }
+
+        private void CreateInitialRound(baseDatosTrucoEntities context, int matchId)
+        {
+            var round = new Round
+            {
+                matchID = matchId,
+                number = 1,
+                status = ROUND_PLAYING,
+                isActive = true
+            };
+
+            context.Round.Add(round);
+            context.SaveChanges();
+        }
+
         private static int GenerateNumericCodeFromString(string code)
         {
             unchecked
@@ -316,7 +326,7 @@ namespace TrucoServer
             }
         }
 
-        private Match GetMatchByCode(baseDatosTrucoEntities context, string matchCode)
+        private static Match GetMatchByCode(baseDatosTrucoEntities context, string matchCode)
         {
             try {
                 int numericCode = GenerateNumericCodeFromString(matchCode);
@@ -361,6 +371,12 @@ namespace TrucoServer
                 LogManager.LogError(ex, nameof(GetMatchByCode));
                 return new Match();
             }
+        }
+
+        private static Match GetExistingInProgressMatch(baseDatosTrucoEntities context, int lobbyId)
+        {
+            return context.Match
+                .FirstOrDefault(m => m.lobbyID == lobbyId && m.status == ROUND_INPROGRESS);
         }
     }
 }

@@ -274,11 +274,6 @@ namespace TrucoServer
                 
                 return sumValues + FLOR_POINTS;
             }
-            catch (NullReferenceException ex)
-            {
-                LogManager.LogWarn(ex.Message, nameof(CalculateFlorScore));
-                return 0;
-            }
             catch (Exception ex)
             {
                 LogManager.LogError(ex, nameof(CalculateFlorScore));
