@@ -765,8 +765,8 @@ namespace TrucoServer
                 waitingForEnvidoResponseId = opponent.PlayerID;
                 proposedEnvidoBet = newBet;
                 currentEnvidoPoints += GetPointsForEnvidoBet(newBet);
-                NotifyAll(cb => cb.NotifyEnvidoCall(caller.Username, betType, currentEnvidoPoints, true));
-                NotifyPlayer(opponent.PlayerID, cb => cb.NotifyEnvidoCall(caller.Username, betType, currentEnvidoPoints, true));
+                NotifyAll(cb => cb.NotifyEnvidoCall(caller.Username, betType, true));
+                NotifyPlayer(opponent.PlayerID, cb => cb.NotifyEnvidoCall(caller.Username, betType, true));
 
                 return true;
             }
@@ -1225,7 +1225,7 @@ namespace TrucoServer
 
                 if (playerFlorScores[playerID] == -1)
                 {
-                    LogManager.LogWarn($"Jugador {caller.Username} intentó cantar Flor sin tenerla.", nameof(CallFlor));
+                    LogManager.LogWarn($"[GAME] Player {caller.Username} tried to call Flor without having it.", nameof(CallFlor));
                     return false;
                 }
 
@@ -1390,7 +1390,7 @@ namespace TrucoServer
 
                 var winner = Players.First(p => p.PlayerID == winnerId);
 
-                string message = $"Contra Flor: {winner.Username} gana con {Math.Max(score1, score2)} vs {Math.Min(score1, score2)}";
+                string message = $"Contra Flor: {winner.Username} wins with {Math.Max(score1, score2)} vs {Math.Min(score1, score2)}";
 
                 NotifyAll(cb => cb.NotifyEnvidoResult(winner.Username, Math.Max(score1, score2), POINTS_CONTRA_FLOR));
 

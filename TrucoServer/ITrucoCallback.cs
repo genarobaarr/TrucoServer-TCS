@@ -52,7 +52,7 @@ namespace TrucoServer
         void NotifyRoundEnd(string winnerName, int team1Score, int team2Score);
 
         [OperationContract(IsOneWay = true)]
-        void NotifyEnvidoCall(string callerName, string betName, int totalPoints, bool needsResponse);
+        void NotifyEnvidoCall(string callerName, string betName, bool needsResponse);
 
         [OperationContract(IsOneWay = true)]
         void NotifyEnvidoResult(string winnerName, int score, int totalPointsAwarded);

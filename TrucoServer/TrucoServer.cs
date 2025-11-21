@@ -2780,12 +2780,12 @@
             }
             catch (SqlException ex)
             {
-                LogManager.LogError(ex, "GetMatchAndPlayerID (DB Query)");
+                LogManager.LogError(ex, "GetMatchAndPlayerID (DataBase Query)");
                 return false;
             }
             catch (InvalidOperationException ex)
             {
-                LogManager.LogError(ex, "GetMatchAndPlayerID (WCF Context or DB Operation)");
+                LogManager.LogError(ex, "GetMatchAndPlayerID (WCF Context or DataBase Operation)");
                 return false;
             }
             catch (CommunicationException ex)

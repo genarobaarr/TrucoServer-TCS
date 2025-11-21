@@ -88,7 +88,7 @@ namespace TrucoServer
             {
                 if (cards.Count < 3)
                 {
-                    throw new InvalidOperationException("No hay suficientes cartas para repartir una mano.");
+                    throw new InvalidOperationException("There are not enough cards to deal a hand.");
                 }
                 
                 var hand = cards.Take(3).ToList();
@@ -124,7 +124,7 @@ namespace TrucoServer
             {
                 if (cards.Count == 0)
                 {
-                    throw new InvalidOperationException("El mazo está vacío.");
+                    throw new InvalidOperationException("The deck is empty.");
                 }
 
                 var card = cards[0];
@@ -165,7 +165,7 @@ namespace TrucoServer
             {
                 if (list == null)
                 {
-                    throw new ArgumentNullException(nameof(list), "La lista a barajar no puede ser nula.");
+                    throw new ArgumentNullException(nameof(list), "The list to be shuffled cannot be null.");
                 }
 
                 for (int i = list.Count - 1; i > 0; i--)

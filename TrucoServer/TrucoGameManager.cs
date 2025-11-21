@@ -290,7 +290,7 @@ namespace TrucoServer
 
                     if (match == null)
                     {
-                        LogManager.LogError(new Exception($"Match ID {matchId} not found in DB"), nameof(SaveMatchResult));
+                        LogManager.LogError(new Exception($"[CREATE MATCH] Match ID {matchId} not found in DB"), nameof(SaveMatchResult));
                         return;
                     }
 
@@ -329,7 +329,7 @@ namespace TrucoServer
                     }
 
                     context.SaveChanges();
-                    Console.WriteLine($"[DB] Match {matchId} finalizado correctamente. Ganador: {winnerTeam}.");
+                    Console.WriteLine($"[GAME] Match {matchId} completed successfully. Winner: {winnerTeam}.");
                 }
             }
             catch (DbEntityValidationException ex)
