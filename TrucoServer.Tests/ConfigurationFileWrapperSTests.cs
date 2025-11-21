@@ -15,8 +15,8 @@ namespace TrucoServer.Tests
         [TestMethod]
         public void TestSerializationReturnsNotEmptyStream()
         {
-            var wrapper = new ConfigurationFIleWrapper { EmailSettings = new EmailSettings() };
-            var serializer = new DataContractJsonSerializer(typeof(ConfigurationFIleWrapper));
+            var wrapper = new ConfigurationFileWrapper { EmailSettings = new EmailSettings() };
+            var serializer = new DataContractJsonSerializer(typeof(ConfigurationFileWrapper));
 
             using (var stream = new MemoryStream())
             {
@@ -30,11 +30,11 @@ namespace TrucoServer.Tests
         public void TestDeserializationReturnsNotNullEmailSettings()
         {
             string json = "{\"EmailSettings\":{\"FromAddress\":\"test@test.com\"}}";
-            var serializer = new DataContractJsonSerializer(typeof(ConfigurationFIleWrapper));
+            var serializer = new DataContractJsonSerializer(typeof(ConfigurationFileWrapper));
 
             using (var stream = new MemoryStream(Encoding.UTF8.GetBytes(json)))
             {
-                var result = (ConfigurationFIleWrapper)serializer.ReadObject(stream);
+                var result = (ConfigurationFileWrapper)serializer.ReadObject(stream);
 
                 Assert.IsNotNull(result.EmailSettings);
             }
@@ -44,11 +44,11 @@ namespace TrucoServer.Tests
         public void TestDeserializationReturnsCorrectInnerValue()
         {
             string json = "{\"EmailSettings\":{\"FromAddress\":\"test@test.com\"}}";
-            var serializer = new DataContractJsonSerializer(typeof(ConfigurationFIleWrapper));
+            var serializer = new DataContractJsonSerializer(typeof(ConfigurationFileWrapper));
 
             using (var stream = new MemoryStream(Encoding.UTF8.GetBytes(json)))
             {
-                var result = (ConfigurationFIleWrapper)serializer.ReadObject(stream);
+                var result = (ConfigurationFileWrapper)serializer.ReadObject(stream);
 
                 Assert.AreEqual("test@test.com", result.EmailSettings.FromAddress);
             }

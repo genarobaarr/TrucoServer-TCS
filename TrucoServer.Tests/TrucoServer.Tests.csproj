@@ -80,6 +80,7 @@
     <Compile Include="ConfigurationFileWrapperSTests.cs" />
     <Compile Include="ConfigurationFileWrapperTests.cs" />
     <Compile Include="ConfigurationReaderTests.cs" />
+    <Compile Include="DeckTests.cs" />
     <Compile Include="EfHelpersTests.cs" />
     <Compile Include="EmailSettingsTests.cs" />
     <Compile Include="EmmailSettingsSTests.cs" />
@@ -87,9 +88,11 @@
     <Compile Include="FriendDataTests.cs" />
     <Compile Include="FriendShipMappingSTests.cs" />
     <Compile Include="FriendShipMappingTests.cs" />
+    <Compile Include="GameManagerTests.cs" />
     <Compile Include="LogManagerTests.cs" />
     <Compile Include="MatchResultSTests.cs" />
     <Compile Include="MatchResultTests.cs" />
+    <Compile Include="MatchScoreTests.cs" />
     <Compile Include="PasswordHasherTests.cs" />
     <Compile Include="PlayerInformationSTests.cs" />
     <Compile Include="PlayerInformationTests.cs" />
@@ -101,6 +104,10 @@
     <Compile Include="PublicLobyInfoTests.cs" />
     <Compile Include="SocialLinksSTests.cs" />
     <Compile Include="SocialLinksTests.cs" />
+    <Compile Include="TrucoCardTests.cs" />
+    <Compile Include="TrucoGameManagerTests.cs" />
+    <Compile Include="TrucoMatchTests.cs" />
+    <Compile Include="TrucoRulesTests.cs" />
     <Compile Include="TrucoServerTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="UserProfileDataSTests.cs" />

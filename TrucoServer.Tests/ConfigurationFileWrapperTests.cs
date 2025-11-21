@@ -13,7 +13,7 @@ namespace TrucoServer.Tests
         [TestMethod]
         public void TestEmailSettingsPropertyInitializeReturnsNull()
         {
-            var wrapper = new ConfigurationFIleWrapper();
+            var wrapper = new ConfigurationFileWrapper();
 
             Assert.IsNull(wrapper.EmailSettings);
         }
@@ -21,7 +21,7 @@ namespace TrucoServer.Tests
         [TestMethod]
         public void TestEmailSettingsPropertySetReturnsCorrectObject()
         {
-            var wrapper = new ConfigurationFIleWrapper();
+            var wrapper = new ConfigurationFileWrapper();
             var settings = new EmailSettings();
 
             wrapper.EmailSettings = settings;
