@@ -12,62 +12,13 @@ namespace TrucoServer
         private const string ROUND_INPROGRESS = "InProgress";
         private const string ROUND_FINISHED = "Finished";
         private const string ROUND_PLAYING = "Playing";
+
         private const int INITIAL_SCORE = 0;
-        private const int LOBBY_ID_DEFAULT = 1;
         private const int VERSION_1V1 = 1;
         private const int VERSION_2V2 = 2;
         private const int HASH_MODULUS = 999999;
         private const int HASH_MULTIPLIER = 31;
         private const int HASH_SEED = 17;
-
-        private static baseDatosTrucoEntities GetContext()
-        {
-            return new baseDatosTrucoEntities();
-        }
-
-        private static int GenerateNumericCodeFromString(string code)
-        {
-            unchecked
-            {
-                int hash = HASH_SEED;
-                
-                foreach (char c in code)
-                {
-                    hash = hash * HASH_MULTIPLIER + c;
-                }
-                return Math.Abs(hash % HASH_MODULUS);
-            }
-        }
-
-        private Match GetMatchByCode(baseDatosTrucoEntities context, string matchCode)
-        {
-            int numericCode = GenerateNumericCodeFromString(matchCode);
-
-            var invitation = context.Invitation
-                .Where(i => i.code == numericCode)
-                .OrderByDescending(i => i.expiresAt)
-                .FirstOrDefault();
-
-            if (invitation == null)
-            {
-                return null;
-            }
-
-            var lobby = context.Lobby
-                .Where(l => l.ownerID == invitation.senderID)
-                .OrderByDescending(l => l.createdAt)
-                .FirstOrDefault();
-
-            if (lobby == null)
-            {
-                return null;
-            }
-
-            return context.Match
-                .Where(m => m.lobbyID == lobby.lobbyID && m.status == ROUND_INPROGRESS)
-                .OrderByDescending(m => m.startedAt)
-                .FirstOrDefault();
-        }
 
         public int SaveMatchToDatabase(string matchCode, int lobbyId, List<PlayerInformation> players)
         {
@@ -133,24 +84,24 @@ namespace TrucoServer
                     return match.matchID;
                 }
             }
-            catch (DbEntityValidationException ex)
-            {
-                LogManager.LogError(ex, nameof(SaveRoundResult));
-                return -1;
-            }
             catch (DbUpdateException ex)
             {
-                LogManager.LogError(ex, nameof(SaveRoundResult));
+                LogManager.LogError(ex, nameof(SaveMatchToDatabase));
                 return -1;
             }
             catch (SqlException ex)
             {
-                LogManager.LogError(ex, nameof(SaveRoundResult));
+                LogManager.LogError(ex, nameof(SaveMatchToDatabase));
+                return -1;
+            }
+            catch (DbEntityValidationException ex)
+            {
+                LogManager.LogError(ex, nameof(SaveMatchToDatabase));
                 return -1;
             }
             catch (InvalidOperationException ex)
             {
-                LogManager.LogError(ex, nameof(SaveRoundResult));
+                LogManager.LogError(ex, nameof(SaveMatchToDatabase));
                 return -1;
             }
             catch (Exception ex)
@@ -167,26 +118,26 @@ namespace TrucoServer
                 using (var context = GetContext())
                 {
                     var match = GetMatchByCode(context, matchCode);
-                    
+
                     if (match == null)
                     {
                         return;
                     }
-                    
+
                     var round = context.Round.FirstOrDefault(r => r.matchID == match.matchID && r.isActive == true);
-                    
+
                     if (round == null)
                     {
                         return;
                     }
-                    
+
                     var user = context.User.FirstOrDefault(u => u.username == player.Username);
-                    
+
                     if (user == null)
                     {
                         return;
                     }
-                    
+
                     foreach (var card in player.Hand)
                     {
                         var cardEntity = context.Card.FirstOrDefault(c =>
@@ -207,21 +158,17 @@ namespace TrucoServer
                     context.SaveChanges();
                 }
             }
-            catch (DbEntityValidationException ex)
-            {
-                LogManager.LogError(ex, nameof(SaveRoundResult));
-            }
             catch (DbUpdateException ex)
             {
-                LogManager.LogError(ex, nameof(SaveRoundResult));
+                LogManager.LogError(ex, nameof(SaveDealtCards));
             }
             catch (SqlException ex)
             {
-                LogManager.LogError(ex, nameof(SaveRoundResult));
+                LogManager.LogError(ex, nameof(SaveDealtCards));
             }
             catch (InvalidOperationException ex)
             {
-                LogManager.LogError(ex, nameof(SaveRoundResult));
+                LogManager.LogError(ex, nameof(SaveDealtCards));
             }
             catch (Exception ex)
             {
@@ -241,14 +188,14 @@ namespace TrucoServer
                     {
                         return;
                     }
-                    
+
                     var round = context.Round.FirstOrDefault(r => r.matchID == match.matchID && r.isActive == true);
-                    
+
                     if (round == null)
                     {
                         return;
                     }
-                    
+
                     var winnerUsername = context.User.FirstOrDefault(u => u.username == winner);
 
                     round.status = ROUND_FINISHED;
@@ -257,10 +204,6 @@ namespace TrucoServer
 
                     context.SaveChanges();
                 }
-            }
-            catch (DbEntityValidationException ex)
-            {
-                LogManager.LogError(ex, nameof(SaveRoundResult));
             }
             catch (DbUpdateException ex)
             {
@@ -311,7 +254,7 @@ namespace TrucoServer
                         else
                         {
                             mp.isWinner = false;
-                            mp.score = loserScore; 
+                            mp.score = loserScore;
                         }
 
                         var userStats = context.User.FirstOrDefault(u => u.userID == mp.userID);
@@ -332,15 +275,15 @@ namespace TrucoServer
                     Console.WriteLine($"[GAME] Match {matchId} completed successfully. Winner: {winnerTeam}.");
                 }
             }
-            catch (DbEntityValidationException ex)
-            {
-                LogManager.LogError(ex, nameof(SaveMatchResult));
-            }
             catch (DbUpdateException ex)
             {
                 LogManager.LogError(ex, nameof(SaveMatchResult));
             }
             catch (SqlException ex)
+            {
+                LogManager.LogError(ex, nameof(SaveMatchResult));
+            }
+            catch (DbEntityValidationException ex)
             {
                 LogManager.LogError(ex, nameof(SaveMatchResult));
             }
@@ -351,6 +294,72 @@ namespace TrucoServer
             catch (Exception ex)
             {
                 LogManager.LogError(ex, nameof(SaveMatchResult));
+            }
+        }
+
+        private static baseDatosTrucoEntities GetContext()
+        {
+            return new baseDatosTrucoEntities();
+        }
+
+        private static int GenerateNumericCodeFromString(string code)
+        {
+            unchecked
+            {
+                int hash = HASH_SEED;
+                
+                foreach (char c in code)
+                {
+                    hash = hash * HASH_MULTIPLIER + c;
+                }
+                return Math.Abs(hash % HASH_MODULUS);
+            }
+        }
+
+        private Match GetMatchByCode(baseDatosTrucoEntities context, string matchCode)
+        {
+            try {
+                int numericCode = GenerateNumericCodeFromString(matchCode);
+
+                var invitation = context.Invitation
+                    .Where(i => i.code == numericCode)
+                    .OrderByDescending(i => i.expiresAt)
+                    .FirstOrDefault();
+
+                if (invitation == null)
+                {
+                    return null;
+                }
+
+                var lobby = context.Lobby
+                    .Where(l => l.ownerID == invitation.senderID)
+                    .OrderByDescending(l => l.createdAt)
+                    .FirstOrDefault();
+
+                if (lobby == null)
+                {
+                    return null;
+                }
+
+                return context.Match
+                    .Where(m => m.lobbyID == lobby.lobbyID && m.status == ROUND_INPROGRESS)
+                    .OrderByDescending(m => m.startedAt)
+                    .FirstOrDefault();
+            }
+            catch (SqlException ex)
+            {
+                LogManager.LogError(ex, nameof(GetMatchByCode));
+                return new Match();
+            }
+            catch (InvalidOperationException ex)
+            {
+                LogManager.LogError(ex, nameof(GetMatchByCode));
+                return new Match();
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError(ex, nameof(GetMatchByCode));
+                return new Match();
             }
         }
     }

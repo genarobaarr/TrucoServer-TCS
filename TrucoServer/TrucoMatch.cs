@@ -148,138 +148,6 @@ namespace TrucoServer
             }
         }
 
-        private static int GetPointsForBet(TrucoBet bet)
-        {
-            switch (bet)
-            {
-                case TrucoBet.Truco:
-                    return 2;
-                
-                case TrucoBet.Retruco:
-                    return 3;
-                
-                case TrucoBet.ValeCuatro:
-                    return 4;
-                
-                case TrucoBet.None:
-                
-                default:
-                    return 1;
-            }
-        }
-
-        private void ResetBetState()
-        {
-            bettingPlayerId = null;
-            waitingForResponseToId = null;
-            proposedBetValue = TrucoBet.None;
-        }
-
-        private PlayerInformation GetOpponentToRespond(PlayerInformation caller)
-        {
-            try
-            {
-                int numPlayers = Players.Count;
-                var currentTurnPlayer = GetCurrentTurnPlayer();
-
-                if (currentTurnPlayer.Team != caller.Team)
-                {
-                    return currentTurnPlayer;
-                }
-
-                int nextOpponentIndex = (turnIndex + 1) % numPlayers;
-
-                while (Players[nextOpponentIndex].Team == caller.Team)
-                {
-                    nextOpponentIndex = (nextOpponentIndex + 1) % numPlayers;
-
-                    if (nextOpponentIndex == turnIndex)
-                    {
-                        return null;
-                    }
-                }
-
-                return Players[nextOpponentIndex];
-            }
-            catch (ArgumentOutOfRangeException ex)
-            {
-                LogManager.LogWarn(ex.Message, nameof(GetOpponentToRespond));
-                return null;
-            }
-            catch (Exception ex)
-            {
-                LogManager.LogError(ex, nameof(GetOpponentToRespond));
-                return null;
-            }
-        }
-
-        private void EndHandWithPoints(string winningTeam, int pointsToAward)
-        {
-            lock (matchLock)
-            {
-                if (matchEnded)
-                {
-                    return;
-                }
-            }
-            try
-            {
-                if (winningTeam == TEAM_1)
-                {
-                    Team1Score += pointsToAward;
-                }
-                else
-                {
-                    Team2Score += pointsToAward;
-                }
-
-                NotifyAll(callback => callback.NotifyScoreUpdate(Team1Score, Team2Score));
-
-                if (CheckMatchEnd())
-                {
-                    lock (matchLock)
-                    {
-                        matchEnded = true;
-                    }
-
-                    string winnerTeamString;
-                    string matchWinnerName;
-                    int winnerScore;
-                    int loserScore;
-
-                    if (Team1Score > Team2Score)
-                    {
-                        winnerTeamString = TEAM_1;
-                        winnerScore = Team1Score;
-                        loserScore = Team2Score;
-                        matchWinnerName = Players.First(p => p.Team == TEAM_1).Username;
-                    }
-                    else
-                    {
-                        winnerTeamString = TEAM_2;
-                        winnerScore = Team2Score;
-                        loserScore = Team1Score;
-                        matchWinnerName = Players.First(p => p.Team == TEAM_2).Username;
-                    }
-
-                    gameManager.SaveMatchResult(this.DbMatchId, winnerTeamString, winnerScore, loserScore);
-                    NotifyAll(callback => callback.OnMatchEnded(MatchCode, matchWinnerName));
-                }
-                else
-                {
-                    StartNewHand();
-                }
-            }
-            catch (InvalidOperationException ex)
-            {
-                LogManager.LogWarn(ex.Message, nameof(EndHandWithPoints));
-            }
-            catch (Exception ex)
-            {
-                LogManager.LogError(ex, nameof(EndHandWithPoints));
-            }
-        }
-
         public void StartNewHand()
         {
             try
@@ -312,14 +180,14 @@ namespace TrucoServer
                     playerHands[player.PlayerID] = hand;
                     player.Hand = hand;
                     NotifyPlayer(player.PlayerID, callback => callback.ReceiveCards(hand.ToArray()));
-                    
+
                     try
                     {
                         gameManager.SaveDealtCards(MatchCode, player);
                     }
-                    catch (Exception dbEx) 
-                    { 
-                        LogManager.LogError(dbEx, "DB_SaveDealtCards"); 
+                    catch (Exception dbEx)
+                    {
+                        LogManager.LogError(dbEx, "DB_SaveDealtCards");
                     }
                 }
 
@@ -364,6 +232,11 @@ namespace TrucoServer
             {
                 LogManager.LogWarn(ex.Message, nameof(StartNewHand));
             }
+
+            catch (ArgumentOutOfRangeException ex)
+            {
+                LogManager.LogError(ex, nameof(StartNewHand));
+            }
             catch (Exception ex)
             {
                 LogManager.LogError(ex, nameof(StartNewHand));
@@ -383,7 +256,7 @@ namespace TrucoServer
                 {
                     return false;
                 }
-                
+
                 var player = GetCurrentTurnPlayer();
 
                 if (player.PlayerID != playerID || (CurrentState != GameState.Truco && CurrentState != GameState.Envido && CurrentState != GameState.Flor))
@@ -423,6 +296,16 @@ namespace TrucoServer
             catch (KeyNotFoundException ex)
             {
                 LogManager.LogWarn(ex.Message, nameof(PlayCard));
+                return false;
+            }
+            catch (InvalidOperationException ex)
+            {
+                LogManager.LogError(ex, nameof(PlayCard));
+                return false;
+            }
+            catch (ArgumentOutOfRangeException ex)
+            {
+                LogManager.LogError(ex, nameof(PlayCard));
                 return false;
             }
             catch (Exception ex)
@@ -571,47 +454,6 @@ namespace TrucoServer
             }
         }
 
-        private bool CheckHandWinner()
-        {
-            try
-            {
-                int team1Wins = roundWinners.Count(w => w == TEAM_1);
-                int team2Wins = roundWinners.Count(w => w == TEAM_2);
-
-                if (team1Wins >= 2 || team2Wins >= 2)
-                {
-                    return true;
-                }
-
-                if (currentRound >= MAX_ROUNDS)
-                {
-                    return true;
-                }
-
-                if (roundWinners[0] == null && currentRound == 2 && (team1Wins == 1 || team2Wins == 1))
-                {
-                    return true;
-                }
-
-                if (roundWinners[0] != null && roundWinners[1] == null && currentRound == 2)
-                {
-                    return true;
-                }
-
-                return false;
-            }
-            catch (IndexOutOfRangeException ex)
-            {
-                LogManager.LogWarn(ex.Message, nameof(CheckHandWinner));
-                return false;
-            }
-            catch (Exception ex)
-            {
-                LogManager.LogError(ex, nameof(CheckHandWinner));
-                return false;
-            }
-        }
-
         public bool CallTruco(int playerID, string betType)
         {
             try
@@ -632,19 +474,19 @@ namespace TrucoServer
                 }
 
                 var caller = Players.FirstOrDefault(p => p.PlayerID == playerID);
-                
+
                 if (caller == null)
                 {
                     return false;
                 }
-                
+
                 TrucoBet newBet;
-                
+
                 if (!Enum.TryParse(betType, out newBet))
                 {
                     return false;
                 }
-                
+
                 if ((newBet == TrucoBet.Truco && TrucoBetValue != TrucoBet.None) ||
                     (newBet == TrucoBet.Retruco && TrucoBetValue != TrucoBet.Truco) ||
                     (newBet == TrucoBet.ValeCuatro && TrucoBetValue != TrucoBet.Retruco))
@@ -653,24 +495,34 @@ namespace TrucoServer
                 }
 
                 var opponent = GetOpponentToRespond(caller);
-                
+
                 if (opponent == null)
                 {
                     return false;
                 }
-                
+
                 CurrentState = GameState.Truco;
                 bettingPlayerId = playerID;
                 waitingForResponseToId = opponent.PlayerID;
                 proposedBetValue = newBet;
                 currentTrucoPoints = GetPointsForBet(newBet);
                 NotifyTrucoCall(playerID, betType, opponent.PlayerID);
-                
+
                 return true;
             }
             catch (ArgumentException ex)
             {
                 LogManager.LogWarn(ex.Message, nameof(CallTruco));
+                return false;
+            }
+            catch (InvalidOperationException ex)
+            {
+                LogManager.LogError(ex, nameof(CallTruco));
+                return false;
+            }
+            catch (KeyNotFoundException ex)
+            {
+                LogManager.LogError(ex, nameof(CallTruco));
                 return false;
             }
             catch (Exception ex)
@@ -688,10 +540,10 @@ namespace TrucoServer
                 {
                     return;
                 }
-                
+
                 var responder = Players.First(p => p.PlayerID == playerID);
                 var caller = Players.First(p => p.PlayerID == bettingPlayerId.Value);
-                
+
                 if (response == NO_QUIERO_STATUS)
                 {
                     int pointsToAward = GetPointsForBet(TrucoBetValue);
@@ -715,6 +567,10 @@ namespace TrucoServer
             {
                 LogManager.LogWarn(ex.Message, nameof(RespondToCall));
             }
+            catch (KeyNotFoundException ex)
+            {
+                LogManager.LogError(ex, nameof(RespondToCall));
+            }
             catch (Exception ex)
             {
                 LogManager.LogError(ex, nameof(RespondToCall));
@@ -729,38 +585,38 @@ namespace TrucoServer
                 {
                     return false;
                 }
-                
+
                 if (waitingForEnvidoResponseId.HasValue)
                 {
                     return false;
                 }
-                
+
                 if (CurrentState != GameState.Envido)
                 {
                     return false;
                 }
 
                 var caller = Players.FirstOrDefault(p => p.PlayerID == playerID);
-                
+
                 if (caller == null)
                 {
                     return false;
                 }
-                
+
                 EnvidoBet newBet;
-                
+
                 if (!Enum.TryParse(betType, out newBet))
                 {
                     return false;
                 }
-                
+
                 var opponent = GetOpponentToRespond(caller);
-                
+
                 if (opponent == null)
                 {
                     return false;
                 }
-                
+
                 envidoBettorId = playerID;
                 waitingForEnvidoResponseId = opponent.PlayerID;
                 proposedEnvidoBet = newBet;
@@ -773,6 +629,16 @@ namespace TrucoServer
             catch (ArgumentException ex)
             {
                 LogManager.LogWarn(ex.Message, nameof(CallEnvido));
+                return false;
+            }
+            catch (InvalidOperationException ex)
+            {
+                LogManager.LogError(ex, nameof(CallEnvido));
+                return false;
+            }
+            catch (KeyNotFoundException ex)
+            {
+                LogManager.LogError(ex, nameof(CallEnvido));
                 return false;
             }
             catch (Exception ex)
@@ -790,7 +656,7 @@ namespace TrucoServer
                 {
                     return;
                 }
-                
+
                 var responder = Players.First(p => p.PlayerID == playerID);
                 var caller = Players.First(p => p.PlayerID == envidoBettorId.Value);
                 envidoWasPlayed = true;
@@ -798,7 +664,7 @@ namespace TrucoServer
                 if (response == NO_QUIERO_STATUS)
                 {
                     int pointsToAward = (currentEnvidoPoints == 0) ? 1 : (currentEnvidoPoints - GetPointsForEnvidoBet(proposedEnvidoBet));
-                    
+
                     if (pointsToAward == 0)
                     {
                         pointsToAward = 1;
@@ -820,6 +686,10 @@ namespace TrucoServer
             {
                 LogManager.LogWarn(ex.Message, nameof(RespondToEnvido));
             }
+            catch (KeyNotFoundException ex)
+            {
+                LogManager.LogError(ex, nameof(RespondToEnvido));
+            }
             catch (Exception ex)
             {
                 LogManager.LogError(ex, nameof(RespondToEnvido));
@@ -832,7 +702,7 @@ namespace TrucoServer
             {
                 PlayerInformation envidoWinner = null;
                 int highestScore = -1;
-                
+
                 for (int i = 0; i < Players.Count; i++)
                 {
                     int playerIndex = (handStartingPlayerIndex + i) % Players.Count;
@@ -845,7 +715,7 @@ namespace TrucoServer
                         envidoWinner = player;
                     }
                 }
-                
+
                 NotifyAll(cb => cb.NotifyEnvidoResult(envidoWinner.Username, highestScore, currentEnvidoPoints));
                 AwardEnvidoPoints(envidoWinner.Team, currentEnvidoPoints);
                 ResetEnvidoState();
@@ -854,346 +724,13 @@ namespace TrucoServer
             {
                 LogManager.LogWarn(ex.Message, nameof(ResolveEnvido));
             }
-            catch (KeyNotFoundException ex)
+            catch (ArgumentOutOfRangeException ex)
             {
                 LogManager.LogWarn(ex.Message, nameof(ResolveEnvido));
             }
             catch (Exception ex)
             {
                 LogManager.LogError(ex, nameof(ResolveEnvido));
-            }
-        }
-
-        private void AwardEnvidoPoints(string winningTeam, int points)
-        {
-            try
-            {
-                if (winningTeam == TEAM_1)
-                {
-                    Team1Score += points;
-                }
-                else
-                {
-                    Team2Score += points;
-                }
-
-                NotifyScoreUpdate();
-
-                if (CheckMatchEnd())
-                {
-                    lock (matchLock)
-                    {
-                        matchEnded = true;
-                    }
-
-                    string winnerTeamString;
-                    string matchWinnerName;
-                    int winnerScore;
-                    int loserScore;
-
-                    if (Team1Score > Team2Score)
-                    {
-                        winnerTeamString = TEAM_1;
-                        winnerScore = Team1Score;
-                        loserScore = Team2Score;
-                        matchWinnerName = Players.First(p => p.Team == TEAM_1).Username;
-                    }
-                    else
-                    {
-                        winnerTeamString = TEAM_2;
-                        winnerScore = Team2Score;
-                        loserScore = Team1Score;
-                        matchWinnerName = Players.First(p => p.Team == TEAM_2).Username;
-                    }
-
-                    gameManager.SaveMatchResult(this.DbMatchId, winnerTeamString, winnerScore, loserScore);
-                    NotifyAll(callback => callback.OnMatchEnded(MatchCode, matchWinnerName));
-                }
-            }
-            catch (InvalidOperationException ex)
-            {
-                LogManager.LogWarn(ex.Message, nameof(AwardEnvidoPoints));
-            }
-            catch (Exception ex)
-            {
-                LogManager.LogError(ex, nameof(AwardEnvidoPoints));
-            }
-        }
-
-        private void ResetEnvidoState(bool markAsPlayed = true)
-        {
-            EnvidoBetValue = EnvidoBet.None;
-            proposedEnvidoBet = EnvidoBet.None;
-            currentEnvidoPoints = CURRENT_ENVIDO_POINT;
-            envidoBettorId = null;
-            waitingForEnvidoResponseId = null;
-            
-            if (markAsPlayed)
-            {
-                envidoWasPlayed = true;
-            }
-        }
-
-        private int GetPointsForEnvidoBet(EnvidoBet bet)
-        {
-            try
-            {
-                switch (bet)
-                {
-                    case EnvidoBet.Envido:
-                        return 2;
-
-                    case EnvidoBet.RealEnvido:
-                        return 3;
-                    
-                    case EnvidoBet.FaltaEnvido:
-                        return MAX_SCORE - (Team1Score > Team2Score ? Team1Score : Team2Score);
-                    
-                    default:
-                        return 0;
-                }
-            }
-            catch (Exception ex)
-            {
-                LogManager.LogError(ex, nameof(GetPointsForEnvidoBet));
-                return 0;
-            }
-        }
-
-        private bool CheckMatchEnd()
-        {
-            return Team1Score >= MAX_SCORE || Team2Score >= MAX_SCORE;
-        }
-
-        private PlayerInformation GetCurrentTurnPlayer()
-        {
-            try
-            {
-                return Players[turnIndex];
-            }
-            catch (ArgumentOutOfRangeException ex)
-            {
-                LogManager.LogWarn(ex.Message, nameof(GetCurrentTurnPlayer));
-                
-                if (Players != null && Players.Count > 0)
-                {
-                    turnIndex = INDEX_VALUE;
-                    return Players[0];
-                }
-                
-                return null;
-            }
-            catch (Exception ex)
-            {
-                LogManager.LogError(ex, nameof(GetCurrentTurnPlayer));
-                return null;
-            }
-        }
-
-        private void NotifyPlayer(int playerID, Action<ITrucoCallback> action)
-        {
-            if (PlayerCallbacks.TryGetValue(playerID, out var callback))
-            {
-                try
-                {
-                    action(callback);
-                }
-                catch (CommunicationException ex)
-                {
-                    LogManager.LogWarn(ex.Message, nameof(NotifyPlayer));
-                }
-                catch (TimeoutException ex)
-                {
-                    LogManager.LogWarn(ex.Message, nameof(NotifyPlayer));
-                }
-                catch (Exception ex)
-                {
-                    LogManager.LogError(ex, nameof(NotifyPlayer));
-                }
-            }
-        }
-
-        private void NotifyAll(Action<ITrucoCallback> action)
-        {
-            foreach (var callback in PlayerCallbacks.Values)
-            {
-                try
-                {
-                    action(callback);
-                }
-                catch (CommunicationException ex)
-                {
-                    LogManager.LogWarn(ex.Message, nameof(NotifyAll));
-                }
-                catch (TimeoutException ex)
-                {
-                    LogManager.LogWarn(ex.Message, nameof(NotifyAll));
-                }
-                catch (Exception ex)
-                {
-                    LogManager.LogError(ex, nameof(NotifyAll));
-                }
-            }
-        }
-
-        private void NotifyTurnChange()
-        {
-            try
-            {
-                var nextPlayer = GetCurrentTurnPlayer();
-                
-                if (nextPlayer != null)
-                {
-                    NotifyAll(callback => callback.NotifyTurnChange(nextPlayer.Username));
-                }
-            }
-            catch (Exception ex)
-            {
-                LogManager.LogError(ex, nameof(NotifyTurnChange));
-            }
-        }
-
-        private void NotifyScoreUpdate()
-        {
-            try
-            {
-                NotifyAll(callback => callback.NotifyScoreUpdate(Team1Score, Team2Score));
-            }
-            catch (Exception ex)
-            {
-                LogManager.LogError(ex, nameof(NotifyScoreUpdate));
-            }
-        }
-
-        private void NotifyTrucoCall(int callerId, string betName, int responderId)
-        {
-            try
-            {
-                var caller = Players.First(p => p.PlayerID == callerId);
-                NotifyPlayer(responderId, callback => callback.NotifyTrucoCall(caller.Username, betName, true));
-
-                foreach (var player in Players.Where(p => p.PlayerID != responderId))
-                {
-                    NotifyPlayer(player.PlayerID, callback => callback.NotifyTrucoCall(caller.Username, betName, false));
-                }
-            }
-            catch (InvalidOperationException ex)
-            {
-                LogManager.LogWarn(ex.Message, nameof(NotifyTrucoCall));
-            }
-            catch (Exception ex)
-            {
-                LogManager.LogError(ex, nameof(NotifyTrucoCall));
-            }
-        }
-
-        private void NotifyResponse(string response, string callerName, string newBetState)
-        {
-            try
-            {
-                NotifyAll(callback => callback.NotifyResponse(callerName, response, newBetState));
-            }
-            catch (Exception ex)
-            {
-                LogManager.LogError(ex, nameof(NotifyResponse));
-            }
-        }
-
-        public void PlayerGoesToDeck(int playerID)
-        {
-            try
-            {
-                var player = Players.FirstOrDefault(p => p.PlayerID == playerID);
-                
-                if (player == null)
-                {
-                    return;
-                }
-
-                if (waitingForEnvidoResponseId.HasValue && waitingForEnvidoResponseId.Value == playerID)
-                {
-                    RespondToEnvido(playerID, NO_QUIERO_STATUS);
-                }
-
-                var opponent = GetOpponentToRespond(player);
-
-                if (opponent == null)
-                {
-                    return;
-                }
-
-                int pointsToAward = GetPointsForBet(TrucoBetValue);
-                NotifyResponse(AL_MAZO, player.Username, TrucoBetValue.ToString());
-                EndHandWithPoints(opponent.Team, pointsToAward);
-            }
-            catch (InvalidOperationException ex)
-            {
-                LogManager.LogWarn(ex.Message, nameof(PlayerGoesToDeck));
-            }
-            catch (Exception ex)
-            {
-                LogManager.LogError(ex, nameof(PlayerGoesToDeck));
-            }
-        }
-
-        public void AbortMatch(string playerUsername)
-        {
-            lock (matchLock)
-            {
-                if (matchEnded)
-                {
-                    return;
-                }
-                matchEnded = true;
-            }
-
-            try
-            {
-                var leaver = Players.FirstOrDefault(p => p.Username == playerUsername);
-                if (leaver == null)
-                {
-                    return;
-                }
-
-                string loserTeam = leaver.Team;
-                string winnerTeam = (loserTeam == TEAM_1) ? TEAM_2 : TEAM_1;
-
-                int winnerScore = (winnerTeam == TEAM_1) ? Team1Score : Team2Score;
-                int loserScore = (loserTeam == TEAM_1) ? Team1Score : Team2Score;
-
-                var winnerPlayer = Players.FirstOrDefault(p => p.Team == winnerTeam);
-                string matchWinnerName = winnerPlayer != null ? winnerPlayer.Username : "Oponente";
-
-                gameManager.SaveMatchResult(this.DbMatchId, winnerTeam, winnerScore, loserScore);
-
-                NotifyAll(callback => callback.OnMatchEnded(MatchCode, matchWinnerName));
-            }
-            catch (Exception ex)
-            {
-                LogManager.LogError(ex, nameof(AbortMatch));
-            }
-        }
-
-        private int GetPointsForFlorBet(FlorBet bet)
-        {
-            try
-            {
-                switch (bet)
-                {
-                    case FlorBet.Flor:
-                        return 3;
-                    
-                    case FlorBet.ContraFlor:
-                        return 6; 
-
-                    default:
-                        return 0;
-                }
-            }
-            catch (Exception ex)
-            {
-                LogManager.LogError(ex, nameof(GetPointsForFlorBet));
-                return 0;
             }
         }
 
@@ -1266,6 +803,21 @@ namespace TrucoServer
                     return true;
                 }
             }
+            catch (ArgumentException ex)
+            {
+                LogManager.LogWarn(ex.Message, nameof(CallFlor));
+                return false;
+            }
+            catch (InvalidOperationException ex)
+            {
+                LogManager.LogError(ex, nameof(CallFlor));
+                return false;
+            }
+            catch (KeyNotFoundException ex)
+            {
+                LogManager.LogError(ex, nameof(CallFlor));
+                return false;
+            }
             catch (Exception ex)
             {
                 LogManager.LogError(ex, nameof(CallFlor));
@@ -1303,9 +855,9 @@ namespace TrucoServer
             }
             catch (InvalidOperationException ex)
             {
-                LogManager.LogError(ex, nameof(RespondToFlor));
+                LogManager.LogWarn(ex.Message, nameof(RespondToFlor));
             }
-            catch (NullReferenceException ex)
+            catch (KeyNotFoundException ex)
             {
                 LogManager.LogError(ex, nameof(RespondToFlor));
             }
@@ -1345,6 +897,14 @@ namespace TrucoServer
                 }
 
                 ResetFlorState();
+            }
+            catch (InvalidOperationException ex)
+            {
+                LogManager.LogWarn(ex.Message, nameof(ResolveFlor));
+            }
+            catch (ArgumentOutOfRangeException ex)
+            {
+                LogManager.LogWarn(ex.Message, nameof(ResolveFlor));
             }
             catch (Exception ex)
             {
@@ -1400,53 +960,278 @@ namespace TrucoServer
                 CurrentState = GameState.Truco;
                 NotifyTurnChange();
             }
+            catch (InvalidOperationException ex)
+            {
+                LogManager.LogWarn(ex.Message, nameof(ResolveContraFlor));
+            }
+            catch (ArgumentOutOfRangeException ex)
+            {
+                LogManager.LogWarn(ex.Message, nameof(ResolveContraFlor));
+            }
             catch (Exception ex)
             {
                 LogManager.LogError(ex, nameof(ResolveContraFlor));
             }
         }
 
-        private void AwardFlorPoints(string winningTeam, int points)
+        private void AwardEnvidoPoints(string winningTeam, int points)
         {
-            if (winningTeam == TEAM_1)
+            try
             {
-                Team1Score += points;
-            }
-            else
-            {
-                Team2Score += points;
-            }
-
-            NotifyScoreUpdate();
-
-            if (CheckMatchEnd())
-            {
-                lock (matchLock)
+                if (winningTeam == TEAM_1)
                 {
-                    matchEnded = true;
-                }
-                string winnerTeamString;
-                string matchWinnerName;
-                int winnerScore;
-                int loserScore;
-
-                if (Team1Score > Team2Score)
-                {
-                    winnerTeamString = TEAM_1;
-                    winnerScore = Team1Score;
-                    loserScore = Team2Score;
-                    matchWinnerName = Players.First(p => p.Team == TEAM_1).Username;
+                    Team1Score += points;
                 }
                 else
                 {
-                    winnerTeamString = TEAM_2;
-                    winnerScore = Team2Score;
-                    loserScore = Team1Score;
-                    matchWinnerName = Players.First(p => p.Team == TEAM_2).Username;
+                    Team2Score += points;
                 }
 
-                gameManager.SaveMatchResult(this.DbMatchId, winnerTeamString, winnerScore, loserScore);
+                NotifyScoreUpdate();
+
+                if (CheckMatchEnd())
+                {
+                    lock (matchLock)
+                    {
+                        matchEnded = true;
+                    }
+
+                    string winnerTeamString;
+                    string matchWinnerName;
+                    int winnerScore;
+                    int loserScore;
+
+                    if (Team1Score > Team2Score)
+                    {
+                        winnerTeamString = TEAM_1;
+                        winnerScore = Team1Score;
+                        loserScore = Team2Score;
+                        matchWinnerName = Players.First(p => p.Team == TEAM_1).Username;
+                    }
+                    else
+                    {
+                        winnerTeamString = TEAM_2;
+                        winnerScore = Team2Score;
+                        loserScore = Team1Score;
+                        matchWinnerName = Players.First(p => p.Team == TEAM_2).Username;
+                    }
+
+                    gameManager.SaveMatchResult(this.DbMatchId, winnerTeamString, winnerScore, loserScore);
+                    NotifyAll(callback => callback.OnMatchEnded(MatchCode, matchWinnerName));
+                }
+            }
+            catch (InvalidOperationException ex)
+            {
+                LogManager.LogWarn(ex.Message, nameof(AwardEnvidoPoints));
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError(ex, nameof(AwardEnvidoPoints));
+            }
+        }
+
+        private void AwardFlorPoints(string winningTeam, int points)
+        {
+            try
+            {
+                if (winningTeam == TEAM_1)
+                {
+                    Team1Score += points;
+                }
+                else
+                {
+                    Team2Score += points;
+                }
+
+                NotifyScoreUpdate();
+
+                if (CheckMatchEnd())
+                {
+                    lock (matchLock)
+                    {
+                        matchEnded = true;
+                    }
+                    string winnerTeamString;
+                    string matchWinnerName;
+                    int winnerScore;
+                    int loserScore;
+
+                    if (Team1Score > Team2Score)
+                    {
+                        winnerTeamString = TEAM_1;
+                        winnerScore = Team1Score;
+                        loserScore = Team2Score;
+                        matchWinnerName = Players.First(p => p.Team == TEAM_1).Username;
+                    }
+                    else
+                    {
+                        winnerTeamString = TEAM_2;
+                        winnerScore = Team2Score;
+                        loserScore = Team1Score;
+                        matchWinnerName = Players.First(p => p.Team == TEAM_2).Username;
+                    }
+
+                    gameManager.SaveMatchResult(this.DbMatchId, winnerTeamString, winnerScore, loserScore);
+                    NotifyAll(callback => callback.OnMatchEnded(MatchCode, matchWinnerName));
+                }
+            }
+            catch (InvalidOperationException ex)
+            {
+                LogManager.LogWarn(ex.Message, nameof(AwardFlorPoints));
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError(ex, nameof(AwardFlorPoints));
+            }
+        }
+
+        private void EndHandWithPoints(string winningTeam, int pointsToAward)
+        {
+            lock (matchLock)
+            {
+                if (matchEnded)
+                {
+                    return;
+                }
+            }
+            try
+            {
+                if (winningTeam == TEAM_1)
+                {
+                    Team1Score += pointsToAward;
+                }
+                else
+                {
+                    Team2Score += pointsToAward;
+                }
+
+                NotifyAll(callback => callback.NotifyScoreUpdate(Team1Score, Team2Score));
+
+                if (CheckMatchEnd())
+                {
+                    HandleMatchWin();
+                }
+                else
+                {
+                    StartNewHand();
+                }
+            }
+            catch (InvalidOperationException ex)
+            {
+                LogManager.LogWarn(ex.Message, nameof(EndHandWithPoints));
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError(ex, nameof(EndHandWithPoints));
+            }
+        }
+
+        private void HandleMatchWin()
+        {
+            lock (matchLock)
+            {
+                matchEnded = true;
+            }
+            string winnerTeamString;
+            string matchWinnerName;
+            int winnerScore;
+            int loserScore;
+
+            if (Team1Score > Team2Score)
+            {
+                winnerTeamString = TEAM_1;
+                winnerScore = Team1Score;
+                loserScore = Team2Score;
+                matchWinnerName = Players.First(p => p.Team == TEAM_1).Username;
+            }
+            else
+            {
+                winnerTeamString = TEAM_2;
+                winnerScore = Team2Score;
+                loserScore = Team1Score;
+                matchWinnerName = Players.First(p => p.Team == TEAM_2).Username;
+            }
+
+            gameManager.SaveMatchResult(this.DbMatchId, winnerTeamString, winnerScore, loserScore);
+            NotifyAll(callback => callback.OnMatchEnded(MatchCode, matchWinnerName));
+        }
+
+        public void PlayerGoesToDeck(int playerID)
+        {
+            try
+            {
+                var player = Players.FirstOrDefault(p => p.PlayerID == playerID);
+
+                if (player == null)
+                {
+                    return;
+                }
+
+                if (waitingForEnvidoResponseId.HasValue && waitingForEnvidoResponseId.Value == playerID)
+                {
+                    RespondToEnvido(playerID, NO_QUIERO_STATUS);
+                }
+
+                var opponent = GetOpponentToRespond(player);
+
+                if (opponent == null)
+                {
+                    return;
+                }
+
+                int pointsToAward = GetPointsForBet(TrucoBetValue);
+                NotifyResponse(AL_MAZO, player.Username, TrucoBetValue.ToString());
+                EndHandWithPoints(opponent.Team, pointsToAward);
+            }
+            catch (InvalidOperationException ex)
+            {
+                LogManager.LogWarn(ex.Message, nameof(PlayerGoesToDeck));
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError(ex, nameof(PlayerGoesToDeck));
+            }
+        }
+
+        public void AbortMatch(string playerUsername)
+        {
+            lock (matchLock)
+            {
+                if (matchEnded)
+                {
+                    return;
+                }
+                matchEnded = true;
+            }
+
+            try
+            {
+                var leaver = Players.FirstOrDefault(p => p.Username == playerUsername);
+                if (leaver == null)
+                {
+                    return;
+                }
+
+                string loserTeam = leaver.Team;
+                string winnerTeam = (loserTeam == TEAM_1) ? TEAM_2 : TEAM_1;
+
+                int winnerScore = (winnerTeam == TEAM_1) ? Team1Score : Team2Score;
+                int loserScore = (loserTeam == TEAM_1) ? Team1Score : Team2Score;
+
+                var winnerPlayer = Players.FirstOrDefault(p => p.Team == winnerTeam);
+                string matchWinnerName = winnerPlayer != null ? winnerPlayer.Username : "Oponente";
+
+                gameManager.SaveMatchResult(this.DbMatchId, winnerTeam, winnerScore, loserScore);
+
                 NotifyAll(callback => callback.OnMatchEnded(MatchCode, matchWinnerName));
+            }
+            catch (CommunicationException ex)
+            {
+                LogManager.LogError(ex, nameof(AbortMatch));
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError(ex, nameof(AbortMatch));
             }
         }
 
@@ -1457,21 +1242,395 @@ namespace TrucoServer
             currentFlorPoints = CURRENT_FLOR_SCORE;
             florBettorId = null;
             waitingForFlorResponseId = null;
-            
+
             if (markAsPlayed)
             {
                 florWasPlayed = true;
             }
         }
 
+        private void ResetEnvidoState(bool markAsPlayed = true)
+        {
+            EnvidoBetValue = EnvidoBet.None;
+            proposedEnvidoBet = EnvidoBet.None;
+            currentEnvidoPoints = CURRENT_ENVIDO_POINT;
+            envidoBettorId = null;
+            waitingForEnvidoResponseId = null;
+
+            if (markAsPlayed)
+            {
+                envidoWasPlayed = true;
+            }
+        }
+
+        private void ResetBetState()
+        {
+            bettingPlayerId = null;
+            waitingForResponseToId = null;
+            proposedBetValue = TrucoBet.None;
+        }
+
+        private PlayerInformation GetOpponentToRespond(PlayerInformation caller)
+        {
+            try
+            {
+                int numPlayers = Players.Count;
+                var currentTurnPlayer = GetCurrentTurnPlayer();
+
+                if (currentTurnPlayer.Team != caller.Team)
+                {
+                    return currentTurnPlayer;
+                }
+
+                int nextOpponentIndex = (turnIndex + 1) % numPlayers;
+
+                while (Players[nextOpponentIndex].Team == caller.Team)
+                {
+                    nextOpponentIndex = (nextOpponentIndex + 1) % numPlayers;
+
+                    if (nextOpponentIndex == turnIndex)
+                    {
+                        return null;
+                    }
+                }
+
+                return Players[nextOpponentIndex];
+            }
+            catch (ArgumentOutOfRangeException ex)
+            {
+                LogManager.LogWarn(ex.Message, nameof(GetOpponentToRespond));
+                return null;
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError(ex, nameof(GetOpponentToRespond));
+                return null;
+            }
+        }
+
+        private void NotifyAll(Action<ITrucoCallback> action)
+        {
+            foreach (var callback in PlayerCallbacks.Values)
+            {
+                try
+                {
+                    action(callback);
+                }
+                catch (CommunicationException ex)
+                {
+                    LogManager.LogWarn(ex.Message, nameof(NotifyAll));
+                }
+                catch (TimeoutException ex)
+                {
+                    LogManager.LogWarn(ex.Message, nameof(NotifyAll));
+                }
+                catch (Exception ex)
+                {
+                    LogManager.LogError(ex, nameof(NotifyAll));
+                }
+            }
+        }
+
+        private void NotifyPlayer(int playerID, Action<ITrucoCallback> action)
+        {
+            if (PlayerCallbacks.TryGetValue(playerID, out var callback))
+            {
+                try
+                {
+                    action(callback);
+                }
+                catch (CommunicationException ex)
+                {
+                    LogManager.LogWarn(ex.Message, nameof(NotifyPlayer));
+                }
+                catch (TimeoutException ex)
+                {
+                    LogManager.LogWarn(ex.Message, nameof(NotifyPlayer));
+                }
+                catch (Exception ex)
+                {
+                    LogManager.LogError(ex, nameof(NotifyPlayer));
+                }
+            }
+        }
+
+        private PlayerInformation GetCurrentTurnPlayer()
+        {
+            try
+            {
+                return Players[turnIndex];
+            }
+            catch (ArgumentOutOfRangeException ex)
+            {
+                LogManager.LogWarn(ex.Message, nameof(GetCurrentTurnPlayer));
+
+                if (Players != null && Players.Count > 0)
+                {
+                    turnIndex = INDEX_VALUE;
+                    return Players[0];
+                }
+
+                return null;
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError(ex, nameof(GetCurrentTurnPlayer));
+                return null;
+            }
+        }
+
+        private void NotifyTurnChange()
+        {
+            try
+            {
+                var nextPlayer = GetCurrentTurnPlayer();
+
+                if (nextPlayer != null)
+                {
+                    NotifyAll(callback => callback.NotifyTurnChange(nextPlayer.Username));
+                }
+            }
+            catch (InvalidOperationException ex)
+            {
+                LogManager.LogError(ex, nameof(NotifyTurnChange));
+            }
+            catch (CommunicationException ex)
+            {
+                LogManager.LogError(ex, nameof(NotifyTurnChange));
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError(ex, nameof(NotifyTurnChange));
+            }
+        }
+
+        private void NotifyScoreUpdate()
+        {
+            try
+            {
+                NotifyAll(callback => callback.NotifyScoreUpdate(Team1Score, Team2Score));
+            }
+            catch (InvalidOperationException ex)
+            {
+                LogManager.LogError(ex, nameof(NotifyScoreUpdate));
+            }
+            catch (CommunicationException ex)
+            {
+                LogManager.LogError(ex, nameof(NotifyScoreUpdate));
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError(ex, nameof(NotifyScoreUpdate));
+            }
+        }
+
+        private void NotifyResponse(string response, string callerName, string newBetState)
+        {
+            try
+            {
+                NotifyAll(callback => callback.NotifyResponse(callerName, response, newBetState));
+            }
+            catch (InvalidOperationException ex)
+            {
+                LogManager.LogError(ex, nameof(NotifyResponse));
+            }
+            catch (CommunicationException ex)
+            {
+                LogManager.LogError(ex, nameof(NotifyResponse));
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError(ex, nameof(NotifyResponse));
+            }
+        }
+
+        private void NotifyTrucoCall(int callerId, string betName, int responderId)
+        {
+            try
+            {
+                var caller = Players.First(p => p.PlayerID == callerId);
+                NotifyPlayer(responderId, callback => callback.NotifyTrucoCall(caller.Username, betName, true));
+
+                foreach (var player in Players.Where(p => p.PlayerID != responderId))
+                {
+                    NotifyPlayer(player.PlayerID, callback => callback.NotifyTrucoCall(caller.Username, betName, false));
+                }
+            }
+            catch (InvalidOperationException ex)
+            {
+                LogManager.LogWarn(ex.Message, nameof(NotifyTrucoCall));
+            }
+            catch (CommunicationException ex)
+            {
+                LogManager.LogError(ex, nameof(NotifyTrucoCall));
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError(ex, nameof(NotifyTrucoCall));
+            }
+        }
+
         private void NotifyFlorCallHelper(int callerId, string betName, int currentPoints, int responderId)
         {
-            var caller = Players.First(p => p.PlayerID == callerId);
-            NotifyPlayer(responderId, callback => callback.NotifyFlorCall(caller.Username, betName, currentPoints, true));
-
-            foreach (var player in Players.Where(p => p.PlayerID != responderId))
+            try
             {
-                NotifyPlayer(player.PlayerID, callback => callback.NotifyFlorCall(caller.Username, betName, currentPoints, false));
+                var caller = Players.First(p => p.PlayerID == callerId);
+                NotifyPlayer(responderId, callback => callback.NotifyFlorCall(caller.Username, betName, currentPoints, true));
+
+                foreach (var player in Players.Where(p => p.PlayerID != responderId))
+                {
+                    NotifyPlayer(player.PlayerID, callback => callback.NotifyFlorCall(caller.Username, betName, currentPoints, false));
+                }
+            }
+            catch (InvalidOperationException ex)
+            {
+                LogManager.LogWarn(ex.Message, nameof(NotifyFlorCallHelper));
+            }
+            catch (CommunicationException ex)
+            {
+                LogManager.LogError(ex, nameof(NotifyFlorCallHelper));
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError(ex, nameof(NotifyFlorCallHelper));
+            }
+        }
+
+        private bool CheckHandWinner()
+        {
+            try
+            {
+                int team1Wins = roundWinners.Count(w => w == TEAM_1);
+                int team2Wins = roundWinners.Count(w => w == TEAM_2);
+
+                if (team1Wins >= 2 || team2Wins >= 2)
+                {
+                    return true;
+                }
+
+                if (currentRound >= MAX_ROUNDS)
+                {
+                    return true;
+                }
+
+                if (roundWinners[0] == null && currentRound == 2 && (team1Wins == 1 || team2Wins == 1))
+                {
+                    return true;
+                }
+
+                if (roundWinners[0] != null && roundWinners[1] == null && currentRound == 2)
+                {
+                    return true;
+                }
+
+                return false;
+            }
+            catch (IndexOutOfRangeException ex)
+            {
+                LogManager.LogWarn(ex.Message, nameof(CheckHandWinner));
+                return false;
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError(ex, nameof(CheckHandWinner));
+                return false;
+            }
+        }
+
+        private bool CheckMatchEnd()
+        {
+            return Team1Score >= MAX_SCORE || Team2Score >= MAX_SCORE;
+        }
+
+        private static int GetPointsForBet(TrucoBet bet)
+        {
+            try
+            {
+                switch (bet)
+                {
+                    case TrucoBet.Truco:
+                        return 2;
+
+                    case TrucoBet.Retruco:
+                        return 3;
+
+                    case TrucoBet.ValeCuatro:
+                        return 4;
+
+                    case TrucoBet.None:
+
+                    default:
+                        return 1;
+                }
+            }
+            catch (InvalidOperationException ex)
+            {
+                LogManager.LogError(ex, nameof(GetPointsForBet));
+                return 0;
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError(ex, nameof(GetPointsForBet));
+                return 0;
+            }
+        }
+
+        private int GetPointsForEnvidoBet(EnvidoBet bet)
+        {
+            try
+            {
+                switch (bet)
+                {
+                    case EnvidoBet.Envido:
+                        return 2;
+
+                    case EnvidoBet.RealEnvido:
+                        return 3;
+                    
+                    case EnvidoBet.FaltaEnvido:
+                        return MAX_SCORE - (Team1Score > Team2Score ? Team1Score : Team2Score);
+                    
+                    default:
+                        return 0;
+                }
+            }
+            catch (InvalidOperationException ex)
+            {
+                LogManager.LogError(ex, nameof(GetPointsForEnvidoBet));
+                return 0;
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError(ex, nameof(GetPointsForEnvidoBet));
+                return 0;
+            }
+        }
+
+        private int GetPointsForFlorBet(FlorBet bet)
+        {
+            try
+            {
+                switch (bet)
+                {
+                    case FlorBet.Flor:
+                        return 3;
+
+                    case FlorBet.ContraFlor:
+                        return 6;
+
+                    default:
+                        return 0;
+                }
+            }
+            catch (InvalidOperationException ex)
+            {
+                LogManager.LogError(ex, nameof(GetPointsForFlorBet));
+                return 0;
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError(ex, nameof(GetPointsForFlorBet));
+                return 0;
             }
         }
     }
