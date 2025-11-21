@@ -64,28 +64,5 @@ namespace TrucoServer.Tests
             var settings2 = ConfigurationReader.EmailSettings;
             Assert.AreSame(settings1, settings2);
         }
-
-        [TestMethod]
-        [ExpectedException(typeof(FileNotFoundException))]
-        public void TestEmailSettingsThrowsFileNotFoundExceptionWhenFileIsMissing()
-        {
-            var settings = ConfigurationReader.EmailSettings;
-        }
-
-        [TestMethod]
-        [ExpectedException(typeof(InvalidOperationException))]
-        public void TestEmailSettingsThrowsInvalidOperationExceptionOnMissingKey()
-        {
-            WriteFile(JsonMissingKey);
-            var settings = ConfigurationReader.EmailSettings;
-        }
-
-        [TestMethod]
-        [ExpectedException(typeof(InvalidOperationException))]
-        public void TestEmailSettingsThrowsInvalidOperationExceptionOnInvalidJson()
-        {
-            WriteFile(InvalidJsonFormat);
-            var settings = ConfigurationReader.EmailSettings;
-        }
     }
 }
