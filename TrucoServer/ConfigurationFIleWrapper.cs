@@ -1,7 +1,7 @@
 ﻿
 namespace TrucoServer
 {
-    public class ConfigurationFIleWrapper
+    public class ConfigurationFileWrapper
     {
         public EmailSettings EmailSettings { get; set; }
     }

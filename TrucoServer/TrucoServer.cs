@@ -242,7 +242,7 @@
                     };
                 }
             }
-            catch (Newtonsoft.Json.JsonException ex)
+            catch (JsonException ex)
             {
                 LogManager.LogError(ex, $"{nameof(GetUserProfile)} - JSON Deserialization Error");
                 return null;
@@ -730,7 +730,7 @@
         public List<FriendData> GetFriends(string username)
         {
             try
-            {
+            {   
                 using (var context = new baseDatosTrucoEntities())
                 {
                     var user = context.User.SingleOrDefault(u => u.username.ToLower() == username.ToLower());

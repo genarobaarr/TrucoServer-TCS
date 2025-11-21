@@ -28,7 +28,7 @@ namespace TrucoServer
             try
             {
                 string jsonText = File.ReadAllText(filePath);
-                var wrapper = JsonConvert.DeserializeObject<ConfigurationFIleWrapper>(jsonText);
+                var wrapper = JsonConvert.DeserializeObject<ConfigurationFileWrapper>(jsonText);
 
                 emailSettings = wrapper.EmailSettings;
 
