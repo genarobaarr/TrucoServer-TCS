@@ -21,25 +21,6 @@
           <Property Name="wordID" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
           <Property Name="word" Type="varchar" MaxLength="50" Nullable="false" />
         </EntityType>
-        <EntityType Name="Card">
-          <Key>
-            <PropertyRef Name="cardID" />
-          </Key>
-          <Property Name="cardID" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
-          <Property Name="suit" Type="varchar" MaxLength="50" Nullable="false" />
-          <Property Name="rank" Type="varchar" MaxLength="20" Nullable="false" />
-          <Property Name="weight" Type="int" Nullable="false" />
-        </EntityType>
-        <EntityType Name="DealtCard">
-          <Key>
-            <PropertyRef Name="dealID" />
-          </Key>
-          <Property Name="dealID" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
-          <Property Name="roundID" Type="int" Nullable="false" />
-          <Property Name="playerID" Type="int" Nullable="false" />
-          <Property Name="cardID" Type="int" Nullable="false" />
-          <Property Name="playOrder" Type="int" />
-        </EntityType>
         <EntityType Name="Friendship">
           <Key>
             <PropertyRef Name="friendshipID" />
@@ -103,17 +84,6 @@
           <Property Name="score" Type="int" Nullable="false" />
           <Property Name="isWinner" Type="bit" Nullable="false" />
         </EntityType>
-        <EntityType Name="Round">
-          <Key>
-            <PropertyRef Name="roundID" />
-          </Key>
-          <Property Name="roundID" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
-          <Property Name="matchID" Type="int" Nullable="false" />
-          <Property Name="number" Type="int" Nullable="false" />
-          <Property Name="status" Type="varchar" MaxLength="20" Nullable="false" />
-          <Property Name="isActive" Type="bit" />
-          <Property Name="winnerID" Type="int" />
-        </EntityType>
         <EntityType Name="User">
           <Key>
             <PropertyRef Name="userID" />
@@ -141,18 +111,6 @@
           <Property Name="versionID" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
           <Property Name="configuration" Type="varchar" MaxLength="50" Nullable="false" />
         </EntityType>
-        <Association Name="FK__Round__winnerID__151B244E">
-          <End Role="User" Type="Self.User" Multiplicity="0..1" />
-          <End Role="Round" Type="Self.Round" Multiplicity="*" />
-          <ReferentialConstraint>
-            <Principal Role="User">
-              <PropertyRef Name="userID" />
-            </Principal>
-            <Dependent Role="Round">
-              <PropertyRef Name="winnerID" />
-            </Dependent>
-          </ReferentialConstraint>
-        </Association>
         <Association Name="FK_Ban_User">
           <End Role="User" Type="Self.User" Multiplicity="1">
             <OnDelete Action="Cascade" />
@@ -164,46 +122,6 @@
             </Principal>
             <Dependent Role="Ban">
               <PropertyRef Name="userID" />
-            </Dependent>
-          </ReferentialConstraint>
-        </Association>
-        <Association Name="FK_DealtCard_Card">
-          <End Role="Card" Type="Self.Card" Multiplicity="1" />
-          <End Role="DealtCard" Type="Self.DealtCard" Multiplicity="*" />
-          <ReferentialConstraint>
-            <Principal Role="Card">
-              <PropertyRef Name="cardID" />
-            </Principal>
-            <Dependent Role="DealtCard">
-              <PropertyRef Name="cardID" />
-            </Dependent>
-          </ReferentialConstraint>
-        </Association>
-        <Association Name="FK_DealtCard_Player">
-          <End Role="User" Type="Self.User" Multiplicity="1">
-            <OnDelete Action="Cascade" />
-          </End>
-          <End Role="DealtCard" Type="Self.DealtCard" Multiplicity="*" />
-          <ReferentialConstraint>
-            <Principal Role="User">
-              <PropertyRef Name="userID" />
-            </Principal>
-            <Dependent Role="DealtCard">
-              <PropertyRef Name="playerID" />
-            </Dependent>
-          </ReferentialConstraint>
-        </Association>
-        <Association Name="FK_DealtCard_Round">
-          <End Role="Round" Type="Self.Round" Multiplicity="1">
-            <OnDelete Action="Cascade" />
-          </End>
-          <End Role="DealtCard" Type="Self.DealtCard" Multiplicity="*" />
-          <ReferentialConstraint>
-            <Principal Role="Round">
-              <PropertyRef Name="roundID" />
-            </Principal>
-            <Dependent Role="DealtCard">
-              <PropertyRef Name="roundID" />
             </Dependent>
           </ReferentialConstraint>
         </Association>
@@ -351,20 +269,6 @@
             </Dependent>
           </ReferentialConstraint>
         </Association>
-        <Association Name="FK_Round_Match">
-          <End Role="Match" Type="Self.Match" Multiplicity="1">
-            <OnDelete Action="Cascade" />
-          </End>
-          <End Role="Round" Type="Self.Round" Multiplicity="*" />
-          <ReferentialConstraint>
-            <Principal Role="Match">
-              <PropertyRef Name="matchID" />
-            </Principal>
-            <Dependent Role="Round">
-              <PropertyRef Name="matchID" />
-            </Dependent>
-          </ReferentialConstraint>
-        </Association>
         <Association Name="FK_UserProfile_User">
           <End Role="User" Type="Self.User" Multiplicity="1" />
           <End Role="UserProfile" Type="Self.UserProfile" Multiplicity="0..1" />
@@ -380,37 +284,18 @@
         <EntityContainer Name="baseDatosTrucoModelStoreContainer">
           <EntitySet Name="Ban" EntityType="Self.Ban" Schema="dbo" store:Type="Tables" />
           <EntitySet Name="BannedWord" EntityType="Self.BannedWord" Schema="dbo" store:Type="Tables" />
-          <EntitySet Name="Card" EntityType="Self.Card" Schema="dbo" store:Type="Tables" />
-          <EntitySet Name="DealtCard" EntityType="Self.DealtCard" Schema="dbo" store:Type="Tables" />
           <EntitySet Name="Friendship" EntityType="Self.Friendship" Schema="dbo" store:Type="Tables" />
           <EntitySet Name="Invitation" EntityType="Self.Invitation" Schema="dbo" store:Type="Tables" />
           <EntitySet Name="Lobby" EntityType="Self.Lobby" Schema="dbo" store:Type="Tables" />
           <EntitySet Name="LobbyMember" EntityType="Self.LobbyMember" Schema="dbo" store:Type="Tables" />
           <EntitySet Name="Match" EntityType="Self.Match" Schema="dbo" store:Type="Tables" />
           <EntitySet Name="MatchPlayer" EntityType="Self.MatchPlayer" Schema="dbo" store:Type="Tables" />
-          <EntitySet Name="Round" EntityType="Self.Round" Schema="dbo" store:Type="Tables" />
           <EntitySet Name="User" EntityType="Self.User" Schema="dbo" store:Type="Tables" />
           <EntitySet Name="UserProfile" EntityType="Self.UserProfile" Schema="dbo" store:Type="Tables" />
           <EntitySet Name="Versions" EntityType="Self.Versions" Schema="dbo" store:Type="Tables" />
-          <AssociationSet Name="FK__Round__winnerID__151B244E" Association="Self.FK__Round__winnerID__151B244E">
-            <End Role="User" EntitySet="User" />
-            <End Role="Round" EntitySet="Round" />
-          </AssociationSet>
           <AssociationSet Name="FK_Ban_User" Association="Self.FK_Ban_User">
             <End Role="User" EntitySet="User" />
             <End Role="Ban" EntitySet="Ban" />
-          </AssociationSet>
-          <AssociationSet Name="FK_DealtCard_Card" Association="Self.FK_DealtCard_Card">
-            <End Role="Card" EntitySet="Card" />
-            <End Role="DealtCard" EntitySet="DealtCard" />
-          </AssociationSet>
-          <AssociationSet Name="FK_DealtCard_Player" Association="Self.FK_DealtCard_Player">
-            <End Role="User" EntitySet="User" />
-            <End Role="DealtCard" EntitySet="DealtCard" />
-          </AssociationSet>
-          <AssociationSet Name="FK_DealtCard_Round" Association="Self.FK_DealtCard_Round">
-            <End Role="Round" EntitySet="Round" />
-            <End Role="DealtCard" EntitySet="DealtCard" />
           </AssociationSet>
           <AssociationSet Name="FK_Friendship_Friend" Association="Self.FK_Friendship_Friend">
             <End Role="User" EntitySet="User" />
@@ -456,10 +341,6 @@
             <End Role="User" EntitySet="User" />
             <End Role="MatchPlayer" EntitySet="MatchPlayer" />
           </AssociationSet>
-          <AssociationSet Name="FK_Round_Match" Association="Self.FK_Round_Match">
-            <End Role="Match" EntitySet="Match" />
-            <End Role="Round" EntitySet="Round" />
-          </AssociationSet>
           <AssociationSet Name="FK_UserProfile_User" Association="Self.FK_UserProfile_User">
             <End Role="User" EntitySet="User" />
             <End Role="UserProfile" EntitySet="UserProfile" />
@@ -485,29 +366,6 @@
           </Key>
           <Property Name="wordID" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
           <Property Name="word" Type="String" MaxLength="50" FixedLength="false" Unicode="false" Nullable="false" />
-        </EntityType>
-        <EntityType Name="Card">
-          <Key>
-            <PropertyRef Name="cardID" />
-          </Key>
-          <Property Name="cardID" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
-          <Property Name="suit" Type="String" MaxLength="50" FixedLength="false" Unicode="false" Nullable="false" />
-          <Property Name="rank" Type="String" MaxLength="20" FixedLength="false" Unicode="false" Nullable="false" />
-          <Property Name="weight" Type="Int32" Nullable="false" />
-          <NavigationProperty Name="DealtCard" Relationship="Self.FK_DealtCard_Card" FromRole="Card" ToRole="DealtCard" />
-        </EntityType>
-        <EntityType Name="DealtCard">
-          <Key>
-            <PropertyRef Name="dealID" />
-          </Key>
-          <Property Name="dealID" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
-          <Property Name="roundID" Type="Int32" Nullable="false" />
-          <Property Name="playerID" Type="Int32" Nullable="false" />
-          <Property Name="cardID" Type="Int32" Nullable="false" />
-          <NavigationProperty Name="Card" Relationship="Self.FK_DealtCard_Card" FromRole="DealtCard" ToRole="Card" />
-          <NavigationProperty Name="User" Relationship="Self.FK_DealtCard_Player" FromRole="DealtCard" ToRole="User" />
-          <NavigationProperty Name="Round" Relationship="Self.FK_DealtCard_Round" FromRole="DealtCard" ToRole="Round" />
-          <Property Name="playOrder" Type="Int32" />
         </EntityType>
         <EntityType Name="Friendship">
           <Key>
@@ -572,7 +430,6 @@
           <NavigationProperty Name="Lobby" Relationship="Self.FK_Match_Lobby" FromRole="Match" ToRole="Lobby" />
           <NavigationProperty Name="Versions" Relationship="Self.FK_Match_Version" FromRole="Match" ToRole="Versions" />
           <NavigationProperty Name="MatchPlayer" Relationship="Self.FK_MatchPlayer_Match" FromRole="Match" ToRole="MatchPlayer" />
-          <NavigationProperty Name="Round" Relationship="Self.FK_Round_Match" FromRole="Match" ToRole="Round" />
         </EntityType>
         <EntityType Name="MatchPlayer">
           <Key>
@@ -587,20 +444,6 @@
           <NavigationProperty Name="User" Relationship="Self.FK_MatchPlayer_User" FromRole="MatchPlayer" ToRole="User" />
           <Property Name="isWinner" Type="Boolean" Nullable="false" />
         </EntityType>
-        <EntityType Name="Round">
-          <Key>
-            <PropertyRef Name="roundID" />
-          </Key>
-          <Property Name="roundID" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
-          <Property Name="matchID" Type="Int32" Nullable="false" />
-          <Property Name="number" Type="Int32" Nullable="false" />
-          <Property Name="status" Type="String" MaxLength="20" FixedLength="false" Unicode="false" Nullable="false" />
-          <NavigationProperty Name="DealtCard" Relationship="Self.FK_DealtCard_Round" FromRole="Round" ToRole="DealtCard" />
-          <NavigationProperty Name="Match" Relationship="Self.FK_Round_Match" FromRole="Round" ToRole="Match" />
-          <Property Name="isActive" Type="Boolean" />
-          <Property Name="winnerID" Type="Int32" />
-          <NavigationProperty Name="User" Relationship="baseDatosTrucoModel.FK__Round__winnerID__151B244E" FromRole="Round" ToRole="User" />
-        </EntityType>
         <EntityType Name="User">
           <Key>
             <PropertyRef Name="userID" />
@@ -613,7 +456,6 @@
           <Property Name="losses" Type="Int32" Nullable="false" />
           <Property Name="nameChangeCount" Type="Int32" Nullable="false" />
           <NavigationProperty Name="Ban" Relationship="Self.FK_Ban_User" FromRole="User" ToRole="Ban" />
-          <NavigationProperty Name="DealtCard" Relationship="Self.FK_DealtCard_Player" FromRole="User" ToRole="DealtCard" />
           <NavigationProperty Name="Friendship" Relationship="Self.FK_Friendship_Friend" FromRole="User" ToRole="Friendship" />
           <NavigationProperty Name="Friendship1" Relationship="Self.FK_Friendship_User" FromRole="User" ToRole="Friendship" />
           <NavigationProperty Name="Invitation" Relationship="Self.FK_Invitation_Sender" FromRole="User" ToRole="Invitation" />
@@ -621,7 +463,6 @@
           <NavigationProperty Name="LobbyMember" Relationship="Self.FK_LobbyMember_User" FromRole="User" ToRole="LobbyMember" />
           <NavigationProperty Name="MatchPlayer" Relationship="Self.FK_MatchPlayer_User" FromRole="User" ToRole="MatchPlayer" />
           <NavigationProperty Name="UserProfile" Relationship="Self.FK_UserProfile_User" FromRole="User" ToRole="UserProfile" />
-          <NavigationProperty Name="Round" Relationship="baseDatosTrucoModel.FK__Round__winnerID__151B244E" FromRole="User" ToRole="Round" />
         </EntityType>
         <EntityType Name="UserProfile">
           <Key>
@@ -652,46 +493,6 @@
             </Principal>
             <Dependent Role="Ban">
               <PropertyRef Name="userID" />
-            </Dependent>
-          </ReferentialConstraint>
-        </Association>
-        <Association Name="FK_DealtCard_Card">
-          <End Role="Card" Type="Self.Card" Multiplicity="1" />
-          <End Role="DealtCard" Type="Self.DealtCard" Multiplicity="*" />
-          <ReferentialConstraint>
-            <Principal Role="Card">
-              <PropertyRef Name="cardID" />
-            </Principal>
-            <Dependent Role="DealtCard">
-              <PropertyRef Name="cardID" />
-            </Dependent>
-          </ReferentialConstraint>
-        </Association>
-        <Association Name="FK_DealtCard_Player">
-          <End Role="User" Type="Self.User" Multiplicity="1">
-            <OnDelete Action="Cascade" />
-          </End>
-          <End Role="DealtCard" Type="Self.DealtCard" Multiplicity="*" />
-          <ReferentialConstraint>
-            <Principal Role="User">
-              <PropertyRef Name="userID" />
-            </Principal>
-            <Dependent Role="DealtCard">
-              <PropertyRef Name="playerID" />
-            </Dependent>
-          </ReferentialConstraint>
-        </Association>
-        <Association Name="FK_DealtCard_Round">
-          <End Role="Round" Type="Self.Round" Multiplicity="1">
-            <OnDelete Action="Cascade" />
-          </End>
-          <End Role="DealtCard" Type="Self.DealtCard" Multiplicity="*" />
-          <ReferentialConstraint>
-            <Principal Role="Round">
-              <PropertyRef Name="roundID" />
-            </Principal>
-            <Dependent Role="DealtCard">
-              <PropertyRef Name="roundID" />
             </Dependent>
           </ReferentialConstraint>
         </Association>
@@ -827,20 +628,6 @@
             </Dependent>
           </ReferentialConstraint>
         </Association>
-        <Association Name="FK_Round_Match">
-          <End Role="Match" Type="Self.Match" Multiplicity="1">
-            <OnDelete Action="Cascade" />
-          </End>
-          <End Role="Round" Type="Self.Round" Multiplicity="*" />
-          <ReferentialConstraint>
-            <Principal Role="Match">
-              <PropertyRef Name="matchID" />
-            </Principal>
-            <Dependent Role="Round">
-              <PropertyRef Name="matchID" />
-            </Dependent>
-          </ReferentialConstraint>
-        </Association>
         <Association Name="FK_MatchPlayer_User">
           <End Role="User" Type="Self.User" Multiplicity="1" />
           <End Role="MatchPlayer" Type="Self.MatchPlayer" Multiplicity="*" />
@@ -868,33 +655,18 @@
         <EntityContainer Name="baseDatosTrucoEntities" annotation:LazyLoadingEnabled="true">
           <EntitySet Name="Ban" EntityType="Self.Ban" />
           <EntitySet Name="BannedWord" EntityType="Self.BannedWord" />
-          <EntitySet Name="Card" EntityType="Self.Card" />
-          <EntitySet Name="DealtCard" EntityType="Self.DealtCard" />
           <EntitySet Name="Friendship" EntityType="Self.Friendship" />
           <EntitySet Name="Invitation" EntityType="Self.Invitation" />
           <EntitySet Name="Lobby" EntityType="Self.Lobby" />
           <EntitySet Name="LobbyMember" EntityType="Self.LobbyMember" />
           <EntitySet Name="Match" EntityType="Self.Match" />
           <EntitySet Name="MatchPlayer" EntityType="Self.MatchPlayer" />
-          <EntitySet Name="Round" EntityType="Self.Round" />
           <EntitySet Name="User" EntityType="Self.User" />
           <EntitySet Name="UserProfile" EntityType="Self.UserProfile" />
           <EntitySet Name="Versions" EntityType="Self.Versions" />
           <AssociationSet Name="FK_Ban_User" Association="Self.FK_Ban_User">
             <End Role="User" EntitySet="User" />
             <End Role="Ban" EntitySet="Ban" />
-          </AssociationSet>
-          <AssociationSet Name="FK_DealtCard_Card" Association="Self.FK_DealtCard_Card">
-            <End Role="Card" EntitySet="Card" />
-            <End Role="DealtCard" EntitySet="DealtCard" />
-          </AssociationSet>
-          <AssociationSet Name="FK_DealtCard_Player" Association="Self.FK_DealtCard_Player">
-            <End Role="User" EntitySet="User" />
-            <End Role="DealtCard" EntitySet="DealtCard" />
-          </AssociationSet>
-          <AssociationSet Name="FK_DealtCard_Round" Association="Self.FK_DealtCard_Round">
-            <End Role="Round" EntitySet="Round" />
-            <End Role="DealtCard" EntitySet="DealtCard" />
           </AssociationSet>
           <AssociationSet Name="FK_Friendship_Friend" Association="Self.FK_Friendship_Friend">
             <End Role="User" EntitySet="User" />
@@ -936,10 +708,6 @@
             <End Role="Match" EntitySet="Match" />
             <End Role="MatchPlayer" EntitySet="MatchPlayer" />
           </AssociationSet>
-          <AssociationSet Name="FK_Round_Match" Association="Self.FK_Round_Match">
-            <End Role="Match" EntitySet="Match" />
-            <End Role="Round" EntitySet="Round" />
-          </AssociationSet>
           <AssociationSet Name="FK_MatchPlayer_User" Association="Self.FK_MatchPlayer_User">
             <End Role="User" EntitySet="User" />
             <End Role="MatchPlayer" EntitySet="MatchPlayer" />
@@ -948,23 +716,7 @@
             <End Role="User" EntitySet="User" />
             <End Role="UserProfile" EntitySet="UserProfile" />
           </AssociationSet>
-          <AssociationSet Name="FK__Round__winnerID__151B244E" Association="baseDatosTrucoModel.FK__Round__winnerID__151B244E">
-            <End Role="User" EntitySet="User" />
-            <End Role="Round" EntitySet="Round" />
-          </AssociationSet>
         </EntityContainer>
-        <Association Name="FK__Round__winnerID__151B244E">
-          <End Type="baseDatosTrucoModel.User" Role="User" Multiplicity="0..1" />
-          <End Type="baseDatosTrucoModel.Round" Role="Round" Multiplicity="*" />
-          <ReferentialConstraint>
-            <Principal Role="User">
-              <PropertyRef Name="userID" />
-            </Principal>
-            <Dependent Role="Round">
-              <PropertyRef Name="winnerID" />
-            </Dependent>
-          </ReferentialConstraint>
-        </Association>
       </Schema>
     </edmx:ConceptualModels>
     <!-- C-S mapping content -->
@@ -986,27 +738,6 @@
               <MappingFragment StoreEntitySet="BannedWord">
                 <ScalarProperty Name="wordID" ColumnName="wordID" />
                 <ScalarProperty Name="word" ColumnName="word" />
-              </MappingFragment>
-            </EntityTypeMapping>
-          </EntitySetMapping>
-          <EntitySetMapping Name="Card">
-            <EntityTypeMapping TypeName="baseDatosTrucoModel.Card">
-              <MappingFragment StoreEntitySet="Card">
-                <ScalarProperty Name="cardID" ColumnName="cardID" />
-                <ScalarProperty Name="suit" ColumnName="suit" />
-                <ScalarProperty Name="rank" ColumnName="rank" />
-                <ScalarProperty Name="weight" ColumnName="weight" />
-              </MappingFragment>
-            </EntityTypeMapping>
-          </EntitySetMapping>
-          <EntitySetMapping Name="DealtCard">
-            <EntityTypeMapping TypeName="baseDatosTrucoModel.DealtCard">
-              <MappingFragment StoreEntitySet="DealtCard">
-                <ScalarProperty Name="playOrder" ColumnName="playOrder" />
-                <ScalarProperty Name="dealID" ColumnName="dealID" />
-                <ScalarProperty Name="roundID" ColumnName="roundID" />
-                <ScalarProperty Name="playerID" ColumnName="playerID" />
-                <ScalarProperty Name="cardID" ColumnName="cardID" />
               </MappingFragment>
             </EntityTypeMapping>
           </EntitySetMapping>
@@ -1074,18 +805,6 @@
                 <ScalarProperty Name="userID" ColumnName="userID" />
                 <ScalarProperty Name="team" ColumnName="team" />
                 <ScalarProperty Name="score" ColumnName="score" />
-              </MappingFragment>
-            </EntityTypeMapping>
-          </EntitySetMapping>
-          <EntitySetMapping Name="Round">
-            <EntityTypeMapping TypeName="baseDatosTrucoModel.Round">
-              <MappingFragment StoreEntitySet="Round">
-                <ScalarProperty Name="winnerID" ColumnName="winnerID" />
-                <ScalarProperty Name="isActive" ColumnName="isActive" />
-                <ScalarProperty Name="roundID" ColumnName="roundID" />
-                <ScalarProperty Name="matchID" ColumnName="matchID" />
-                <ScalarProperty Name="number" ColumnName="number" />
-                <ScalarProperty Name="status" ColumnName="status" />
               </MappingFragment>
             </EntityTypeMapping>
           </EntitySetMapping>

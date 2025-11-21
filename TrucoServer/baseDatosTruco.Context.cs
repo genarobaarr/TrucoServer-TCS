@@ -27,15 +27,12 @@ namespace TrucoServer
     
         public virtual DbSet<Ban> Ban { get; set; }
         public virtual DbSet<BannedWord> BannedWord { get; set; }
-        public virtual DbSet<Card> Card { get; set; }
-        public virtual DbSet<DealtCard> DealtCard { get; set; }
         public virtual DbSet<Friendship> Friendship { get; set; }
         public virtual DbSet<Invitation> Invitation { get; set; }
         public virtual DbSet<Lobby> Lobby { get; set; }
         public virtual DbSet<LobbyMember> LobbyMember { get; set; }
         public virtual DbSet<Match> Match { get; set; }
         public virtual DbSet<MatchPlayer> MatchPlayer { get; set; }
-        public virtual DbSet<Round> Round { get; set; }
         public virtual DbSet<User> User { get; set; }
         public virtual DbSet<UserProfile> UserProfile { get; set; }
         public virtual DbSet<Versions> Versions { get; set; }
