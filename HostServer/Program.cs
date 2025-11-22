@@ -1,10 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.ServiceModel;
-using System.Text;
-using System.Threading.Tasks;
-using TrucoServer;
+using TrucoServer.Services;
 
 //Cada vez que se quiera testear el server se debe descomentar este codigo y comentar el que esta abajo
 /*
@@ -19,7 +15,7 @@ namespace HostServer
 
         public static string StartServer()
         {
-            using (ServiceHost host = new ServiceHost(typeof(TrucoServer.TrucoServer)))
+            using (ServiceHost host = new ServiceHost(typeof(TrucoServer.Services.TrucoServer)))
             {
                 host.Open();
                 Console.WriteLine(GetServerMessage());
@@ -44,7 +40,7 @@ namespace HostServer
     {
         static void Main(string[] args)
         {
-            using (ServiceHost host = new ServiceHost(typeof(TrucoServer.TrucoServer)))
+            using (ServiceHost host = new ServiceHost(typeof(TrucoServer.Services.TrucoServer)))
             {
                 host.Open();
 

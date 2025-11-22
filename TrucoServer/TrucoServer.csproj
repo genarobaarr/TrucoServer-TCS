@@ -73,7 +73,10 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="ActiveMatch.cs" />
+    <Compile Include="Contracts\IDeckShuffler.cs" />
+    <Compile Include="Contracts\ITrucoDeck.cs" />
+    <Compile Include="Data\DTOs\EmblemLayer.cs" />
+    <Compile Include="GameLogic\ActiveMatch.cs" />
     <Compile Include="Ban.cs">
       <DependentUpon>baseDatosTruco.tt</DependentUpon>
     </Compile>
@@ -95,22 +98,23 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>baseDatosTruco.edmx</DependentUpon>
     </Compile>
-    <Compile Include="ConfigurationFileWrapper.cs" />
-    <Compile Include="ConfigurationReader.cs" />
-    <Compile Include="Deck.cs" />
-    <Compile Include="EfHelpers.cs" />
-    <Compile Include="EmailSettings.cs" />
-    <Compile Include="FriendData.cs" />
+    <Compile Include="GameLogic\DefaultDeckShuffler.cs" />
+    <Compile Include="Utilities\ConfigurationFileWrapper.cs" />
+    <Compile Include="Utilities\ConfigurationReader.cs" />
+    <Compile Include="GameLogic\Deck.cs" />
+    <Compile Include="Data\Entitites\EfHelpers.cs" />
+    <Compile Include="Utilities\EmailSettings.cs" />
+    <Compile Include="Data\DTOs\FriendData.cs" />
     <Compile Include="Friendship.cs">
       <DependentUpon>baseDatosTruco.tt</DependentUpon>
     </Compile>
-    <Compile Include="FriendShipMapping.cs" />
-    <Compile Include="IGameManager.cs" />
+    <Compile Include="Data\Entitites\FriendShipMapping.cs" />
+    <Compile Include="Contracts\IGameManager.cs" />
     <Compile Include="Invitation.cs">
       <DependentUpon>baseDatosTruco.tt</DependentUpon>
     </Compile>
-    <Compile Include="ITrucoCallback.cs" />
-    <Compile Include="ITrucoService.cs" />
+    <Compile Include="Contracts\ITrucoCallback.cs" />
+    <Compile Include="Contracts\ITrucoService.cs" />
     <Compile Include="Langs\Lang.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
@@ -123,35 +127,35 @@
     <Compile Include="LobbyMember.cs">
       <DependentUpon>baseDatosTruco.tt</DependentUpon>
     </Compile>
-    <Compile Include="LogManager.cs" />
+    <Compile Include="Utilities\LogManager.cs" />
     <Compile Include="Match.cs">
       <DependentUpon>baseDatosTruco.tt</DependentUpon>
     </Compile>
     <Compile Include="MatchPlayer.cs">
       <DependentUpon>baseDatosTruco.tt</DependentUpon>
     </Compile>
-    <Compile Include="MatchResult.cs" />
-    <Compile Include="MatchScore.cs" />
-    <Compile Include="PasswordHasher.cs" />
-    <Compile Include="PlayerInfo.cs" />
-    <Compile Include="PlayerInformation.cs" />
-    <Compile Include="PlayerStats.cs" />
+    <Compile Include="Data\DTOs\MatchResult.cs" />
+    <Compile Include="Data\DTOs\MatchScore.cs" />
+    <Compile Include="Utilities\PasswordHasher.cs" />
+    <Compile Include="Data\DTOs\PlayerInfo.cs" />
+    <Compile Include="Data\DTOs\PlayerInformation.cs" />
+    <Compile Include="Data\DTOs\PlayerStats.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="PublicLobbyInfo.cs" />
-    <Compile Include="SocialLinks.cs" />
-    <Compile Include="TrucoCard.cs" />
-    <Compile Include="TrucoGameManager.cs" />
-    <Compile Include="TrucoMatch.cs" />
-    <Compile Include="TrucoRules.cs" />
-    <Compile Include="TrucoServer.cs" />
+    <Compile Include="Data\DTOs\PublicLobbyInfo.cs" />
+    <Compile Include="Data\DTOs\SocialLinks.cs" />
+    <Compile Include="GameLogic\TrucoCard.cs" />
+    <Compile Include="GameLogic\TrucoGameManager.cs" />
+    <Compile Include="GameLogic\TrucoMatch.cs" />
+    <Compile Include="GameLogic\TrucoRules.cs" />
+    <Compile Include="Services\TrucoServer.cs" />
     <Compile Include="User.cs">
       <DependentUpon>baseDatosTruco.tt</DependentUpon>
     </Compile>
     <Compile Include="UserProfile.cs">
       <DependentUpon>baseDatosTruco.tt</DependentUpon>
     </Compile>
-    <Compile Include="UserProfileData.cs" />
-    <Compile Include="ValidatedLobbyData.cs" />
+    <Compile Include="Data\DTOs\UserProfileData.cs" />
+    <Compile Include="Data\DTOs\ValidatedLobbyData.cs" />
     <Compile Include="Versions.cs">
       <DependentUpon>baseDatosTruco.tt</DependentUpon>
     </Compile>
@@ -190,6 +194,7 @@
       <LastGenOutput>Lang.Designer.cs</LastGenOutput>
     </EmbeddedResource>
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>

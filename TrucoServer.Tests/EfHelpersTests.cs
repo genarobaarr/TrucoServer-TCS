@@ -1,7 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using TrucoServer;
+﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+using TrucoServer.Data.Entities;
 
 namespace TrucoServer.Tests
 {

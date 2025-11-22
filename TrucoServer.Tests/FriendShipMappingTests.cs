@@ -3,10 +3,8 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using System.Linq;
 using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
+using TrucoServer.Data.Entities;
 
 namespace TrucoServer.Tests
 {
@@ -26,9 +24,9 @@ namespace TrucoServer.Tests
             var mapping = new FriendShipMapping();
             int expected = TEST_EXPECTED_CORRECT_VALUE;
 
-            mapping.userID = expected;
+            mapping.UserID = expected;
 
-            Assert.AreEqual(expected, mapping.userID);
+            Assert.AreEqual(expected, mapping.UserID);
         }
 
         [TestMethod]
@@ -37,9 +35,9 @@ namespace TrucoServer.Tests
             var mapping = new FriendShipMapping();
             int expected = TEST_EXPECTED_SECOND_CORRECT_VALUE;
 
-            mapping.friendID = expected;
+            mapping.FriendID = expected;
 
-            Assert.AreEqual(expected, mapping.friendID);
+            Assert.AreEqual(expected, mapping.FriendID);
         }
 
         [TestMethod]

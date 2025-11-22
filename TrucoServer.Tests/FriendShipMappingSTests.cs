@@ -1,11 +1,7 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
-using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Xml.Serialization;
+using TrucoServer.Data.Entities;
 
 namespace TrucoServer.Tests
 {
@@ -23,8 +19,8 @@ namespace TrucoServer.Tests
         {
             var mapping = new FriendShipMapping 
             { 
-                userID = TEST_USER_ID, 
-                friendID = TEST_FRIEND_ID
+                UserID = TEST_USER_ID, 
+                FriendID = TEST_FRIEND_ID
             };
             var serializer = new XmlSerializer(typeof(FriendShipMapping));
 
@@ -41,8 +37,8 @@ namespace TrucoServer.Tests
         {
             var original = new FriendShipMapping
             { 
-                userID = TEST_SECOND_USER_ID, 
-                friendID = TEST_SECOND_FRIEND_ID 
+                UserID = TEST_SECOND_USER_ID, 
+                FriendID = TEST_SECOND_FRIEND_ID 
             };
             var serializer = new XmlSerializer(typeof(FriendShipMapping));
             byte[] data;
@@ -57,7 +53,7 @@ namespace TrucoServer.Tests
             {
                 var result = (FriendShipMapping)serializer.Deserialize(stream);
 
-                Assert.AreEqual(original.userID, result.userID);
+                Assert.AreEqual(original.UserID, result.UserID);
             }
         }
 
@@ -66,8 +62,8 @@ namespace TrucoServer.Tests
         {
             var original = new FriendShipMapping 
             { 
-                userID = TEST_SECOND_USER_ID, 
-                friendID = TEST_SECOND_FRIEND_ID 
+                UserID = TEST_SECOND_USER_ID, 
+                FriendID = TEST_SECOND_FRIEND_ID 
             };
             var serializer = new XmlSerializer(typeof(FriendShipMapping));
             byte[] data;
@@ -82,7 +78,7 @@ namespace TrucoServer.Tests
             {
                 var result = (FriendShipMapping)serializer.Deserialize(stream);
 
-                Assert.AreEqual(original.friendID, result.friendID);
+                Assert.AreEqual(original.FriendID, result.FriendID);
             }
         }
     }
