@@ -5,10 +5,17 @@ namespace TrucoServer
     [DataContract]
     public enum Suit
     {
-        [EnumMember] club_,
-        [EnumMember] cup_,
-        [EnumMember] sword_,
-        [EnumMember] gold_
+        [EnumMember(Value = "club_")]
+        Club,
+
+        [EnumMember(Value = "cup_")]
+        Cup,
+
+        [EnumMember(Value = "sword_")]
+        Sword,
+
+        [EnumMember(Value = "gold_")]
+        Gold
     }
 
     [DataContract]
@@ -31,10 +38,10 @@ namespace TrucoServer
     {
         [DataMember]
         public Rank CardRank { get; set; }
-        
+
         [DataMember]
         public Suit CardSuit { get; set; }
-        
+
         [DataMember]
         public string FileName { get; set; }
 
@@ -42,7 +49,35 @@ namespace TrucoServer
         {
             CardRank = rank;
             CardSuit = suit;
-            FileName = $"{suit}{(int)rank}";
+            FileName = GenerateFileName(rank, suit);
+        }
+
+        private string GenerateFileName(Rank rank, Suit suit)
+        {
+            string suitPrefix = GetSuitPrefix(suit);
+
+            return $"{suitPrefix}{(int)rank}";
+        }
+
+        private string GetSuitPrefix(Suit suit)
+        {
+            switch (suit)
+            {
+                case Suit.Club:
+                    return "club_";
+
+                case Suit.Cup:
+                    return "cup_";
+
+                case Suit.Sword:
+                    return "sword_";
+
+                case Suit.Gold:
+                    return "gold_";
+
+                default:
+                    return string.Empty;
+            }
         }
     }
 }

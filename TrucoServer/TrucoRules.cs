@@ -26,130 +26,130 @@ namespace TrucoServer
         {
             
             { 
-                (Rank.Uno, Suit.sword_), FOURTEEN 
+                (Rank.Uno, Suit.Sword), FOURTEEN 
             }, 
             { 
-                (Rank.Uno, Suit.club_), THIRTEEN
+                (Rank.Uno, Suit.Club), THIRTEEN
             },  
             { 
-                (Rank.Siete, Suit.sword_), TWELVE
+                (Rank.Siete, Suit.Sword), TWELVE
             },
             { 
-                (Rank.Siete, Suit.gold_), ELEVEN
+                (Rank.Siete, Suit.Gold), ELEVEN
             },                
             
             { 
-                (Rank.Tres, Suit.sword_), TEN 
+                (Rank.Tres, Suit.Sword), TEN 
             }, 
             { 
-                (Rank.Tres, Suit.club_), TEN
+                (Rank.Tres, Suit.Club), TEN
             },
             { 
-                (Rank.Tres, Suit.cup_), TEN
+                (Rank.Tres, Suit.Cup), TEN
             }, 
             { 
-                (Rank.Tres, Suit.gold_), TEN
+                (Rank.Tres, Suit.Gold), TEN
             },
             
             { 
-                (Rank.Dos, Suit.sword_), NINE
+                (Rank.Dos, Suit.Sword), NINE
             }, 
             { 
-                (Rank.Dos, Suit.club_), NINE
+                (Rank.Dos, Suit.Club), NINE
             },
             { 
-                (Rank.Dos, Suit.cup_), NINE
+                (Rank.Dos, Suit.Cup), NINE
             }, 
             { 
-                (Rank.Dos, Suit.gold_), NINE
+                (Rank.Dos, Suit.Gold), NINE
             }, 
             
             { 
-                (Rank.Uno, Suit.cup_), EIGHT
+                (Rank.Uno, Suit.Cup), EIGHT
             }, 
             { 
-                (Rank.Uno, Suit.gold_), EIGHT
+                (Rank.Uno, Suit.Gold), EIGHT
             }, 
             { 
-                (Rank.Doce, Suit.sword_), SEVEN
+                (Rank.Doce, Suit.Sword), SEVEN
             }, 
             { 
-                (Rank.Doce, Suit.club_), SEVEN
+                (Rank.Doce, Suit.Club), SEVEN
             },
             { 
-                (Rank.Doce, Suit.cup_), SEVEN
+                (Rank.Doce, Suit.Cup), SEVEN
             }, 
             { 
-                (Rank.Doce, Suit.gold_), SEVEN
+                (Rank.Doce, Suit.Gold), SEVEN
             }, 
             { 
-                (Rank.Once, Suit.sword_), SIX
+                (Rank.Once, Suit.Sword), SIX
             }, 
             { 
-                (Rank.Once, Suit.club_), SIX
+                (Rank.Once, Suit.Club), SIX
             },
             { 
-                (Rank.Once, Suit.cup_), SIX
+                (Rank.Once, Suit.Cup), SIX
             }, 
             { 
-                (Rank.Once, Suit.gold_), SIX
+                (Rank.Once, Suit.Gold), SIX
             },
             { 
-                (Rank.Diez, Suit.sword_), FIVE
+                (Rank.Diez, Suit.Sword), FIVE
             }, 
             { 
-                (Rank.Diez, Suit.club_), FIVE
+                (Rank.Diez, Suit.Club), FIVE
             },
             { 
-                (Rank.Diez, Suit.cup_), FIVE
+                (Rank.Diez, Suit.Cup), FIVE
             }, 
             { 
-                (Rank.Diez, Suit.gold_), FIVE
+                (Rank.Diez, Suit.Gold), FIVE
             }, 
             
             { 
-                (Rank.Siete, Suit.club_), FOUR
+                (Rank.Siete, Suit.Club), FOUR
             }, 
             { 
-                (Rank.Siete, Suit.cup_), FOUR
-            }, 
-            
-            { 
-                (Rank.Seis, Suit.sword_), THREE 
-            }, 
-            { 
-                (Rank.Seis, Suit.club_), THREE
-            },
-            { 
-                (Rank.Seis, Suit.cup_), THREE
-            }, 
-            { 
-                (Rank.Seis, Suit.gold_), THREE
+                (Rank.Siete, Suit.Cup), FOUR
             }, 
             
             { 
-                (Rank.Cinco, Suit.sword_), TWO
+                (Rank.Seis, Suit.Sword), THREE 
             }, 
             { 
-                (Rank.Cinco, Suit.club_), TWO 
+                (Rank.Seis, Suit.Club), THREE
             },
             { 
-                (Rank.Cinco, Suit.cup_), TWO
+                (Rank.Seis, Suit.Cup), THREE
             }, 
             { 
-                (Rank.Cinco, Suit.gold_), TWO 
+                (Rank.Seis, Suit.Gold), THREE
+            }, 
+            
+            { 
+                (Rank.Cinco, Suit.Sword), TWO
             }, 
             { 
-                (Rank.Cuatro, Suit.sword_), ONE
-            }, 
-            { 
-                (Rank.Cuatro, Suit.club_), ONE
+                (Rank.Cinco, Suit.Club), TWO 
             },
             { 
-                (Rank.Cuatro, Suit.cup_), ONE
+                (Rank.Cinco, Suit.Cup), TWO
             }, 
             { 
-                (Rank.Cuatro, Suit.gold_), ONE
+                (Rank.Cinco, Suit.Gold), TWO 
+            }, 
+            { 
+                (Rank.Cuatro, Suit.Sword), ONE
+            }, 
+            { 
+                (Rank.Cuatro, Suit.Club), ONE
+            },
+            { 
+                (Rank.Cuatro, Suit.Cup), ONE
+            }, 
+            { 
+                (Rank.Cuatro, Suit.Gold), ONE
             }
         };
 
