@@ -12,14 +12,10 @@ namespace TrucoServer
     {
         private const string STATUS_INPROGRESS = "InProgress";
         private const string STATUS_FINISHED = "Finished";
-        private const string STATUS_PLAYING = "Playing";
 
         private const int INITIAL_SCORE = 0;
         private const int VERSION_1V1 = 1;
         private const int VERSION_2V2 = 2;
-        private const int HASH_MODULUS = 999999;
-        private const int HASH_MULTIPLIER = 31;
-        private const int HASH_SEED = 17;
 
         public int SaveMatchToDatabase(string matchCode, int lobbyId, List<PlayerInformation> players)
         {

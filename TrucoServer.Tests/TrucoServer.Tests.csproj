@@ -92,6 +92,7 @@
     <Compile Include="LogManagerTests.cs" />
     <Compile Include="MatchResultSTests.cs" />
     <Compile Include="MatchResultTests.cs" />
+    <Compile Include="MatchScoreSTests.cs" />
     <Compile Include="MatchScoreTests.cs" />
     <Compile Include="PasswordHasherTests.cs" />
     <Compile Include="PlayerInformationSTests.cs" />
@@ -104,6 +105,7 @@
     <Compile Include="PublicLobyInfoTests.cs" />
     <Compile Include="SocialLinksSTests.cs" />
     <Compile Include="SocialLinksTests.cs" />
+    <Compile Include="TrucoCardSTests.cs" />
     <Compile Include="TrucoCardTests.cs" />
     <Compile Include="TrucoGameManagerTests.cs" />
     <Compile Include="TrucoMatchTests.cs" />
