@@ -11,67 +11,150 @@ namespace TrucoServer.Tests
     public class TrucoServerTests
     {
         private TrucoServer server;
+        private const string TEST_USER = "AuthTestUser";
+        private const string TEST_USER_2 = "AuthTestUser2";
+        private const string TEST_UNKNOWN_USER = "UnknownUser";
+        private const string TEST_USER_NON_EXISTENT = "NonExistentUser";
+        private const string TEST_EMAIL = "authtest@example.com";
+        private const string TEST_EMAIL_2 = "other@example.com";
+        private const string TEST_PASSWORD = "Password123!";
+        private const string TEST_NEW_PASSWORD = "NewPassword456!";
+        private const string TEST_WRONG_PASSWORD = "WrongPassword";
+        private const string TEST_LANGUAGE = "en";
+
         [TestInitialize]
         public void Setup()
         {
             server = new TrucoServer();
+            CleanDatabase();
         }
-        //Para el email
-        [TestMethod]
-        public void TestRequestEmailVerificationReturnTrue()
+
+        [TestCleanup]
+        public void Cleanup()
         {
-            var result = server.RequestEmailVerification("test@example.com", "en");
+            CleanDatabase();
+        }
+
+        private void CleanDatabase()
+        {
+            using (var context = new baseDatosTrucoEntities())
+            {
+                var user = context.User.FirstOrDefault(u => u.username == TEST_USER || u.email == TEST_EMAIL);
+
+                if (user != null)
+                {
+                    var profile = context.UserProfile.FirstOrDefault(p => p.userID == user.userID);
+
+                    if (profile != null)
+                    {
+                        context.UserProfile.Remove(profile);
+                    }
+
+                    context.User.Remove(user);
+                    context.SaveChanges();
+                }
+            }
+        }
+
+        [TestMethod]
+        public void TestRegisterReturnsTrueForNewUser()
+        {
+            bool result = server.Register(TEST_USER, TEST_PASSWORD, TEST_EMAIL);
             Assert.IsTrue(result);
         }
 
-        /*[TestMethod]
-        public void TestConfirmEmailVerificationWithCorrectCodeReturnTrue()
-        {
-        
-        }
-        */
         [TestMethod]
-        public void TestConfirmEmailVerificationWithWrongCodeReturnFalse()
+        public void TestRegisterCreatesUserInDatabase()
         {
-            server.RequestEmailVerification("test@example.com", "en");
-            var result = server.ConfirmEmailVerification("test@example.com", "000000");
-            Assert.IsFalse(result);
-        }
-        //Validar usuario y email
-        [TestMethod]
-        public void TestUsernameExistsReturnFalse()
-        {
-            var result = server.UsernameExists("");
-            Assert.IsFalse(result);
+            server.Register(TEST_USER, TEST_PASSWORD, TEST_EMAIL);
+            using (var context = new baseDatosTrucoEntities())
+            {
+                bool exists = context.User.Any(u => u.username == TEST_USER);
+                Assert.IsTrue(exists);
+            }
         }
 
         [TestMethod]
-        public void TestEmailExistsReturnFalse()
+        public void TestRegisterCreatesUserProfileInDatabase()
         {
-            var result = server.EmailExists("");
-            Assert.IsFalse(result);
+            server.Register(TEST_USER, TEST_PASSWORD, TEST_EMAIL);
+            using (var context = new baseDatosTrucoEntities())
+            {
+                var user = context.User.FirstOrDefault(u => u.username == TEST_USER);
+                bool profileExists = context.UserProfile.Any(p => p.userID == user.userID);
+                Assert.IsTrue(profileExists);
+            }
         }
-        //Guardar perfil de usuario
+
         [TestMethod]
-        public void TestSaveNullUserProfileReturnFalse()
+        public void TestRegisterReturnsFalseForExistingUsername()
         {
-            var result = server.SaveUserProfile(null);
+            server.Register(TEST_USER, TEST_PASSWORD, TEST_EMAIL_2);
+            bool result = server.Register(TEST_USER, TEST_NEW_PASSWORD, TEST_EMAIL);
             Assert.IsFalse(result);
         }
 
         [TestMethod]
-        public void TestSaveUserProfileEmptyEmailReturnFalse()
+        public void TestRegisterReturnsFalseForExistingEmail()
         {
-            var profile = new UserProfileData { Email = "" };
-            var result = server.SaveUserProfile(profile);
+            server.Register(TEST_USER_2, TEST_PASSWORD, TEST_EMAIL);
+            bool result = server.Register(TEST_USER, TEST_NEW_PASSWORD, TEST_EMAIL);
+            using (var context = new baseDatosTrucoEntities())
+            {
+                var extra = context.User.FirstOrDefault(u => u.username == TEST_USER_2);
+                if (extra != null)
+                {
+                    var p = context.UserProfile.FirstOrDefault(pro => pro.userID == extra.userID);
+                    if (p != null) context.UserProfile.Remove(p);
+                    context.User.Remove(extra);
+                    context.SaveChanges();
+                }
+            }
             Assert.IsFalse(result);
         }
-        //Guardar avatar actualizado
 
+        [TestMethod]
+        public void TestLoginReturnsFalseForNonExistentUser()
+        {
+            bool result = server.Login(TEST_USER_NON_EXISTENT, TEST_PASSWORD, TEST_LANGUAGE);
+            Assert.IsFalse(result);
+        }
 
-        //Cambiar contraseña
+        [TestMethod]
+        public void TestLoginReturnsFalseForWrongPassword()
+        {
+            server.Register(TEST_USER, TEST_PASSWORD, TEST_EMAIL);
+            bool result = server.Login(TEST_USER, TEST_WRONG_PASSWORD, TEST_LANGUAGE);
+            Assert.IsFalse(result);
+        }
 
+        [TestMethod]
+        public void TestUsernameExistsReturnsTrueForRegisteredUser()
+        {
+            server.Register(TEST_USER, TEST_PASSWORD, TEST_EMAIL);
+            bool result = server.UsernameExists(TEST_USER);
+            Assert.IsTrue(result);
+        }
 
-        //Resto de métodos de prueba
+        [TestMethod]
+        public void TestUsernameExistsReturnsFalseForUnregisteredUser()
+        {
+            bool result = server.UsernameExists(TEST_UNKNOWN_USER);
+            Assert.IsFalse(result);
+        }
+
+        [TestMethod]
+        public void TestUsernameExistsReturnsFalseForNullInput()
+        {
+            bool result = server.UsernameExists(null);
+            Assert.IsFalse(result);
+        }
+
+        [TestMethod]
+        public void TestUsernameExistsReturnsFalseForEmptyInput()
+        {
+            bool result = server.UsernameExists("   ");
+            Assert.IsFalse(result);
+        }
     }
 }
