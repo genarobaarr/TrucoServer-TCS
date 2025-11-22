@@ -293,6 +293,18 @@ namespace TrucoServer
 
         private void AdvanceTurn()
         {
+            if (Players == null || Players.Count == 0)
+            {
+                LogManager.LogError(new InvalidOperationException("Attempt to advance turn without players"), nameof(AdvanceTurn));
+                return;
+            }
+
+            if (cardsOnTable == null)
+            {
+                LogManager.LogError(new InvalidOperationException("The list of cards on the table is null"), nameof(AdvanceTurn));
+                return;
+            }
+
             try
             {
                 turnIndex = (turnIndex + 1) % Players.Count;

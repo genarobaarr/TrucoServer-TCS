@@ -1,11 +1,12 @@
-﻿using System;
+﻿using log4net;
+using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Text;
 
 namespace TrucoServer
 {
-    public static class EfHelpers //El static se cambia a public para poder probarlo y viceversa para correr el server
+    public static class EfHelpers
     {
         private const BindingFlags REFLECTIONFLAGS = BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase;
 
@@ -69,6 +70,8 @@ namespace TrucoServer
         {
             try
             {
+                if (value == null) return default;
+
                 if (typeof(T) == typeof(string))
                 {
                     if (value is byte[] bytes)
@@ -80,8 +83,14 @@ namespace TrucoServer
 
                 return (T)Convert.ChangeType(value, typeof(T));
             }
-            catch
+            catch (InvalidCastException ex)
             {
+                LogManager.LogError(ex, $"{nameof(ConvertValue)} - Invalid Cast");
+                return default;
+            }
+            catch (FormatException ex)
+            {
+                LogManager.LogError(ex, $"{nameof(ConvertValue)} - Invalid format");
                 return default;
             }
         }

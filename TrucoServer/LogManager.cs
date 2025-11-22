@@ -15,21 +15,21 @@ namespace TrucoServer
 
         public static void LogFatal(Exception exception, string methodName)
         {
-            string formattedMessage = string.Format("Error crítico en el sistema al ejecutar {0}.", methodName);
+            string formattedMessage = string.Format("Critical error in the system when running {0}.", methodName);
 
             logger.Fatal(formattedMessage, exception);
         }
 
         public static void LogError(Exception exception, string methodName)
         {
-            string formattedMessage = string.Format("Error operativo o de negocio al ejecutar {0}.", methodName);
+            string formattedMessage = string.Format("Operational or business error when executing {0}.", methodName);
 
             logger.Error(formattedMessage, exception);
         }
 
         public static void LogWarn(string message, string methodName)
         {
-            string formattedMessage = string.Format("Advertencia en {0}: {1}", methodName, message);
+            string formattedMessage = string.Format("Warning on {0}: {1}", methodName, message);
 
             logger.Warn(formattedMessage);
         }

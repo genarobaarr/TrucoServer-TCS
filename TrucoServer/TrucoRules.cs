@@ -162,8 +162,18 @@ namespace TrucoServer
                     return value;
                 }
 
-                LogManager.LogError(new InvalidOperationException($"Carta no mapeada: {card.FileName}"), nameof(GetTrucoValue));
+                LogManager.LogError(new InvalidOperationException($"Unmapped letter: {card.FileName}"), nameof(GetTrucoValue));
                 
+                return 0;
+            }
+            catch (InvalidOperationException ex)
+            {
+                LogManager.LogWarn(ex.Message, nameof(GetTrucoValue));
+                return 0;
+            }
+            catch (KeyNotFoundException ex)
+            {
+                LogManager.LogWarn(ex.Message, nameof(GetTrucoValue));
                 return 0;
             }
             catch (Exception ex)
@@ -190,6 +200,11 @@ namespace TrucoServer
                     return -1;
                 }
                 
+                return 0;
+            }
+            catch (InvalidOperationException ex)
+            {
+                LogManager.LogWarn(ex.Message, nameof(CompareCards));
                 return 0;
             }
             catch (Exception ex)
@@ -274,6 +289,16 @@ namespace TrucoServer
                 
                 return sumValues + FLOR_POINTS;
             }
+            catch (ArgumentNullException ex)
+            {
+                LogManager.LogWarn(ex.Message, nameof(CalculateFlorScore));
+                return 0;
+            }
+            catch (InvalidOperationException ex)
+            {
+                LogManager.LogWarn(ex.Message, nameof(CalculateFlorScore));
+                return 0;
+            }
             catch (Exception ex)
             {
                 LogManager.LogError(ex, nameof(CalculateFlorScore));
@@ -291,6 +316,16 @@ namespace TrucoServer
                 }
 
                 return (int)card.CardRank;
+            }
+            catch (InvalidOperationException ex)
+            {
+                LogManager.LogWarn(ex.Message, nameof(GetEnvidoValue));
+                return 0;
+            }
+            catch (KeyNotFoundException ex)
+            {
+                LogManager.LogWarn(ex.Message, nameof(GetEnvidoValue));
+                return 0;
             }
             catch (Exception ex)
             {

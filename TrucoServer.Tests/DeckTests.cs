@@ -170,7 +170,7 @@ namespace TrucoServer.Tests
             {
                 shuffler.Shuffle<int>(null);
             }
-            catch
+            catch (ArgumentNullException)
             {
                 Assert.Fail("Shuffle should catch ArgumentNullException and not rethrow it.");
             }

@@ -1109,7 +1109,7 @@
 
                     if (user == null)
                     {
-                        LogManager.LogWarn($"Intento de historial para usuario no encontrado: {username}", nameof(GetLastMatches));
+                        LogManager.LogWarn($"History attempt for user not found: {username}", nameof(GetLastMatches));
                         return new List<MatchScore>();
                     }
 
@@ -1555,13 +1555,13 @@
 
                 if (!CanJoinTeam(matchCode, newTeam))
                 {
-                    Console.WriteLine($"[TEAM SWITCH] Denegado: {username} intentó unirse a {newTeam} (lleno) en {matchCode}.");
+                    Console.WriteLine($"[TEAM SWITCH] Denied: {username} attempted to join {newTeam} (full) in {matchCode}");
                     return false;
                 }
 
                 member.team = newTeam;
                 context.SaveChanges();
-                Console.WriteLine($"[TEAM SWITCH] {username} cambió a {newTeam} en {matchCode}.");
+                Console.WriteLine($"[TEAM SWITCH] {username} switched to {newTeam} at {matchCode}.");
 
                 return true;
             }
@@ -2412,11 +2412,36 @@
 
                 if (gamePlayers.Count != gameCallbacks.Count)
                 {
-                    LogManager.LogError(new Exception($"Discrepancia: {gamePlayers.Count} jugadores vs {gameCallbacks.Count} conexiones."), nameof(BuildGamePlayersAndCallbacks));
+                    LogManager.LogError(new Exception($"Discrepancy: {gamePlayers.Count} players vs {gameCallbacks.Count} connections."), nameof(BuildGamePlayersAndCallbacks));
                     return false;
                 }
 
                 return true;
+            }
+            catch (SqlException ex)
+            {
+                LogManager.LogError(ex, $"{nameof(BuildGamePlayersAndCallbacks)} - SQL Server Error");
+                return false;
+            }
+            catch (InvalidOperationException ex)
+            {
+                LogManager.LogError(ex, $"{nameof(BuildGamePlayersAndCallbacks)} - Invalid Operation (DataBase Context)");
+                return false;
+            }
+            catch (CommunicationException ex)
+            {
+                LogManager.LogError(ex, $"{nameof(BuildGamePlayersAndCallbacks)} - Callback Communication Error");
+                return false;
+            }
+            catch (TimeoutException ex)
+            {
+                LogManager.LogError(ex, $"{nameof(BuildGamePlayersAndCallbacks)} - Timeout Error");
+                return false;
+            }
+            catch (ArgumentNullException ex)
+            {
+                LogManager.LogError(ex, $"{nameof(BuildGamePlayersAndCallbacks)} - Null Argument");
+                return false;
             }
             catch (Exception ex)
             {
@@ -2762,8 +2787,14 @@
                 }
                 return null;
             }
-            catch
+            catch (CommunicationException ex)
             {
+                LogManager.LogError(ex, $"{nameof(GetPlayerInfoFromCallback)} - Callback Communication Error");
+                return null;
+            }
+            catch (Exception ex) 
+            {
+                LogManager.LogError(ex, $"{nameof(GetPlayerInfoFromCallback)} - Error retrieving player info from callback");
                 return null;
             }
         }

@@ -34,7 +34,7 @@ namespace TrucoServer
 
                 if (emailSettings == null)
                 {
-                    throw new InvalidOperationException("La clave 'EmailSettings' no se encontró o no pudo ser deserializada.");
+                    throw new InvalidOperationException("The key 'EmailSettings' was not found or could not be deserialized");
                 }
             }
             catch (FileNotFoundException ex)
