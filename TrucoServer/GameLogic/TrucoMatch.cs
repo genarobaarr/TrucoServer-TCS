@@ -148,7 +148,7 @@ namespace TrucoServer.GameLogic
         {
             try
             {
-                CurrentState = GameState.Deal;
+                CurrentState = GameState.Envido;
                 deck.Reset();
                 deck.Shuffle();
                 playerHands.Clear();
@@ -169,6 +169,19 @@ namespace TrucoServer.GameLogic
                 handStartingPlayerIndex = (handStartingPlayerIndex + 1) % Players.Count;
                 turnIndex = handStartingPlayerIndex;
 
+                EnvidoBetValue = EnvidoBet.None;
+                proposedEnvidoBet = EnvidoBet.None;
+                currentEnvidoPoints = CURRENT_ENVIDO_POINT;
+                envidoBettorId = null;
+                waitingForEnvidoResponseId = null;
+                envidoWasPlayed = false;
+
+                FlorBetValue = FlorBet.None;
+                currentFlorPoints = CURRENT_FLOR_POINT;
+                florBettorId = null;
+                waitingForFlorResponseId = null;
+                florWasPlayed = false;
+
                 foreach (var player in Players)
                 {
                     var hand = deck.DealHand();
@@ -183,26 +196,12 @@ namespace TrucoServer.GameLogic
                     p => TrucoRules.CalculateEnvidoScore(playerHands[p.PlayerID])
                 );
 
-                EnvidoBetValue = EnvidoBet.None;
-                proposedEnvidoBet = EnvidoBet.None;
-                currentEnvidoPoints = CURRENT_ENVIDO_POINT;
-                envidoBettorId = null;
-                waitingForEnvidoResponseId = null;
-                envidoWasPlayed = false;
-                playerFlorScores = new Dictionary<int, int>();
-
                 playerFlorScores = Players.ToDictionary(
                     p => p.PlayerID,
                     p => TrucoRules.HasFlor(playerHands[p.PlayerID])
                         ? TrucoRules.CalculateFlorScore(playerHands[p.PlayerID])
                         : -1
                 );
-
-                FlorBetValue = FlorBet.None;
-                currentFlorPoints = CURRENT_FLOR_POINT;
-                florBettorId = null;
-                waitingForFlorResponseId = null;
-                florWasPlayed = false;
 
                 CurrentState = GameState.Envido;
                 NotifyTurnChange();
@@ -389,6 +388,8 @@ namespace TrucoServer.GameLogic
                     return false;
                 }
 
+                CurrentState = GameState.Truco;
+
                 ApplyTrucoCallState(playerID, newBet, opponent.PlayerID);
 
                 NotifyTrucoCall(playerID, betType, opponent.PlayerID);
@@ -505,7 +506,16 @@ namespace TrucoServer.GameLogic
                 envidoBettorId = playerID;
                 waitingForEnvidoResponseId = opponent.PlayerID;
                 proposedEnvidoBet = newBet;
-                currentEnvidoPoints += GetPointsForEnvidoBet(newBet);
+
+                if (newBet == EnvidoBet.FaltaEnvido)
+                {
+                    currentEnvidoPoints = GetPointsForFaltaEnvido();
+                }
+                else
+                {
+                    currentEnvidoPoints += GetPointsForEnvidoBet(newBet);
+                }
+
                 NotifyAll(cb => cb.NotifyEnvidoCall(caller.Username, betType, true));
                 NotifyPlayer(opponent.PlayerID, cb => cb.NotifyEnvidoCall(caller.Username, betType, true));
 
@@ -547,11 +557,20 @@ namespace TrucoServer.GameLogic
 
                 if (response == NO_QUIERO_STATUS)
                 {
-                    int pointsToAward = (currentEnvidoPoints == 0) ? 1 : (currentEnvidoPoints - GetPointsForEnvidoBet(proposedEnvidoBet));
+                    int pointsToAward;
 
-                    if (pointsToAward == 0)
+                    if (proposedEnvidoBet == EnvidoBet.FaltaEnvido)
                     {
                         pointsToAward = 1;
+                    }
+                    else
+                    {
+                        pointsToAward = (currentEnvidoPoints == 0) ? 1 : (currentEnvidoPoints - GetPointsForEnvidoBet(proposedEnvidoBet));
+
+                        if (pointsToAward == 0)
+                        {
+                            pointsToAward = 1;
+                        }
                     }
                     AwardEnvidoPoints(caller.Team, pointsToAward);
                     ResetEnvidoState();
@@ -600,8 +619,12 @@ namespace TrucoServer.GameLogic
                     }
                 }
 
-                NotifyAll(cb => cb.NotifyEnvidoResult(envidoWinner.Username, highestScore, currentEnvidoPoints));
-                AwardEnvidoPoints(envidoWinner.Team, currentEnvidoPoints);
+                if (envidoWinner != null)
+                {
+                    NotifyAll(cb => cb.NotifyEnvidoResult(envidoWinner.Username, highestScore, currentEnvidoPoints));
+                    AwardEnvidoPoints(envidoWinner.Team, currentEnvidoPoints);
+                }
+
                 ResetEnvidoState();
             }
             catch (InvalidOperationException ex)
@@ -1600,10 +1623,7 @@ namespace TrucoServer.GameLogic
 
                     case EnvidoBet.RealEnvido:
                         return 3;
-                    
-                    case EnvidoBet.FaltaEnvido:
-                        return MAX_SCORE - (Team1Score > Team2Score ? Team1Score : Team2Score);
-                    
+                                        
                     default:
                         return 0;
                 }
@@ -1618,6 +1638,18 @@ namespace TrucoServer.GameLogic
                 LogManager.LogError(ex, nameof(GetPointsForEnvidoBet));
                 return 0;
             }
+        }
+
+        private int GetPointsForFaltaEnvido()
+        {
+            bool bothInMalas = Team1Score < 15 && Team2Score < 15;
+            int targetScore = bothInMalas ? 15 : 30;
+
+            int leadingScore = Math.Max(Team1Score, Team2Score);
+
+            int pointsNeeded = targetScore - leadingScore;
+
+            return pointsNeeded;
         }
 
         private static int GetPointsForFlorBet(FlorBet bet)
