@@ -135,4 +135,7 @@
   <data name="EmailPasswordNotificationSubject" xml:space="preserve">
     <value>Password successfully changed for your Truco Argentino account</value>
   </data>
+  <data name="ExceptionTextLogin" xml:space="preserve">
+    <value>This user already has an active session.</value>
+  </data>
 </root>

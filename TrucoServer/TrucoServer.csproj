@@ -76,6 +76,7 @@
     <Compile Include="Contracts\IDeckShuffler.cs" />
     <Compile Include="Contracts\ITrucoDeck.cs" />
     <Compile Include="Data\DTOs\EmblemLayer.cs" />
+    <Compile Include="Data\DTOs\LoginFault.cs" />
     <Compile Include="GameLogic\ActiveMatch.cs" />
     <Compile Include="Ban.cs">
       <DependentUpon>baseDatosTruco.tt</DependentUpon>

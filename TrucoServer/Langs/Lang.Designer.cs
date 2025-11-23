@@ -113,5 +113,14 @@ namespace TrucoServer.Langs {
                 return ResourceManager.GetString("EmailVerificationSubject", resourceCulture);
             }
         }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a This user already has an active session..
+        /// </summary>
+        public static string ExceptionTextLogin {
+            get {
+                return ResourceManager.GetString("ExceptionTextLogin", resourceCulture);
+            }
+        }
     }
 }

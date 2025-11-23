@@ -24,6 +24,7 @@ namespace TrucoServer.Contracts
         bool EmailExists(string email);
 
         [OperationContract]
+        [FaultContract(typeof(LoginFault))]
         bool Login(string username, string password, string languageCode);
 
         [OperationContract]

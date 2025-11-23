@@ -135,4 +135,7 @@
   <data name="EmailPasswordNotificationSubject" xml:space="preserve">
     <value>Contraseña cambiada exitosamente para en tu cuenta de Truco Argentino</value>
   </data>
+  <data name="ExceptionTextLogin" xml:space="preserve">
+    <value>Este usuario ya tiene una sesión activa.</value>
+  </data>
 </root>

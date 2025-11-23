@@ -53,7 +53,8 @@ namespace TrucoServer.Services
         public bool Login(string username, string password, string languageCode)
         {
             User user = null;
-            
+            LanguageManager.SetLanguage(languageCode);
+
             try
             {
                 using (var context = new baseDatosTrucoEntities())
@@ -98,7 +99,12 @@ namespace TrucoServer.Services
 
                 if (!isZombie)
                 {
-                    throw new FaultException("UserAlreadyLoggedIn");
+                    var fault = new LoginFault
+                    {
+                        ErrorCode = "UserAlreadyLoggedIn",
+                        ErrorMessage = Lang.ExceptionTextLogin
+                    };
+                    throw new FaultException<LoginFault>(fault, new FaultReason("UserAlreadyLoggedIn"));
                 }
                 else
                 {
@@ -111,7 +117,7 @@ namespace TrucoServer.Services
             {
                 ITrucoCallback currentCallback = OperationContext.Current.GetCallbackChannel<ITrucoCallback>();
                 onlineUsers.AddOrUpdate(realUsername, currentCallback, (key, oldValue) => currentCallback);
-                LanguageManager.SetLanguage(languageCode);
+                
                 Task.Run(() =>
                 {
                     try
