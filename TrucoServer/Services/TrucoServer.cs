@@ -52,24 +52,84 @@ namespace TrucoServer.Services
 
         public bool Login(string username, string password, string languageCode)
         {
+            User user = null;
+            
             try
             {
                 using (var context = new baseDatosTrucoEntities())
                 {
-                    User user = context.User.FirstOrDefault(u => u.email == username || u.username == username);
-                    if (user != null && PasswordHasher.Verify(password, user.passwordHash))
+                    user = context.User.FirstOrDefault(u => u.email == username || u.username == username);
+                    
+                    if (user == null || !PasswordHasher.Verify(password, user.passwordHash))
                     {
-                        ITrucoCallback callback = OperationContext.Current.GetCallbackChannel<ITrucoCallback>();
-                        onlineUsers.TryAdd(user.username, callback);
-
-                        LanguageManager.SetLanguage(languageCode);
-                        Task.Run(() => SendEmail(user.email, Lang.EmailLoginNotificationSubject,
-                            string.Format(Lang.EmailLoginNotificactionBody, username, DateTime.Now).Replace("\\n", Environment.NewLine)));
-
-                        return true;
+                        return false;
                     }
-                    return false;
                 }
+            }
+            catch (SqlException ex)
+            {
+                LogManager.LogError(ex, $"{nameof(Login)} - Database Error");
+                
+                return false;
+            }
+            
+            string realUsername = user.username;
+            
+            if (onlineUsers.ContainsKey(realUsername))
+            {
+                var oldCallback = onlineUsers[realUsername];
+                var oldChannel = oldCallback as ICommunicationObject;
+
+                bool isZombie = true;
+
+                if (oldChannel != null && oldChannel.State == CommunicationState.Opened)
+                {
+                    try
+                    {
+                        oldCallback.Ping();
+                        isZombie = false;
+                    }
+                    catch (Exception)
+                    {
+                        isZombie = true;
+                        LogManager.LogWarn($"Zombie session detected and deleted: {realUsername}", nameof(Login));
+                    }
+                }
+
+                if (!isZombie)
+                {
+                    throw new FaultException("UserAlreadyLoggedIn");
+                }
+                else
+                {
+                    ITrucoCallback trash;
+                    onlineUsers.TryRemove(realUsername, out trash);
+                }
+            }
+            
+            try
+            {
+                ITrucoCallback currentCallback = OperationContext.Current.GetCallbackChannel<ITrucoCallback>();
+                onlineUsers.AddOrUpdate(realUsername, currentCallback, (key, oldValue) => currentCallback);
+                LanguageManager.SetLanguage(languageCode);
+                Task.Run(() =>
+                {
+                    try
+                    {
+                        SendEmail(user.email, Lang.EmailLoginNotificationSubject,
+                            string.Format(Lang.EmailLoginNotificactionBody, realUsername, DateTime.Now).Replace("\\n", Environment.NewLine));
+                    }
+                    catch (Exception ex)
+                    {
+                        LogManager.LogError(ex, "Login_EmailTask");
+                    }
+                });
+
+                return true;
+            }
+            catch (FaultException)
+            {
+                throw;
             }
             catch (InvalidOperationException ex) when (ex.Source.Contains("System.ServiceModel"))
             {
@@ -229,10 +289,12 @@ namespace TrucoServer.Services
                         return null;
                     }
 
-                    string json = user.UserProfile?.socialLinksJson != null
-                        ? Encoding.UTF8.GetString(user.UserProfile.socialLinksJson)
-                        : "{}";
-                    dynamic links = JsonConvert.DeserializeObject(json);
+                    SocialLinks links = new SocialLinks();
+                    if (user.UserProfile?.socialLinksJson != null)
+                    {
+                        string json = Encoding.UTF8.GetString(user.UserProfile.socialLinksJson);
+                        links = JsonConvert.DeserializeObject<SocialLinks>(json) ?? new SocialLinks();
+                    }
 
                     return new UserProfileData
                     {
@@ -240,9 +302,9 @@ namespace TrucoServer.Services
                         Email = user.email,
                         AvatarId = user.UserProfile?.avatarID ?? DEFAULT_AVATAR_ID,
                         NameChangeCount = user.nameChangeCount,
-                        FacebookHandle = links?.facebook ?? "",
-                        XHandle = links?.x ?? "",
-                        InstagramHandle = links?.instagram ?? ""
+                        FacebookHandle = links.FacebookHandle ?? "",
+                        XHandle = links.XHandle ?? "",
+                        InstagramHandle = links.InstagramHandle ?? ""
                     };
                 }
             }
@@ -281,8 +343,13 @@ namespace TrucoServer.Services
                         return null;
                     }
 
-                    string json = user.UserProfile?.socialLinksJson != null ? Encoding.UTF8.GetString(user.UserProfile.socialLinksJson) : "{}";
-                    dynamic links = JsonConvert.DeserializeObject(json);
+                    SocialLinks links = new SocialLinks();
+
+                    if (user.UserProfile?.socialLinksJson != null)
+                    {
+                        string json = Encoding.UTF8.GetString(user.UserProfile.socialLinksJson);
+                        links = JsonConvert.DeserializeObject<SocialLinks>(json) ?? new SocialLinks();
+                    }
 
                     return new UserProfileData
                     {
@@ -290,9 +357,9 @@ namespace TrucoServer.Services
                         Email = user.email,
                         AvatarId = user.UserProfile?.avatarID ?? DEFAULT_AVATAR_ID,
                         NameChangeCount = user.nameChangeCount,
-                        FacebookHandle = links?.facebook ?? "",
-                        XHandle = links?.x ?? "",
-                        InstagramHandle = links?.instagram ?? ""
+                        FacebookHandle = links?.FacebookHandle ?? "",
+                        XHandle = links?.XHandle ?? "",
+                        InstagramHandle = links?.InstagramHandle ?? ""
                     };
                 }
             }
@@ -351,12 +418,15 @@ namespace TrucoServer.Services
                     }
 
                     user.UserProfile.avatarID = profile.AvatarId ?? DEFAULT_AVATAR_ID;
-                    string json = JsonConvert.SerializeObject(new
+
+                    var links = new SocialLinks
                     {
-                        facebook = profile.FacebookHandle ?? "",
-                        x = profile.XHandle ?? "",
-                        instagram = profile.InstagramHandle ?? ""
-                    });
+                        FacebookHandle = profile.FacebookHandle?.Trim() ?? "",
+                        XHandle = profile.XHandle?.Trim() ?? "",
+                        InstagramHandle = profile.InstagramHandle?.Trim() ?? ""
+                    };
+
+                    string json = JsonConvert.SerializeObject(links);
                     user.UserProfile.socialLinksJson = Encoding.UTF8.GetBytes(json);
 
                     context.SaveChanges();
