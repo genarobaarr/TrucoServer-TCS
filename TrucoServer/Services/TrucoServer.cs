@@ -3077,11 +3077,32 @@ namespace TrucoServer.Services
             {
                 gamePlayers.Add(new PlayerInformation(user.userID, user.username, pInfo.Team));
 
-                var playerCb = matchCallbackToPlayer.FirstOrDefault(kvp => kvp.Value.Username == pInfo.Username).Key;
+                var userCallbacks = matchCallbackToPlayer
+                    .Where(kvp => kvp.Value.Username == pInfo.Username)
+                    .Select(kvp => kvp.Key)
+                    .ToList();
 
-                if (playerCb != null && ((ICommunicationObject)playerCb).State == CommunicationState.Opened)
+                ITrucoCallback activeCallback = null;
+
+                foreach (var cb in userCallbacks)
                 {
-                    gameCallbacks[user.userID] = playerCb;
+                    if (((ICommunicationObject)cb).State == CommunicationState.Opened)
+                    {
+                        activeCallback = cb;
+                    }
+                    else
+                    {
+                        matchCallbackToPlayer.TryRemove(cb, out _);
+                    }
+                }
+
+                if (activeCallback != null)
+                {
+                    gameCallbacks[user.userID] = activeCallback;
+                }
+                else
+                {
+                    Console.WriteLine($"[WARNING] User {pInfo.Username} is in the lobby but has no active WCF connection.");
                 }
             }
         }
