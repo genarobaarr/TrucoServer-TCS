@@ -101,6 +101,9 @@
       <DependentUpon>baseDatosTruco.edmx</DependentUpon>
     </Compile>
     <Compile Include="GameLogic\DefaultDeckShuffler.cs" />
+    <Compile Include="Services\FriendServiceImp.cs" />
+    <Compile Include="Services\TrucoMatchServiceImp.cs" />
+    <Compile Include="Services\TrucoUserServiceImp.cs" />
     <Compile Include="Utilities\BruteForceProtector.cs" />
     <Compile Include="Utilities\ConfigurationFileWrapper.cs" />
     <Compile Include="Utilities\ConfigurationReader.cs" />
