@@ -2,24 +2,25 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Configuration;
 using System.Data.Entity;
+using System.Data.Entity.Core;
 using System.Data.Entity.Infrastructure;
 using System.Data.Entity.Validation;
 using System.Data.SqlClient;
-using System.Data.Entity.Core;
-using System.Threading;
-using System.Configuration;
 using System.Linq;
 using System.Net;
 using System.Net.Mail;
 using System.Security.Cryptography;
 using System.ServiceModel;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
-using TrucoServer.Langs;
 using TrucoServer.Contracts;
 using TrucoServer.Data.DTOs;
 using TrucoServer.GameLogic;
+using TrucoServer.Langs;
+using TrucoServer.Security;
 using TrucoServer.Utilities;
 
 namespace TrucoServer.Services
@@ -52,84 +53,122 @@ namespace TrucoServer.Services
 
         public bool Login(string username, string password, string languageCode)
         {
-            User user = null;
-            LanguageManager.SetLanguage(languageCode);
+            try {
+                LanguageManager.SetLanguage(languageCode);
 
+                ValidateBruteForceStatus(username);
+
+                User user = AuthenticateUser(username, password);
+                if (user == null)
+                {
+                    return false;
+                }
+
+                string realUsername = user.username;
+
+                HandleExistingSession(realUsername);
+
+                return TryRegisterAndNotify(user, username);
+            }
+            catch (FaultException)
+            {
+                throw;
+            }
+            catch (InvalidOperationException ex) when (ex.Source.Contains("System.ServiceModel"))
+            {
+                LogManager.LogError(ex, $"{nameof(Login)} - WCF Context Error");
+                return false;
+            }
+            catch (SqlException ex)
+            {
+                LogManager.LogError(ex, $"{nameof(Login)} - SQL Server Error");
+                return false;
+            }
+            catch (SmtpException ex)
+            {
+                LogManager.LogError(ex, $"{nameof(Login)} - Email Error");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError(ex, nameof(Login));
+                return false;
+            }
+        }
+
+        private void ValidateBruteForceStatus(string username)
+        {
+            if (BruteForceProtector.IsBlocked(username))
+            {
+                var fault = new LoginFault
+                {
+                    ErrorCode = "TooManyAttempts",
+                    ErrorMessage = Lang.ExceptionTextTooManyAttempts
+                };
+                throw new FaultException<LoginFault>(fault, new FaultReason("TooManyAttempts"));
+            }
+        }
+
+        private User AuthenticateUser(string username, string password)
+        {
             try
             {
                 using (var context = new baseDatosTrucoEntities())
                 {
-                    user = context.User.FirstOrDefault(u => u.email == username || u.username == username);
-                    
+                    var user = context.User.FirstOrDefault(u => u.email == username || u.username == username);
+
                     if (user == null || !PasswordHasher.Verify(password, user.passwordHash))
                     {
-                        return false;
+                        BruteForceProtector.RegisterFailedAttempt(username);
+                        return null;
                     }
+                    return user;
                 }
             }
             catch (SqlException ex)
             {
                 LogManager.LogError(ex, $"{nameof(Login)} - Database Error");
-                
-                return false;
+                return null;
             }
-            
-            string realUsername = user.username;
-            
-            if (onlineUsers.ContainsKey(realUsername))
+        }
+
+        private void HandleExistingSession(string realUsername)
+        {
+            if (!onlineUsers.ContainsKey(realUsername)) return;
+
+            var oldCallback = onlineUsers[realUsername];
+            var oldChannel = oldCallback as ICommunicationObject;
+            bool isZombie = true;
+
+            if (oldChannel != null && oldChannel.State == CommunicationState.Opened)
             {
-                var oldCallback = onlineUsers[realUsername];
-                var oldChannel = oldCallback as ICommunicationObject;
-
-                bool isZombie = true;
-
-                if (oldChannel != null && oldChannel.State == CommunicationState.Opened)
-                {
-                    try
-                    {
-                        oldCallback.Ping();
-                        isZombie = false;
-                    }
-                    catch (Exception)
-                    {
-                        isZombie = true;
-                        LogManager.LogWarn($"Zombie session detected and deleted: {realUsername}", nameof(Login));
-                    }
-                }
-
-                if (!isZombie)
-                {
-                    var fault = new LoginFault
-                    {
-                        ErrorCode = "UserAlreadyLoggedIn",
-                        ErrorMessage = Lang.ExceptionTextLogin
-                    };
-                    throw new FaultException<LoginFault>(fault, new FaultReason("UserAlreadyLoggedIn"));
-                }
-                else
-                {
-                    ITrucoCallback trash;
-                    onlineUsers.TryRemove(realUsername, out trash);
-                }
+                oldCallback.Ping();
+                isZombie = false;
             }
-            
+
+            if (!isZombie)
+            {
+                var fault = new LoginFault
+                {
+                    ErrorCode = "UserAlreadyLoggedIn",
+                    ErrorMessage = Lang.ExceptionTextLogin
+                };
+                throw new FaultException<LoginFault>(fault, new FaultReason("UserAlreadyLoggedIn"));
+            }
+            else
+            {
+                ITrucoCallback trash;
+                onlineUsers.TryRemove(realUsername, out trash);
+            }
+        }
+
+        private bool TryRegisterAndNotify(User user, string inputUsername)
+        {
             try
             {
-                ITrucoCallback currentCallback = OperationContext.Current.GetCallbackChannel<ITrucoCallback>();
-                onlineUsers.AddOrUpdate(realUsername, currentCallback, (key, oldValue) => currentCallback);
-                
-                Task.Run(() =>
-                {
-                    try
-                    {
-                        SendEmail(user.email, Lang.EmailLoginNotificationSubject,
-                            string.Format(Lang.EmailLoginNotificactionBody, realUsername, DateTime.Now).Replace("\\n", Environment.NewLine));
-                    }
-                    catch (Exception ex)
-                    {
-                        LogManager.LogError(ex, "Login_EmailTask");
-                    }
-                });
+                RegisterSession(user.username);
+                SendLoginEmailAsync(user);
+                BruteForceProtector.RegisterSuccess(inputUsername);
 
                 return true;
             }
@@ -157,6 +196,29 @@ namespace TrucoServer.Services
                 LogManager.LogError(ex, nameof(Login));
                 return false;
             }
+        }
+
+        private void RegisterSession(string realUsername)
+        {
+            ITrucoCallback currentCallback = OperationContext.Current.GetCallbackChannel<ITrucoCallback>();
+            onlineUsers.AddOrUpdate(realUsername, currentCallback, (key, oldValue) => currentCallback);
+        }
+
+        private void SendLoginEmailAsync(User user)
+        {
+            Task.Run(() =>
+            {
+                try
+                {
+                    SendEmail(user.email, Lang.EmailLoginNotificationSubject,
+                        string.Format(Lang.EmailLoginNotificactionBody, user.username, DateTime.Now)
+                        .Replace("\\n", Environment.NewLine));
+                }
+                catch (SmtpException ex)
+                {
+                    LogManager.LogError(ex, "Login_EmailTask");
+                }
+            });
         }
 
         public bool Register(string username, string password, string email)
@@ -1935,6 +1997,10 @@ namespace TrucoServer.Services
                 {
                     smtp.Send(message);
                 }
+            }
+            catch (SmtpFailedRecipientException ex)
+            {
+                LogManager.LogError(ex, nameof(SendEmail));
             }
             catch (SmtpException ex)
             {

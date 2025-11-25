@@ -138,4 +138,7 @@
   <data name="ExceptionTextLogin" xml:space="preserve">
     <value>This user already has an active session.</value>
   </data>
+  <data name="ExceptionTextTooManyAttempts" xml:space="preserve">
+    <value>Too many login attempts have been detected. If you've forgotten your password, use the 'Forgot your password?' link below. Otherwise, please wait a moment and try again.</value>
+  </data>
 </root>
