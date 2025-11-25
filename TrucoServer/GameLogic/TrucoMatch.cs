@@ -572,11 +572,13 @@ namespace TrucoServer.GameLogic
                             pointsToAward = 1;
                         }
                     }
+                    NotifyResponse(response, caller.Username, TrucoBetValue.ToString());
                     AwardEnvidoPoints(caller.Team, pointsToAward);
                     ResetEnvidoState();
                 }
                 else if (response == QUIERO_STATUS)
                 {
+                    NotifyResponse(response, caller.Username, TrucoBetValue.ToString());
                     ResolveEnvido();
                 }
                 else
