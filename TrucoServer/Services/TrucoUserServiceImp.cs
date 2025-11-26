@@ -1,6 +1,5 @@
 ﻿using Newtonsoft.Json;
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Configuration;
 using System.Data.Entity;
@@ -19,6 +18,14 @@ using TrucoServer.Data.DTOs;
 using TrucoServer.Langs;
 using TrucoServer.Security;
 using TrucoServer.Utilities;
+using TrucoServer.Helpers.Authentication;
+using TrucoServer.Helpers.Sessions;
+using TrucoServer.Helpers.Email;
+using TrucoServer.Helpers.Verification;
+using TrucoServer.Helpers.Profiles;
+using TrucoServer.Helpers.Password;
+using TrucoServer.Helpers.Mapping;
+using TrucoServer.Helpers.Ranking;
 
 namespace TrucoServer.Services
 {
@@ -28,29 +35,67 @@ namespace TrucoServer.Services
         private const string DEFAULT_AVATAR_ID = "avatar_aaa_default";
         private const string DEFAULT_LANG_CODE = "es-MX";
 
-        private static readonly ConcurrentDictionary<string, string> verificationCodes = new ConcurrentDictionary<string, string>();
-        private static readonly ConcurrentDictionary<string, ITrucoCallback> onlineUsers = new ConcurrentDictionary<string, ITrucoCallback>();
+        private readonly IUserAuthenticationHelper authenticationHelper;
+        private readonly IUserSessionManager sessionManager;
+        private readonly IEmailSender emailSender;
+        private readonly IVerificationService verificationService;
+        private readonly IProfileUpdater profileUpdater;
+        private readonly IPasswordManager passwordManager;
+        private readonly IUserMapper userMapper;
+        private readonly IRankingService rankingService;
+        private readonly IMatchHistoryService matchHistoryService;
+
+        private static readonly IUserSessionManager sessionManagerStatic = new UserSessionManager();
+
+        public TrucoUserServiceImp()
+        {
+            this.authenticationHelper = new UserAuthenticationHelper();
+            this.sessionManager = new UserSessionManager();
+            this.emailSender = new EmailSender();
+            this.verificationService = new VerificationService(authenticationHelper, emailSender);
+            this.profileUpdater = new ProfileUpdater();
+            this.passwordManager = new PasswordManager(emailSender);
+            this.userMapper = new UserMapper();
+            this.rankingService = new RankingService();
+            this.match_history_instantiation_guard();
+            this.matchHistoryService = new MatchHistoryService();
+        }
+        private void match_history_instantiation_guard()
+        {
+            // intentionally empty - preserves style/formatting
+        }
 
         public bool Login(string username, string password, string languageCode)
         {
+            bool isUsernameValid = ServerValidator.IsUsernameValid(username);
+            bool isEmailValid = ServerValidator.IsEmailValid(username);
+
+            if ((!isUsernameValid && !isEmailValid) || string.IsNullOrWhiteSpace(password))
+            {
+                return false;
+            }
+
             try
             {
                 LanguageManager.SetLanguage(languageCode);
 
-                ValidateBruteForceStatus(username);
+                authenticationHelper.ValidateBruteForceStatus(username);
 
-                User user = AuthenticateUser(username, password);
+                User user = authenticationHelper.AuthenticateUser(username, password);
 
                 if (user == null)
                 {
                     return false;
                 }
 
-                string realUsername = user.username;
+                sessionManager.HandleExistingSession(user.username);
 
-                HandleExistingSession(realUsername);
+                sessionManager.RegisterSession(user.username);
+                emailSender.SendLoginEmailAsync(user);
+                BruteForceProtector.RegisterSuccess(username);
 
-                return TryRegisterAndNotify(user, username);
+                Console.WriteLine($"[LOGIN] User {user.username} logged in successfully.");
+                return true;
             }
             catch (FaultException)
             {
@@ -80,6 +125,13 @@ namespace TrucoServer.Services
 
         public bool Register(string username, string password, string email)
         {
+            if (!ServerValidator.IsUsernameValid(username) ||
+                !ServerValidator.IsEmailValid(email) ||
+                !ServerValidator.IsPasswordValid(password))
+            {
+                return false;
+            }
+
             try
             {
                 using (var context = new baseDatosTrucoEntities())
@@ -89,7 +141,7 @@ namespace TrucoServer.Services
                         return false;
                     }
 
-                    User user = new User
+                    User newUser = new User
                     {
                         username = username,
                         passwordHash = PasswordHasher.Hash(password),
@@ -98,18 +150,12 @@ namespace TrucoServer.Services
                         nameChangeCount = 0
                     };
 
-                    context.User.Add(user);
+                    context.User.Add(newUser);
                     context.SaveChanges();
 
-                    UserProfile profile = new UserProfile
-                    {
-                        userID = user.userID,
-                        avatarID = DEFAULT_AVATAR_ID,
-                        socialLinksJson = Encoding.UTF8.GetBytes("{}")
-                    };
-                    context.UserProfile.Add(profile);
-                    context.SaveChanges();
+                    profileUpdater.CreateAndSaveDefaultProfile(context, newUser.userID);
 
+                    Console.WriteLine($"[REGISTER] New user registered: {username}");
                     return true;
                 }
             }
@@ -120,7 +166,7 @@ namespace TrucoServer.Services
             }
             catch (DbUpdateException ex)
             {
-                LogManager.LogError(ex, nameof(Register));
+                LogManager.LogError(ex, $"{nameof(Register)} - Database Update Error");
                 return false;
             }
             catch (SqlException ex)
@@ -130,190 +176,19 @@ namespace TrucoServer.Services
             }
             catch (ArgumentException ex)
             {
-                LogManager.LogError(ex, nameof(Register));
+                LogManager.LogError(ex, $"{nameof(Register)} - Argument Error");
                 return false;
             }
             catch (Exception ex)
             {
                 LogManager.LogError(ex, nameof(Register));
                 return false;
-            }
-        }
-
-        public bool UsernameExists(string username)
-        {
-            if (string.IsNullOrWhiteSpace(username))
-            {
-                return false;
-            }
-
-            try
-            {
-                using (var context = new baseDatosTrucoEntities())
-                {
-                    return context.User.Any(u => u.username == username);
-                }
-            }
-            catch (SqlException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(UsernameExists)} - SQL Server Error");
-                throw;
-            }
-            catch (InvalidOperationException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(UsernameExists)} - Invalid Operation (DataBase Context)");
-                throw;
-            }
-            catch (Exception ex)
-            {
-                LogManager.LogError(ex, nameof(UsernameExists));
-                throw;
-            }
-        }
-
-        public bool EmailExists(string email)
-        {
-            if (string.IsNullOrWhiteSpace(email))
-            {
-                return false;
-            }
-
-            try
-            {
-                using (var context = new baseDatosTrucoEntities())
-                {
-                    return context.User.Any(u => u.email == email);
-                }
-            }
-            catch (SqlException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(EmailExists)} - SQL Server Error");
-                throw;
-            }
-            catch (InvalidOperationException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(EmailExists)} - Invalid Operation (DataBase Context)");
-                throw;
-            }
-            catch (Exception ex)
-            {
-                LogManager.LogError(ex, nameof(EmailExists));
-                throw;
-            }
-        }
-
-        public UserProfileData GetUserProfile(string username)
-        {
-            try
-            {
-                using (var context = new baseDatosTrucoEntities())
-                {
-                    User user = context.User.Include(u => u.UserProfile).FirstOrDefault(u => u.username == username);
-
-                    if (user == null)
-                    {
-                        return null;
-                    }
-
-                    SocialLinks links = new SocialLinks();
-
-                    if (user.UserProfile?.socialLinksJson != null)
-                    {
-                        string json = Encoding.UTF8.GetString(user.UserProfile.socialLinksJson);
-                        links = JsonConvert.DeserializeObject<SocialLinks>(json) ?? new SocialLinks();
-                    }
-
-                    return new UserProfileData
-                    {
-                        Username = user.username,
-                        Email = user.email,
-                        AvatarId = user.UserProfile?.avatarID ?? DEFAULT_AVATAR_ID,
-                        NameChangeCount = user.nameChangeCount,
-                        FacebookHandle = links.FacebookHandle ?? "",
-                        XHandle = links.XHandle ?? "",
-                        InstagramHandle = links.InstagramHandle ?? "",
-                        LanguageCode = user.UserProfile?.languageCode ?? "en-US",
-                        IsMusicMuted = user.UserProfile?.isMusicMuted ?? false
-                    };
-                }
-            }
-            catch (JsonException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(GetUserProfile)} - JSON Deserialization Error");
-                return null;
-            }
-            catch (SqlException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(GetUserProfile)} - SQL Server Error");
-                return null;
-            }
-            catch (InvalidOperationException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(GetUserProfile)} - Invalid Operation (DataBase Context)");
-                return null;
-            }
-            catch (Exception ex)
-            {
-                LogManager.LogError(ex, nameof(GetUserProfile));
-                return null;
-            }
-        }
-
-        public async Task<UserProfileData> GetUserProfileByEmailAsync(string email)
-        {
-            try
-            {
-                using (var context = new baseDatosTrucoEntities())
-                {
-                    var user = await context.User.Include(u => u.UserProfile).FirstOrDefaultAsync(u => u.email == email);
-
-                    if (user == null)
-                    {
-                        return null;
-                    }
-
-                    SocialLinks links = new SocialLinks();
-
-                    if (user.UserProfile?.socialLinksJson != null)
-                    {
-                        string json = Encoding.UTF8.GetString(user.UserProfile.socialLinksJson);
-                        links = JsonConvert.DeserializeObject<SocialLinks>(json) ?? new SocialLinks();
-                    }
-
-                    return new UserProfileData
-                    {
-                        Username = user.username,
-                        Email = user.email,
-                        AvatarId = user.UserProfile?.avatarID ?? DEFAULT_AVATAR_ID,
-                        NameChangeCount = user.nameChangeCount,
-                        FacebookHandle = links?.FacebookHandle ?? "",
-                        XHandle = links?.XHandle ?? "",
-                        InstagramHandle = links?.InstagramHandle ?? "",
-                        LanguageCode = user.UserProfile?.languageCode ?? "en-US",
-                        IsMusicMuted = user.UserProfile?.isMusicMuted ?? false
-                    };
-                }
-            }
-            catch (JsonException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(GetUserProfileByEmailAsync)} - JSON Deserialization Error");
-                return null;
-            }
-            catch (System.Data.Common.DbException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(GetUserProfileByEmailAsync)} - Database Query Error");
-                return null;
-            }
-            catch (Exception ex)
-            {
-                LogManager.LogError(ex, nameof(GetUserProfileByEmailAsync));
-                return null;
             }
         }
 
         public bool SaveUserProfile(UserProfileData profile)
         {
-            if (profile == null || string.IsNullOrWhiteSpace(profile.Email))
+            if (!profileUpdater.ValidateProfileInput(profile))
             {
                 return false;
             }
@@ -329,12 +204,12 @@ namespace TrucoServer.Services
                         return false;
                     }
 
-                    if (!TryUpdateUsername(context, user, profile.Username))
+                    if (!profileUpdater.TryUpdateUsername(context, user, profile.Username, MAX_NAME_CHANGES))
                     {
                         return false;
                     }
 
-                    UpdateProfileDetails(context, user, profile);
+                    profileUpdater.UpdateProfileDetails(context, user, profile, DEFAULT_LANG_CODE, DEFAULT_AVATAR_ID);
                     context.SaveChanges();
                     return true;
                 }
@@ -363,28 +238,17 @@ namespace TrucoServer.Services
 
         public Task<bool> UpdateUserAvatarAsync(string username, string newAvatarId)
         {
+            if (!ServerValidator.IsUsernameValid(username) || string.IsNullOrWhiteSpace(newAvatarId))
+            {
+                return Task.FromResult(false);
+            }
+
             try
             {
                 using (var context = new baseDatosTrucoEntities())
                 {
-                    User user = context.User.FirstOrDefault(u => u.username == username);
-
-                    if (user == null)
-                    {
-                        return Task.FromResult(false);
-                    }
-
-                    UserProfile profile = context.UserProfile.FirstOrDefault(p => p.userID == user.userID);
-
-                    if (profile == null)
-                    {
-                        profile = new UserProfile { userID = user.userID, socialLinksJson = Encoding.UTF8.GetBytes("{}") };
-                        context.UserProfile.Add(profile);
-                    }
-
-                    profile.avatarID = newAvatarId;
-                    context.SaveChanges();
-                    return Task.FromResult(true);
+                    bool result = profileUpdater.ProcessAvatarUpdate(context, username, newAvatarId);
+                    return Task.FromResult(result);
                 }
             }
             catch (DbUpdateException ex)
@@ -404,129 +268,51 @@ namespace TrucoServer.Services
 
         public bool PasswordChange(string email, string newPassword, string languageCode)
         {
-            try
+            if (!ServerValidator.IsEmailValid(email) || !ServerValidator.IsPasswordValid(newPassword))
             {
-                using (var context = new baseDatosTrucoEntities())
-                {
-                    User user = context.User.FirstOrDefault(u => u.email == email);
-
-                    if (user == null)
-                    {
-                        return false;
-                    }
-
-                    user.passwordHash = PasswordHasher.Hash(newPassword);
-                    context.SaveChanges();
-
-                    LanguageManager.SetLanguage(languageCode);
-
-                    Task.Run(() => SendEmail(user.email, Lang.EmailPasswordNotificationSubject,
-                        string.Format(Lang.EmailPasswordNotificationBody, user.username, DateTime.Now).Replace("\\n", Environment.NewLine)));
-
-                    return true;
-                }
-            }
-            catch (DbUpdateException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(PasswordChange)} - DataBase Saving Error");
                 return false;
             }
-            catch (SqlException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(PasswordChange)} - SQL Server Error");
-                return false;
-            }
-            catch (SmtpException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(PasswordChange)} - Email Error");
-                return true;
-            }
-            catch (Exception ex)
-            {
-                LogManager.LogError(ex, nameof(PasswordChange));
-                return false;
-            }
+
+            return passwordManager.UpdatePasswordAndNotify(email, newPassword, languageCode, nameof(PasswordChange));
         }
 
         public bool PasswordReset(string email, string code, string newPassword, string languageCode)
         {
-            if (!ConfirmEmailVerification(email, code))
+            if (!ServerValidator.IsEmailValid(email) || !ServerValidator.IsPasswordValid(newPassword))
             {
                 return false;
             }
 
-            try
+            if (!verificationService.ConfirmEmailVerification(email, code))
             {
-                using (var context = new baseDatosTrucoEntities())
-                {
-                    User user = context.User.FirstOrDefault(u => u.email == email);
-
-                    if (user == null)
-                    {
-                        return false;
-                    }
-
-                    user.passwordHash = PasswordHasher.Hash(newPassword);
-                    context.SaveChanges();
-
-                    LanguageManager.SetLanguage(languageCode);
-
-                    Task.Run(() => SendEmail(user.email, Lang.EmailPasswordNotificationSubject,
-                        string.Format(Lang.EmailPasswordNotificationBody, user.username, DateTime.Now).Replace("\\n", Environment.NewLine)));
-
-                    return true;
-                }
-            }
-            catch (DbUpdateException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(PasswordReset)} - DataBase Saving Error");
                 return false;
             }
-            catch (SqlException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(PasswordReset)} - SQL Server Error");
-                return false;
-            }
-            catch (SmtpException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(PasswordReset)} - Email Error");
-                return true;
-            }
-            catch (Exception ex)
-            {
-                LogManager.LogError(ex, nameof(PasswordReset));
-                return false;
-            }
+
+            return passwordManager.UpdatePasswordAndNotify(email, newPassword, languageCode, nameof(PasswordReset));
         }
 
         public bool RequestEmailVerification(string email, string languageCode)
         {
+            if (!ServerValidator.IsEmailValid(email))
+            {
+                return false;
+            }
+
             try
             {
-                string code = GenerateSecureNumericCode();
-
-                verificationCodes[email] = code;
-
-                LanguageManager.SetLanguage(languageCode);
-
-                Task.Run(() => SendEmail(email, Lang.EmailVerificationSubject,
-                    string.Format(Lang.EmailVerificationBody, code).Replace("\\n", Environment.NewLine)));
-
-                Console.WriteLine($"[EMAIL] Code Sended To {email}: {code}");
-
-                return true;
+                return verificationService.RequestEmailVerification(email, languageCode);
             }
             catch (ArgumentNullException ex)
             {
-                LogManager.LogError(ex, nameof(RequestEmailVerification));
+                LogManager.LogError(ex, $"{nameof(RequestEmailVerification)} - Argument Null");
             }
             catch (SmtpException ex)
             {
-                LogManager.LogError(ex, nameof(RequestEmailVerification));
+                LogManager.LogError(ex, $"{nameof(RequestEmailVerification)} - SMTP Error");
             }
             catch (InvalidOperationException ex)
             {
-                LogManager.LogError(ex, nameof(RequestEmailVerification));
+                LogManager.LogError(ex, $"{nameof(RequestEmailVerification)} - Invalid Operation");
             }
             catch (Exception ex)
             {
@@ -537,33 +323,157 @@ namespace TrucoServer.Services
 
         public bool ConfirmEmailVerification(string email, string code)
         {
-            if (verificationCodes.TryGetValue(email, out string storedCode) && storedCode == code)
+            return verificationService.ConfirmEmailVerification(email, code);
+        }
+
+        public bool UsernameExists(string username)
+        {
+            if (!ServerValidator.IsUsernameValid(username))
             {
-                verificationCodes.TryRemove(email, out _);
-                return true;
+                return false;
             }
 
-            return false;
+            try
+            {
+                using (var context = new baseDatosTrucoEntities())
+                {
+                    return context.User.Any(u => u.username == username);
+                }
+            }
+            catch (SqlException ex)
+            {
+                LogManager.LogError(ex, $"{nameof(UsernameExists)} - SQL Server Error");
+                return false;
+            }
+            catch (InvalidOperationException ex)
+            {
+                LogManager.LogError(ex, $"{nameof(UsernameExists)} - Invalid Operation (DataBase Context)");
+                return false;
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError(ex, nameof(UsernameExists));
+                return false;
+            }
+        }
+
+        public bool EmailExists(string email)
+        {
+            if (!ServerValidator.IsEmailValid(email))
+            {
+                return false;
+            }
+
+            try
+            {
+                using (var context = new baseDatosTrucoEntities())
+                {
+                    return context.User.Any(u => u.email == email);
+                }
+            }
+            catch (SqlException ex)
+            {
+                LogManager.LogError(ex, $"{nameof(EmailExists)} - SQL Server Error");
+                return false;
+            }
+            catch (InvalidOperationException ex)
+            {
+                LogManager.LogError(ex, $"{nameof(EmailExists)} - Invalid Operation (DataBase Context)");
+                return false;
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError(ex, nameof(EmailExists));
+                return false;
+            }
+        }
+
+        public UserProfileData GetUserProfile(string username)
+        {
+            if (!ServerValidator.IsUsernameValid(username))
+            {
+                return null;
+            }
+
+            try
+            {
+                using (var context = new baseDatosTrucoEntities())
+                {
+                    User user = context.User.Include(u => u.UserProfile).FirstOrDefault(u => u.username == username);
+
+                    if (user == null)
+                    {
+                        return null;
+                    }
+
+                    return userMapper.MapUserToProfileData(user);
+                }
+            }
+            catch (JsonException ex)
+            {
+                LogManager.LogError(ex, $"{nameof(GetUserProfile)} - JSON Deserialization Error");
+                return null;
+            }
+            catch (SqlException ex)
+            {
+                LogManager.LogError(ex, $"{nameof(GetUserProfile)} - SQL Server Error");
+                return null;
+            }
+            catch (InvalidOperationException ex)
+            {
+                LogManager.LogError(ex, $"{nameof(GetUserProfile)} - Invalid Operation (DataBase Context)");
+                return null;
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError(ex, nameof(GetUserProfile));
+                return null;
+            }
+        }
+
+        public async Task<UserProfileData> GetUserProfileByEmailAsync(string email)
+        {
+            if (!ServerValidator.IsEmailValid(email))
+            {
+                return null;
+            }
+
+            try
+            {
+                using (var context = new baseDatosTrucoEntities())
+                {
+                    var user = await context.User.Include(u => u.UserProfile).FirstOrDefaultAsync(u => u.email == email);
+
+                    if (user == null)
+                    {
+                        return null;
+                    }
+
+                    return userMapper.MapUserToProfileData(user);
+                }
+            }
+            catch (JsonException ex)
+            {
+                LogManager.LogError(ex, $"{nameof(GetUserProfileByEmailAsync)} - JSON Deserialization Error");
+                return null;
+            }
+            catch (System.Data.Common.DbException ex)
+            {
+                LogManager.LogError(ex, $"{nameof(GetUserProfileByEmailAsync)} - Database Query Error");
+                return null;
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError(ex, nameof(GetUserProfileByEmailAsync));
+                return null;
+            }
         }
 
         public List<PlayerStats> GetGlobalRanking()
         {
             try
             {
-                using (var context = new baseDatosTrucoEntities())
-                {
-                    var topPlayers = context.User
-                        .OrderByDescending(u => u.wins)
-                        .Take(10)
-                        .Select(u => new PlayerStats
-                        {
-                            PlayerName = u.username,
-                            Wins = u.wins,
-                        })
-                        .ToList();
-
-                    return topPlayers;
-                }
+                return rankingService.GetGlobalRanking();
             }
             catch (NotSupportedException ex)
             {
@@ -589,37 +499,14 @@ namespace TrucoServer.Services
 
         public List<MatchScore> GetLastMatches(string username)
         {
+            if (!ServerValidator.IsUsernameValid(username))
+            {
+                return new List<MatchScore>();
+            }
+
             try
             {
-                using (var context = new baseDatosTrucoEntities())
-                {
-                    var user = context.User.FirstOrDefault(u => u.username == username);
-
-                    if (user == null)
-                    {
-                        LogManager.LogWarn($"History attempt for user not found: {username}", nameof(GetLastMatches));
-                        return new List<MatchScore>();
-                    }
-
-                    int userID = user.userID;
-
-                    var lastMatches = context.MatchPlayer
-                        .Where(mp => mp.userID == userID)
-                        .Select(mp => new { MatchPlayer = mp, Match = mp.Match })
-                        .Where(join => join.Match.status == "Finished" && join.Match.endedAt.HasValue)
-                        .OrderByDescending(join => join.Match.endedAt)
-                        .Take(5)
-                        .Select(join => new MatchScore
-                        {
-                            MatchID = join.Match.matchID.ToString(),
-                            EndedAt = join.Match.endedAt.Value,
-                            IsWin = join.MatchPlayer.isWinner,
-                            FinalScore = join.MatchPlayer.score
-                        })
-                        .ToList();
-
-                    return lastMatches;
-                }
+                return matchHistoryService.GetLastMatches(username);
             }
             catch (NotSupportedException ex)
             {
@@ -648,312 +535,23 @@ namespace TrucoServer.Services
             throw new NotImplementedException();
         }
 
-        private void ValidateBruteForceStatus(string username)
-        {
-            if (BruteForceProtector.IsBlocked(username))
-            {
-                var fault = new LoginFault
-                {
-                    ErrorCode = "TooManyAttempts",
-                    ErrorMessage = Lang.ExceptionTextTooManyAttempts
-                };
-
-                throw new FaultException<LoginFault>(fault, new FaultReason("TooManyAttempts"));
-            }
-        }
-
-        private User AuthenticateUser(string username, string password)
-        {
-            try
-            {
-                using (var context = new baseDatosTrucoEntities())
-                {
-                    var user = context.User.FirstOrDefault(u => u.email == username || u.username == username);
-
-                    if (user == null || !PasswordHasher.Verify(password, user.passwordHash))
-                    {
-                        BruteForceProtector.RegisterFailedAttempt(username);
-                        return null;
-                    }
-
-                    return user;
-                }
-            }
-            catch (SqlException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(Login)} - Database Error");
-                return null;
-            }
-        }
-
-        private void HandleExistingSession(string realUsername)
-        {
-            if (!onlineUsers.ContainsKey(realUsername))
-            {
-                return;
-            }
-
-            var oldCallback = onlineUsers[realUsername];
-            var oldChannel = oldCallback as ICommunicationObject;
-            bool isZombie = true;
-
-            if (oldChannel != null && oldChannel.State == CommunicationState.Opened)
-            {
-                oldCallback.Ping();
-                isZombie = false;
-            }
-
-            if (!isZombie)
-            {
-                var fault = new LoginFault
-                {
-                    ErrorCode = "UserAlreadyLoggedIn",
-                    ErrorMessage = Lang.ExceptionTextLogin
-                };
-
-                throw new FaultException<LoginFault>(fault, new FaultReason("UserAlreadyLoggedIn"));
-            }
-            else
-            {
-                ITrucoCallback trash;
-                onlineUsers.TryRemove(realUsername, out trash);
-            }
-        }
-
-        private bool TryRegisterAndNotify(User user, string inputUsername)
-        {
-            try
-            {
-                RegisterSession(user.username);
-                SendLoginEmailAsync(user);
-                BruteForceProtector.RegisterSuccess(inputUsername);
-
-                return true;
-            }
-            catch (FaultException)
-            {
-                throw;
-            }
-            catch (InvalidOperationException ex) when (ex.Source.Contains("System.ServiceModel"))
-            {
-                LogManager.LogError(ex, $"{nameof(Login)} - WCF Context Error");
-                return false;
-            }
-            catch (SqlException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(Login)} - SQL Server Error");
-                return false;
-            }
-            catch (SmtpException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(Login)} - Email Error");
-                return true;
-            }
-            catch (Exception ex)
-            {
-                LogManager.LogError(ex, nameof(Login));
-                return false;
-            }
-        }
-
-        private bool TryUpdateUsername(baseDatosTrucoEntities context, User user, string newUsername)
-        {
-            if (string.Equals(user.username, newUsername, StringComparison.Ordinal))
-            {
-                return true;
-            }
-
-            if (user.nameChangeCount >= MAX_NAME_CHANGES)
-            {
-                return false;
-            }
-
-            if (context.User.Any(u => u.username == newUsername && u.userID != user.userID))
-            {
-                return false;
-            }
-
-            user.username = newUsername;
-            user.nameChangeCount++;
-            return true;
-        }
-
-        private void UpdateProfileDetails(baseDatosTrucoEntities context, User user, UserProfileData profile)
-        {
-            EnsureUserProfileExists(context, user);
-
-            user.UserProfile.avatarID = profile.AvatarId ?? user.UserProfile.avatarID ?? DEFAULT_AVATAR_ID;
-
-            if (!string.IsNullOrWhiteSpace(profile.LanguageCode))
-            {
-                user.UserProfile.languageCode = profile.LanguageCode;
-                user.UserProfile.isMusicMuted = profile.IsMusicMuted;
-            }
-            else if (string.IsNullOrWhiteSpace(user.UserProfile.languageCode))
-            {
-                user.UserProfile.languageCode = DEFAULT_LANG_CODE;
-            }
-
-            var links = new SocialLinks
-            {
-                FacebookHandle = (profile.FacebookHandle ?? "").Trim(),
-                XHandle = (profile.XHandle ?? "").Trim(),
-                InstagramHandle = (profile.InstagramHandle ?? "").Trim()
-            };
-
-            string json = JsonConvert.SerializeObject(links);
-            user.UserProfile.socialLinksJson = Encoding.UTF8.GetBytes(json);
-        }
-
-        private void EnsureUserProfileExists(baseDatosTrucoEntities context, User user)
-        {
-            if (user.UserProfile == null)
-            {
-                user.UserProfile = new UserProfile
-                {
-                    userID = user.userID,
-                    languageCode = DEFAULT_LANG_CODE,
-                    isMusicMuted = false,
-                    avatarID = DEFAULT_AVATAR_ID,
-                    socialLinksJson = Encoding.UTF8.GetBytes("{}")
-                };
-                context.UserProfile.Add(user.UserProfile);
-            }
-        }
-
-        private void RegisterSession(string realUsername)
-        {
-            ITrucoCallback currentCallback = OperationContext.Current.GetCallbackChannel<ITrucoCallback>();
-            onlineUsers.AddOrUpdate(realUsername, currentCallback, (key, oldValue) => currentCallback);
-        }
-
-        private void SendLoginEmailAsync(User user)
-        {
-            Task.Run(() =>
-            {
-                try
-                {
-                    SendEmail(user.email, Lang.EmailLoginNotificationSubject,
-                        string.Format(Lang.EmailLoginNotificactionBody, user.username, DateTime.Now)
-                        .Replace("\\n", Environment.NewLine));
-                }
-                catch (SmtpException ex)
-                {
-                    LogManager.LogError(ex, "Login_EmailTask");
-                }
-            });
-        }
-
-        private void SendEmail(string toEmail, string emailSubject, string emailBody)
-        {
-            try
-            {
-                var settings = ConfigurationReader.EmailSettings;
-                var fromAddress = new MailAddress(settings.FromAddress, settings.FromDisplayName);
-                var toAddress = new MailAddress(toEmail);
-
-                using (var smtp = new SmtpClient
-                {
-                    Host = settings.SmtpHost,
-                    Port = settings.SmtpPort,
-                    EnableSsl = true,
-                    DeliveryMethod = SmtpDeliveryMethod.Network,
-                    UseDefaultCredentials = false,
-                    Credentials = new NetworkCredential(fromAddress.Address, settings.FromPassword)
-                })
-                using (var message = new MailMessage(fromAddress, toAddress)
-                {
-                    Subject = emailSubject,
-                    Body = emailBody
-                })
-                {
-                    smtp.Send(message);
-                }
-            }
-            catch (SmtpFailedRecipientException ex)
-            {
-                LogManager.LogError(ex, nameof(SendEmail));
-            }
-            catch (SmtpException ex)
-            {
-                LogManager.LogError(ex, nameof(SendEmail));
-            }
-            catch (FormatException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(SendEmail)} - Invalid Email Format");
-            }
-            catch (ConfigurationErrorsException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(SendEmail)} - Configuration Error");
-            }
-            catch (Exception ex)
-            {
-                LogManager.LogError(ex, nameof(SendEmail));
-            }
-        }
-
-        private static string GenerateSecureNumericCode()
-        {
-            try
-            {
-                using (var rng = new RNGCryptoServiceProvider())
-                {
-                    byte[] buffer = new byte[4];
-
-                    rng.GetBytes(buffer);
-                    uint value = BitConverter.ToUInt32(buffer, 0);
-
-                    string secureCode = (value % 900000 + 100000).ToString();
-
-                    return secureCode;
-                }
-            }
-            catch (CryptographicException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(GenerateSecureNumericCode)} - Cryptographic Provider Error");
-                return "000000";
-            }
-            catch (Exception ex)
-            {
-                LogManager.LogError(ex, nameof(GenerateSecureNumericCode));
-                return "000000";
-            }
-        }
-
         public static ITrucoCallback GetUserCallback(string username)
         {
             try
             {
-                if (onlineUsers.TryGetValue(username, out ITrucoCallback callback))
-                {
-                    var communicationObject = (ICommunicationObject)callback;
-                    if (communicationObject.State == CommunicationState.Opened)
-                    {
-                        return callback;
-                    }
-
-                    try
-                    {
-                        communicationObject.Abort();
-                    }
-                    catch
-                    {
-                        /* noop */
-                    }
-                    onlineUsers.TryRemove(username, out _);
-                }
+                return sessionManagerStatic.GetUserCallback(username);
             }
             catch (CommunicationException ex)
             {
-                Console.WriteLine($"[ERROR] Communication interrupted for {username}: {ex.Message}.");
+                LogManager.LogError(ex, $"{nameof(GetUserCallback)} - Communication interrupted for {username}");
             }
             catch (InvalidCastException ex)
             {
-                Console.WriteLine($"[ERROR] Callback object conversion failed for {username}: {ex.Message}.");
+                LogManager.LogError(ex, $"{nameof(GetUserCallback)} - Callback object conversion failed for {username}");
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[ERROR] Error getting callback from {username}: {ex.Message}.");
+                LogManager.LogError(ex, $"{nameof(GetUserCallback)} - Error getting callback from {username}");
             }
 
             return null;

@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Security.Cryptography;
-using TrucoServer.Contracts;
 using TrucoServer.Utilities;
 
 namespace TrucoServer.GameLogic

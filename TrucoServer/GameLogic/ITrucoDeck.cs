@@ -1,7 +1,6 @@
 ﻿using System.Collections.Generic;
-using TrucoServer.GameLogic;
 
-namespace TrucoServer.Contracts
+namespace TrucoServer.GameLogic
 {
     public interface ITrucoDeck
     {

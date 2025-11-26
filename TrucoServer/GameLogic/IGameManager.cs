@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using TrucoServer.Data.DTOs;
 
-namespace TrucoServer.Contracts
+namespace TrucoServer.GameLogic
 {
     public interface IGameManager
     {

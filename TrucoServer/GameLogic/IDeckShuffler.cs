@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace TrucoServer.Contracts
+namespace TrucoServer.GameLogic
 {
     public interface IDeckShuffler
     {
