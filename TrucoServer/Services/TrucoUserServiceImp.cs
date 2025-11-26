@@ -26,6 +26,7 @@ namespace TrucoServer.Services
     {
         private const int MAX_NAME_CHANGES = 2;
         private const string DEFAULT_AVATAR_ID = "avatar_aaa_default";
+        private const string DEFAULT_LANG_CODE = "es-MX";
 
         private static readonly ConcurrentDictionary<string, string> verificationCodes = new ConcurrentDictionary<string, string>();
         private static readonly ConcurrentDictionary<string, ITrucoCallback> onlineUsers = new ConcurrentDictionary<string, ITrucoCallback>();
@@ -328,43 +329,12 @@ namespace TrucoServer.Services
                         return false;
                     }
 
-                    if (user.username != profile.Username)
+                    if (!TryUpdateUsername(context, user, profile.Username))
                     {
-                        if (user.nameChangeCount >= MAX_NAME_CHANGES)
-                        {
-                            return false;
-                        }
-
-                        if (context.User.Any(u => u.username == profile.Username && u.userID != user.userID))
-                        {
-                            return false;
-                        }
-
-
-                        user.username = profile.Username;
-                        user.nameChangeCount++;
+                        return false;
                     }
 
-                    if (user.UserProfile == null)
-                    {
-                        user.UserProfile = new UserProfile { userID = user.userID };
-                        context.UserProfile.Add(user.UserProfile);
-                    }
-
-                    user.UserProfile.avatarID = profile.AvatarId ?? DEFAULT_AVATAR_ID;
-                    user.UserProfile.languageCode = profile.LanguageCode;
-                    user.UserProfile.isMusicMuted = profile.IsMusicMuted;
-
-                    var links = new SocialLinks
-                    {
-                        FacebookHandle = profile.FacebookHandle?.Trim() ?? "",
-                        XHandle = profile.XHandle?.Trim() ?? "",
-                        InstagramHandle = profile.InstagramHandle?.Trim() ?? ""
-                    };
-
-                    string json = JsonConvert.SerializeObject(links);
-                    user.UserProfile.socialLinksJson = Encoding.UTF8.GetBytes(json);
-
+                    UpdateProfileDetails(context, user, profile);
                     context.SaveChanges();
                     return true;
                 }
@@ -783,6 +753,71 @@ namespace TrucoServer.Services
             {
                 LogManager.LogError(ex, nameof(Login));
                 return false;
+            }
+        }
+
+        private bool TryUpdateUsername(baseDatosTrucoEntities context, User user, string newUsername)
+        {
+            if (string.Equals(user.username, newUsername, StringComparison.Ordinal))
+            {
+                return true;
+            }
+
+            if (user.nameChangeCount >= MAX_NAME_CHANGES)
+            {
+                return false;
+            }
+
+            if (context.User.Any(u => u.username == newUsername && u.userID != user.userID))
+            {
+                return false;
+            }
+
+            user.username = newUsername;
+            user.nameChangeCount++;
+            return true;
+        }
+
+        private void UpdateProfileDetails(baseDatosTrucoEntities context, User user, UserProfileData profile)
+        {
+            EnsureUserProfileExists(context, user);
+
+            user.UserProfile.avatarID = profile.AvatarId ?? user.UserProfile.avatarID ?? DEFAULT_AVATAR_ID;
+
+            if (!string.IsNullOrWhiteSpace(profile.LanguageCode))
+            {
+                user.UserProfile.languageCode = profile.LanguageCode;
+                user.UserProfile.isMusicMuted = profile.IsMusicMuted;
+            }
+            else if (string.IsNullOrWhiteSpace(user.UserProfile.languageCode))
+            {
+                user.UserProfile.languageCode = DEFAULT_LANG_CODE;
+            }
+
+            var links = new SocialLinks
+            {
+                FacebookHandle = (profile.FacebookHandle ?? "").Trim(),
+                XHandle = (profile.XHandle ?? "").Trim(),
+                InstagramHandle = (profile.InstagramHandle ?? "").Trim()
+            };
+
+            string json = JsonConvert.SerializeObject(links);
+            user.UserProfile.socialLinksJson = Encoding.UTF8.GetBytes(json);
+        }
+
+        private void EnsureUserProfileExists(baseDatosTrucoEntities context, User user)
+        {
+            if (user.UserProfile == null)
+            {
+                user.UserProfile = new UserProfile
+                {
+                    userID = user.userID,
+                    languageCode = DEFAULT_LANG_CODE,
+                    isMusicMuted = false,
+                    avatarID = DEFAULT_AVATAR_ID,
+                    socialLinksJson = Encoding.UTF8.GetBytes("{}")
+                };
+                context.UserProfile.Add(user.UserProfile);
             }
         }
 
