@@ -75,6 +75,7 @@
   <ItemGroup>
     <Compile Include="Contracts\IDeckShuffler.cs" />
     <Compile Include="Contracts\ITrucoDeck.cs" />
+    <Compile Include="Data\DTOs\AttemptInfo.cs" />
     <Compile Include="Data\DTOs\EmblemLayer.cs" />
     <Compile Include="Data\DTOs\LoginFault.cs" />
     <Compile Include="GameLogic\ActiveMatch.cs" />
@@ -100,6 +101,10 @@
       <DependentUpon>baseDatosTruco.edmx</DependentUpon>
     </Compile>
     <Compile Include="GameLogic\DefaultDeckShuffler.cs" />
+    <Compile Include="Services\TrucoFriendServiceImp.cs" />
+    <Compile Include="Services\TrucoMatchServiceImp.cs" />
+    <Compile Include="Services\TrucoUserServiceImp.cs" />
+    <Compile Include="Utilities\BruteForceProtector.cs" />
     <Compile Include="Utilities\ConfigurationFileWrapper.cs" />
     <Compile Include="Utilities\ConfigurationReader.cs" />
     <Compile Include="GameLogic\Deck.cs" />
@@ -157,6 +162,7 @@
     </Compile>
     <Compile Include="Data\DTOs\UserProfileData.cs" />
     <Compile Include="Data\DTOs\ValidatedLobbyData.cs" />
+    <Compile Include="Utilities\ServerValidator.cs" />
     <Compile Include="Versions.cs">
       <DependentUpon>baseDatosTruco.tt</DependentUpon>
     </Compile>

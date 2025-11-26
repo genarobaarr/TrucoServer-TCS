@@ -122,5 +122,14 @@ namespace TrucoServer.Langs {
                 return ResourceManager.GetString("ExceptionTextLogin", resourceCulture);
             }
         }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a Too many login attempts have been detected. If you&apos;ve forgotten your password, use the &apos;Forgot your password?&apos; link below. Otherwise, please wait a moment and try again..
+        /// </summary>
+        public static string ExceptionTextTooManyAttempts {
+            get {
+                return ResourceManager.GetString("ExceptionTextTooManyAttempts", resourceCulture);
+            }
+        }
     }
 }
