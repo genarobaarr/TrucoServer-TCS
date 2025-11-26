@@ -860,11 +860,9 @@ namespace TrucoServer.Services
                     byte[] buffer = new byte[4];
 
                     rng.GetBytes(buffer);
-                    int secureInt = BitConverter.ToInt32(buffer, 0);
+                    uint value = BitConverter.ToUInt32(buffer, 0);
 
-                    secureInt = Math.Abs(secureInt);
-
-                    string secureCode = (secureInt % 900000 + 100000).ToString();
+                    string secureCode = (value % 900000 + 100000).ToString();
 
                     return secureCode;
                 }
