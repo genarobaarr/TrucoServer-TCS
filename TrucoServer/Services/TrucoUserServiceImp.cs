@@ -1,17 +1,13 @@
 ﻿using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
-using System.Configuration;
 using System.Data.Entity;
 using System.Data.Entity.Infrastructure;
 using System.Data.Entity.Validation;
 using System.Data.SqlClient;
 using System.Linq;
-using System.Net;
 using System.Net.Mail;
-using System.Security.Cryptography;
 using System.ServiceModel;
-using System.Text;
 using System.Threading.Tasks;
 using TrucoServer.Contracts;
 using TrucoServer.Data.DTOs;
@@ -57,12 +53,7 @@ namespace TrucoServer.Services
             this.passwordManager = new PasswordManager(emailSender);
             this.userMapper = new UserMapper();
             this.rankingService = new RankingService();
-            this.match_history_instantiation_guard();
             this.matchHistoryService = new MatchHistoryService();
-        }
-        private void match_history_instantiation_guard()
-        {
-            // intentionally empty - preserves style/formatting
         }
 
         public bool Login(string username, string password, string languageCode)
