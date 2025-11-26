@@ -230,7 +230,9 @@ namespace TrucoServer.Services
                         NameChangeCount = user.nameChangeCount,
                         FacebookHandle = links.FacebookHandle ?? "",
                         XHandle = links.XHandle ?? "",
-                        InstagramHandle = links.InstagramHandle ?? ""
+                        InstagramHandle = links.InstagramHandle ?? "",
+                        LanguageCode = user.UserProfile?.languageCode ?? "en-US",
+                        IsMusicMuted = user.UserProfile?.isMusicMuted ?? false
                     };
                 }
             }
@@ -285,7 +287,9 @@ namespace TrucoServer.Services
                         NameChangeCount = user.nameChangeCount,
                         FacebookHandle = links?.FacebookHandle ?? "",
                         XHandle = links?.XHandle ?? "",
-                        InstagramHandle = links?.InstagramHandle ?? ""
+                        InstagramHandle = links?.InstagramHandle ?? "",
+                        LanguageCode = user.UserProfile?.languageCode ?? "en-US",
+                        IsMusicMuted = user.UserProfile?.isMusicMuted ?? false
                     };
                 }
             }
@@ -348,6 +352,8 @@ namespace TrucoServer.Services
                     }
 
                     user.UserProfile.avatarID = profile.AvatarId ?? DEFAULT_AVATAR_ID;
+                    user.UserProfile.languageCode = profile.LanguageCode;
+                    user.UserProfile.isMusicMuted = profile.IsMusicMuted;
 
                     var links = new SocialLinks
                     {
