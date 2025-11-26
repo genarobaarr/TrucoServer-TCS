@@ -17,6 +17,8 @@ namespace TrucoServer
         public int userID { get; set; }
         public byte[] socialLinksJson { get; set; }
         public string avatarID { get; set; }
+        public string languageCode { get; set; }
+        public bool isMusicMuted { get; set; }
     
         public virtual User User { get; set; }
     }

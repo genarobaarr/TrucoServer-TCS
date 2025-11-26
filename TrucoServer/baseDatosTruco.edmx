@@ -103,6 +103,8 @@
           <Property Name="userID" Type="int" Nullable="false" />
           <Property Name="socialLinksJson" Type="varbinary(max)" Nullable="false" />
           <Property Name="avatarID" Type="varchar" MaxLength="50" Nullable="false" />
+          <Property Name="languageCode" Type="varchar" MaxLength="10" Nullable="false" />
+          <Property Name="isMusicMuted" Type="bit" Nullable="false" />
         </EntityType>
         <EntityType Name="Versions">
           <Key>
@@ -472,6 +474,8 @@
           <Property Name="socialLinksJson" Type="Binary" MaxLength="Max" FixedLength="false" Nullable="false" />
           <Property Name="avatarID" Type="String" MaxLength="50" FixedLength="false" Unicode="false" Nullable="false" />
           <NavigationProperty Name="User" Relationship="Self.FK_UserProfile_User" FromRole="UserProfile" ToRole="User" />
+          <Property Name="languageCode" Type="String" Nullable="false" MaxLength="10" FixedLength="false" Unicode="false" />
+          <Property Name="isMusicMuted" Type="Boolean" Nullable="false" />
         </EntityType>
         <EntityType Name="Versions">
           <Key>
@@ -824,6 +828,8 @@
           <EntitySetMapping Name="UserProfile">
             <EntityTypeMapping TypeName="baseDatosTrucoModel.UserProfile">
               <MappingFragment StoreEntitySet="UserProfile">
+                <ScalarProperty Name="isMusicMuted" ColumnName="isMusicMuted" />
+                <ScalarProperty Name="languageCode" ColumnName="languageCode" />
                 <ScalarProperty Name="userID" ColumnName="userID" />
                 <ScalarProperty Name="socialLinksJson" ColumnName="socialLinksJson" />
                 <ScalarProperty Name="avatarID" ColumnName="avatarID" />

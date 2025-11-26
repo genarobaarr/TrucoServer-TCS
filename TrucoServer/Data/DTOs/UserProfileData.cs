@@ -24,5 +24,9 @@ namespace TrucoServer.Data.DTOs
         public List<EmblemLayer> EmblemLayers { get; set; }
         [DataMember]
         public byte[] SocialLinksJson { get; set; }
+        [DataMember]
+        public string LanguageCode { get; set; }
+        [DataMember]
+        public bool IsMusicMuted { get; set; }
     }
 }
