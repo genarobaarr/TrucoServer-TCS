@@ -7,6 +7,7 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{58B1747C-6BA5-4518-9536-F30FF3031219}</ProjectGuid>
     <OutputType>Library</OutputType>
+    <SonarQubeTestProject>false</SonarQubeTestProject>
     <RootNamespace>TrucoServer</RootNamespace>
     <AssemblyName>TrucoServer</AssemblyName>
     <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
