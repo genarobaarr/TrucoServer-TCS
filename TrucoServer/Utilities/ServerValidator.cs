@@ -6,9 +6,9 @@ namespace TrucoServer.Utilities
 {
     public static class ServerValidator
     {
-        private const int MIN_PASSWORD_LENGTH = 8;
+        private const int MIN_PASSWORD_LENGTH = 12;
         private const int MAX_PASSWORD_LENGTH = 64;
-        private const int MAX_USERNAME_LENGTH = 50;
+        private const int MAX_USERNAME_LENGTH = 20;
 
         private static readonly TimeSpan regexTimeout = TimeSpan.FromMilliseconds(150);
 
