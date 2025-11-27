@@ -15,7 +15,7 @@ namespace TrucoServer.Utilities
         private const string USERNAME_PATTERN = @"^[a-zA-Z0-9_.@-]+$";
         private const string EMAIL_PATTERN = @"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$";
         private const string PASSWORD_PATTERN = @"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&.#_+=-])[A-Za-z\d@$!%*?&.#_+=-]{8,64}$";
-        private const string MATCH_CODE_PATTERN = @"^\d{6}$";
+        private const string MATCH_CODE_PATTERN = @"^[A-Z0-9]{6}$";
 
         public static bool IsUsernameValid(string username)
         {

@@ -1,14 +1,11 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Data.Entity.Core;
 using System.Data.Entity.Infrastructure;
-using System.Data.Entity.Validation;
 using System.Data.SqlClient;
 using System.Linq;
 using System.Security.Cryptography;
 using System.ServiceModel;
-using System.Threading;
 using System.Threading.Tasks;
 using TrucoServer.Contracts;
 using TrucoServer.Data.DTOs;
@@ -20,11 +17,11 @@ namespace TrucoServer.Services
     public class TrucoMatchServiceImp : ITrucoMatchService
     {
         private const string DEFAULT_AVATAR_ID = "avatar_aaa_default";
-        private const string EXPIRED_STATUS = "Expired";
-        private const string PENDING_STATUS = "Pending";
-        private const string PUBLIC_STATUS = "Public";
-        private const string PRIVATE_STATUS = "Private";
-        private const string CLOSED_STATUS = "Closed";
+        private const string STATUS_EXPIRED = "Expired";
+        private const string STATUS_PENDING = "Pending";
+        private const string STATUS_PUBLIC = "Public";
+        private const string STATUS_PRIVATE = "Private";
+        private const string STATUS_CLOSED = "Closed";
         private const string TEAM_1 = "Team 1";
         private const string TEAM_2 = "Team 2";
         private const string GUEST_PREFIX = "Guest_";
@@ -43,25 +40,36 @@ namespace TrucoServer.Services
 
         public string CreateLobby(string hostUsername, int maxPlayers, string privacy)
         {
+            if (!ServerValidator.IsUsernameValid(hostUsername))
+            {
+                return string.Empty;
+            }
+
             try
             {
                 using (var context = new baseDatosTrucoEntities())
                 {
-                    var host = context.User.FirstOrDefault(u => u.username == hostUsername)
-                        ?? throw new InvalidOperationException("Host user not found.");
+                    var host = context.User.FirstOrDefault(u => u.username == hostUsername);
+
+                    if (host == null)
+                    {
+                        throw new InvalidOperationException("Host user not found.");
+                    }
 
                     int versionId = ResolveVersionId(context, maxPlayers);
                     string matchCode = GenerateMatchCode();
-
-                    string normalizedStatus =
-                        privacy.Equals("public", StringComparison.OrdinalIgnoreCase)
-                        ? PUBLIC_STATUS : PRIVATE_STATUS;
+                    string normalizedStatus = privacy.Equals("public", StringComparison.OrdinalIgnoreCase) ? STATUS_PUBLIC : STATUS_PRIVATE;
 
                     var lobby = CreateNewLobby(context, host, versionId, maxPlayers, normalizedStatus);
 
+                    if (lobby == null)
+                    {
+                        return string.Empty;
+                    }
+
                     AddLobbyOwner(context, lobby, host);
 
-                    if (lobby.status.Equals(PRIVATE_STATUS, StringComparison.OrdinalIgnoreCase))
+                    if (lobby.status.Equals(STATUS_PRIVATE, StringComparison.OrdinalIgnoreCase))
                     {
                         CreatePrivateInvitation(context, host, matchCode);
                     }
@@ -74,11 +82,6 @@ namespace TrucoServer.Services
                     return matchCode;
                 }
             }
-            catch (InvalidOperationException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(CreateLobby)} - Business Logic Error (Host not found)");
-                return string.Empty;
-            }
             catch (DbUpdateException ex)
             {
                 LogManager.LogError(ex, $"{nameof(CreateLobby)} - DataBase Saving Error");
@@ -87,6 +90,11 @@ namespace TrucoServer.Services
             catch (SqlException ex)
             {
                 LogManager.LogError(ex, $"{nameof(CreateLobby)} - SQL Server Error");
+                return string.Empty;
+            }
+            catch (InvalidOperationException ex)
+            {
+                LogManager.LogError(ex, $"{nameof(CreateLobby)} - Logic Error");
                 return string.Empty;
             }
             catch (Exception ex)
@@ -98,6 +106,11 @@ namespace TrucoServer.Services
 
         public bool JoinMatch(string matchCode, string player)
         {
+            if (!ServerValidator.IsMatchCodeValid(matchCode) || !ServerValidator.IsUsernameValid(player))
+            {
+                return false;
+            }
+
             bool joinSuccess = false;
             Lobby lobby = null;
 
@@ -107,7 +120,7 @@ namespace TrucoServer.Services
                 {
                     lobby = ResolveLobbyForJoin(context, matchCode);
 
-                    if (lobby == null || lobby.status.Equals(CLOSED_STATUS, StringComparison.OrdinalIgnoreCase))
+                    if (lobby == null || lobby.status.Equals(STATUS_CLOSED, StringComparison.OrdinalIgnoreCase))
                     {
                         Console.WriteLine($"[JOIN] Denied: Lobby closed or not found for code {matchCode}.");
                         return false;
@@ -123,7 +136,7 @@ namespace TrucoServer.Services
 
                 if (joinSuccess)
                 {
-                    Console.WriteLine($"[SERVER] {player} was processed for lobby {matchCode}.");
+                    Console.WriteLine($"[SERVER] {player} joined lobby {matchCode}.");
                 }
             }
             catch (DbUpdateException ex)
@@ -148,6 +161,11 @@ namespace TrucoServer.Services
 
         public void LeaveMatch(string matchCode, string player)
         {
+            if (!ServerValidator.IsMatchCodeValid(matchCode) || !ServerValidator.IsUsernameValid(player))
+            {
+                return;
+            }
+
             try
             {
                 using (var context = new baseDatosTrucoEntities())
@@ -178,19 +196,101 @@ namespace TrucoServer.Services
             }
         }
 
-        public void StartMatch(string matchCode)
+        public List<PublicLobbyInfo> GetPublicLobbies()
         {
             try
             {
-                ValidatedLobbyData validatedData;
+                using (var context = new baseDatosTrucoEntities())
+                {
+                    var publicLobbies = context.Lobby
+                        .Where(l => l.status == STATUS_PUBLIC)
+                        .Select(l => new { l.lobbyID, l.maxPlayers, l.createdAt, l.ownerID })
+                        .ToList();
 
+                    var result = new List<PublicLobbyInfo>();
+
+                    foreach (var lobby in publicLobbies)
+                    {
+                        int currentPlayers = context.LobbyMember.Count(lm => lm.lobbyID == lobby.lobbyID);
+                        var owner = context.User.FirstOrDefault(u => u.userID == lobby.ownerID);
+                        string matchCode = matchCodeToLobbyId.FirstOrDefault(kvp => kvp.Value == lobby.lobbyID).Key ?? "(unknown)";
+
+                        result.Add(new PublicLobbyInfo
+                        {
+                            MatchCode = matchCode,
+                            MatchName = $"{owner?.username ?? "Host"} - {lobby.maxPlayers}P",
+                            CurrentPlayers = currentPlayers,
+                            MaxPlayers = lobby.maxPlayers
+                        });
+                    }
+                    return result;
+                }
+            }
+            catch (SqlException ex)
+            {
+                LogManager.LogError(ex, $"{nameof(GetPublicLobbies)} - SQL Server Error");
+                return new List<PublicLobbyInfo>();
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError(ex, nameof(GetPublicLobbies));
+                return new List<PublicLobbyInfo>();
+            }
+        }
+
+        public List<PlayerInfo> GetLobbyPlayers(string matchCode)
+        {
+            if (!ServerValidator.IsMatchCodeValid(matchCode))
+            {
+                return new List<PlayerInfo>();
+            }
+
+            try
+            {
+                using (var context = new baseDatosTrucoEntities())
+                {
+                    Lobby lobby = FindLobbyByMatchCode(context, matchCode, false);
+
+                    if (lobby == null)
+                    {
+                        return GetGuestPlayersFromMemory(matchCode);
+                    }
+
+                    string ownerUsername = GetLobbyOwnerName(context, lobby.ownerID);
+                    var dbPlayers = GetDatabasePlayers(context, lobby, ownerUsername);
+                    var guestPlayers = GetGuestPlayersFromMemory(matchCode, ownerUsername);
+
+                    MergePlayersLists(dbPlayers, guestPlayers);
+                    return dbPlayers;
+                }
+            }
+            catch (SqlException ex)
+            {
+                LogManager.LogError(ex, $"{nameof(GetLobbyPlayers)} - SQL Server Error");
+                return new List<PlayerInfo>();
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError(ex, nameof(GetLobbyPlayers));
+                return new List<PlayerInfo>();
+            }
+        }
+
+        public void StartMatch(string matchCode)
+        {
+            if (!ServerValidator.IsMatchCodeValid(matchCode))
+            {
+                return;
+            }
+
+            try
+            {
+                ValidatedLobbyData validatedData;
                 using (var context = new baseDatosTrucoEntities())
                 {
                     validatedData = GetAndValidateLobbyForStart(context, matchCode);
-
                     if (validatedData == null)
                     {
-                        LogManager.LogWarn($"StartMatch validation failed for {matchCode}", nameof(StartMatch));
                         return;
                     }
                 }
@@ -202,20 +302,12 @@ namespace TrucoServer.Services
                     return;
                 }
 
-                var newDeck = new Deck(shuffler);
-                var newGame = new TrucoMatch(matchCode, validatedData.Lobby.lobbyID, gamePlayers, gameCallbacks, newDeck, gameManager);
-
-                if (!runningGames.TryAdd(matchCode, newGame))
-                {
-                    LogManager.LogError(new Exception($"Failed to add running game {matchCode}"), nameof(StartMatch));
-                    return;
-                }
+                InitializeAndRegisterGame(matchCode, validatedData.Lobby.lobbyID, gamePlayers, gameCallbacks);
 
                 NotifyMatchStart(matchCode, playersList);
                 HandleMatchStartupCleanup(matchCode);
 
-                Task.Delay(500).Wait();
-                newGame.StartNewHand();
+                Task.Delay(500).ContinueWith(_ => runningGames[matchCode].StartNewHand());
             }
             catch (CommunicationException ex)
             {
@@ -227,86 +319,19 @@ namespace TrucoServer.Services
             }
         }
 
-        public List<PublicLobbyInfo> GetPublicLobbies()
-        {
-            try
-            {
-                using (var context = new baseDatosTrucoEntities())
-                {
-                    var publicLobbies = context.Lobby
-                        .Where(l => l.status == PUBLIC_STATUS)
-                        .Select(l => new
-                        {
-                            l.lobbyID,
-                            l.maxPlayers,
-                            l.createdAt,
-                            l.ownerID
-                        })
-                        .ToList();
-
-                    var result = new List<PublicLobbyInfo>();
-
-                    foreach (var lobby in publicLobbies)
-                    {
-                        int currentPlayers = context.LobbyMember.Count(lm => lm.lobbyID == lobby.lobbyID);
-                        var owner = context.User.FirstOrDefault(u => u.userID == lobby.ownerID);
-
-                        string matchCode = matchCodeToLobbyId.FirstOrDefault(kvp => kvp.Value == lobby.lobbyID).Key ?? "(unknown)";
-
-                        result.Add(new PublicLobbyInfo
-                        {
-                            MatchCode = matchCode,
-                            MatchName = $"{owner?.username ?? "Host"} - {lobby.maxPlayers}P",
-                            CurrentPlayers = currentPlayers,
-                            MaxPlayers = lobby.maxPlayers
-                        });
-                    }
-
-                    return result;
-                }
-            }
-            catch (SqlException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(GetPublicLobbies)} - SQL Server Error");
-                return new List<PublicLobbyInfo>();
-            }
-            catch (InvalidOperationException ex)
-            {
-                LogManager.LogError(ex, nameof(GetPublicLobbies));
-                return new List<PublicLobbyInfo>();
-            }
-            catch (Exception ex)
-            {
-                LogManager.LogError(ex, nameof(GetPublicLobbies));
-                return new List<PublicLobbyInfo>();
-            }
-        }
-
         public void JoinMatchChat(string matchCode, string player)
         {
+            if (!ServerValidator.IsMatchCodeValid(matchCode) || !ServerValidator.IsUsernameValid(player))
+            {
+                return;
+            }
+
             try
             {
                 var callback = OperationContext.Current.GetCallbackChannel<ITrucoCallback>();
                 RemoveInactiveCallbacks(matchCode);
 
-                bool isNewCallback = false;
-
-                lock (matchCallbacks)
-                {
-                    if (!matchCallbacks.ContainsKey(matchCode))
-                    {
-                        matchCallbacks[matchCode] = new List<ITrucoCallback>();
-                    }
-
-                    if (!matchCallbacks[matchCode].Any(cb => ReferenceEquals(cb, callback)))
-                    {
-                        PlayerInfo playerInfo = CreatePlayerInfoForChat(matchCode, player);
-
-                        matchCallbacks[matchCode].Add(callback);
-                        matchCallbackToPlayer[callback] = playerInfo;
-                        isNewCallback = true;
-                    }
-                }
+                bool isNewCallback = RegisterChatCallback(matchCode, player, callback);
 
                 Console.WriteLine($"[CHAT] {player} joined the lobby {matchCode}.");
 
@@ -317,11 +342,7 @@ namespace TrucoServer.Services
             }
             catch (InvalidOperationException ex)
             {
-                LogManager.LogError(ex, $"{nameof(JoinMatchChat)} - There is no WCF Operational Context");
-            }
-            catch (OutOfMemoryException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(JoinMatchChat)} - Insuficient Memory");
+                LogManager.LogError(ex, $"{nameof(JoinMatchChat)} - No WCF Context");
             }
             catch (Exception ex)
             {
@@ -331,6 +352,11 @@ namespace TrucoServer.Services
 
         public void LeaveMatchChat(string matchCode, string player)
         {
+            if (!ServerValidator.IsMatchCodeValid(matchCode) || !ServerValidator.IsUsernameValid(player))
+            {
+                return;
+            }
+
             try
             {
                 var callback = OperationContext.Current.GetCallbackChannel<ITrucoCallback>();
@@ -345,37 +371,11 @@ namespace TrucoServer.Services
 
                 if (matchCallbacks.ContainsKey(matchCode))
                 {
-                    BroadcastToMatchCallbacksAsync(matchCode, cb =>
-                    {
-                        try
-                        {
-                            cb.OnPlayerLeft(matchCode, player);
-                        }
-                        catch (CommunicationException ex)
-                        {
-                            LogManager.LogError(ex, $"{nameof(LeaveMatchChat)} - Callback Communication Error");
-                        }
-                        catch (TimeoutException ex)
-                        {
-                            LogManager.LogError(ex, $"{nameof(LeaveMatchChat)} - Timeout When Notifying Exit");
-                        }
-                        catch (Exception ex)
-                        {
-                            LogManager.LogError(ex, nameof(LeaveMatchChat));
-                        }
-                    });
+                    NotifyPlayerLeftChat(matchCode, player);
                 }
-                Console.WriteLine($"[CHAT] {player} left the lobby {matchCode}.");
 
-                if (runningGames.TryGetValue(matchCode, out TrucoMatch match))
-                {
-                    match.AbortMatch(player);
-                    runningGames.TryRemove(matchCode, out _);
-                }
-            }
-            catch (InvalidOperationException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(LeaveMatchChat)} - There is no WCF Operational Context");
+                Console.WriteLine($"[CHAT] {player} left the lobby {matchCode}.");
+                TerminateRunningGameIfExist(matchCode, player);
             }
             catch (Exception ex)
             {
@@ -385,6 +385,11 @@ namespace TrucoServer.Services
 
         public void SendChatMessage(string matchCode, string player, string message)
         {
+            if (!ServerValidator.IsMatchCodeValid(matchCode) || string.IsNullOrWhiteSpace(message))
+            {
+                return;
+            }
+
             try
             {
                 RemoveInactiveCallbacks(matchCode);
@@ -405,25 +410,12 @@ namespace TrucoServer.Services
                             cb.OnChatMessage(matchCode, player, message);
                         }
                     }
-                    catch (CommunicationException ex)
-                    {
-                        LogManager.LogError(ex, $"{nameof(SendChatMessage)} - Disconnected Client");
-                    }
-                    catch (TimeoutException ex)
-                    {
-                        LogManager.LogError(ex, $"{nameof(SendChatMessage)} - Timeout When Sending Message");
-                    }
-                    catch (Exception ex)
-                    {
-                        LogManager.LogError(ex, $"{nameof(SendChatMessage)} - Callback Error");
-                    }
+                    catch (CommunicationException ex) { LogManager.LogError(ex, $"{nameof(SendChatMessage)} - Client disconnected"); }
+                    catch (TimeoutException ex) { LogManager.LogError(ex, $"{nameof(SendChatMessage)} - Timeout"); }
+                    catch (Exception ex) { LogManager.LogError(ex, $"{nameof(SendChatMessage)} - Error"); }
                 });
 
                 Console.WriteLine($"[{matchCode}] {player}: {message}");
-            }
-            catch (InvalidOperationException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(SendChatMessage)} - Invalid OperationContext");
             }
             catch (Exception ex)
             {
@@ -433,158 +425,51 @@ namespace TrucoServer.Services
 
         public void PlayCard(string matchCode, string cardFileName)
         {
-            try
-            {
-                if (GetMatchAndPlayerID(matchCode, out TrucoMatch match, out int playerID))
-                {
-                    match.PlayCard(playerID, cardFileName);
-                }
-            }
-            catch (InvalidOperationException ex)
-            {
-                LogManager.LogError(ex, nameof(PlayCard));
-            }
-            catch (Exception ex)
-            {
-                LogManager.LogError(ex, nameof(PlayCard));
-            }
+            ExecuteGameAction(matchCode, (m, pid) => m.PlayCard(pid, cardFileName), nameof(PlayCard));
         }
 
         public void CallTruco(string matchCode, string betType)
         {
-            try
-            {
-                if (GetMatchAndPlayerID(matchCode, out TrucoMatch match, out int playerID))
-                {
-                    match.CallTruco(playerID, betType);
-                }
-            }
-            catch (InvalidOperationException ex)
-            {
-                LogManager.LogError(ex, nameof(CallTruco));
-            }
-            catch (Exception ex)
-            {
-                LogManager.LogError(ex, nameof(CallTruco));
-            }
+            ExecuteGameAction(matchCode, (m, pid) => m.CallTruco(pid, betType), nameof(CallTruco));
         }
 
         public void RespondToCall(string matchCode, string response)
         {
-            try
-            {
-                if (GetMatchAndPlayerID(matchCode, out TrucoMatch match, out int playerID))
-                {
-                    match.RespondToCall(playerID, response);
-                }
-            }
-            catch (InvalidOperationException ex)
-            {
-                LogManager.LogError(ex, nameof(RespondToCall));
-            }
-            catch (Exception ex)
-            {
-                LogManager.LogError(ex, nameof(RespondToCall));
-            }
+            ExecuteGameAction(matchCode, (m, pid) => m.RespondToCall(pid, response), nameof(RespondToCall));
         }
 
         public void CallEnvido(string matchCode, string betType)
         {
-            try
-            {
-                if (GetMatchAndPlayerID(matchCode, out TrucoMatch match, out int playerID))
-                {
-                    match.CallEnvido(playerID, betType);
-                }
-            }
-            catch (InvalidOperationException ex)
-            {
-                LogManager.LogError(ex, nameof(CallEnvido));
-            }
-            catch (Exception ex)
-            {
-                LogManager.LogError(ex, nameof(CallEnvido));
-            }
+            ExecuteGameAction(matchCode, (m, pid) => m.CallEnvido(pid, betType), nameof(CallEnvido));
         }
 
         public void RespondToEnvido(string matchCode, string response)
         {
-            try
-            {
-                if (GetMatchAndPlayerID(matchCode, out TrucoMatch match, out int playerID))
-                {
-                    match.RespondToEnvido(playerID, response);
-                }
-            }
-            catch (InvalidOperationException ex)
-            {
-                LogManager.LogError(ex, nameof(RespondToEnvido));
-            }
-            catch (Exception ex)
-            {
-                LogManager.LogError(ex, nameof(RespondToEnvido));
-            }
+            ExecuteGameAction(matchCode, (m, pid) => m.RespondToEnvido(pid, response), nameof(RespondToEnvido));
         }
 
         public void CallFlor(string matchCode, string betType)
         {
-            try
-            {
-                if (GetMatchAndPlayerID(matchCode, out TrucoMatch match, out int playerID))
-                {
-                    match.CallFlor(playerID, betType);
-                }
-            }
-            catch (InvalidOperationException ex)
-            {
-                LogManager.LogError(ex, nameof(CallFlor));
-            }
-            catch (Exception ex)
-            {
-                LogManager.LogError(ex, nameof(CallFlor));
-            }
+            ExecuteGameAction(matchCode, (m, pid) => m.CallFlor(pid, betType), nameof(CallFlor));
         }
 
         public void RespondToFlor(string matchCode, string response)
         {
-            try
-            {
-                if (GetMatchAndPlayerID(matchCode, out TrucoMatch match, out int playerID))
-                {
-                    match.RespondToFlor(playerID, response);
-                }
-            }
-            catch (InvalidOperationException ex)
-            {
-                LogManager.LogError(ex, nameof(RespondToFlor));
-            }
-            catch (Exception ex)
-            {
-                LogManager.LogError(ex, nameof(RespondToFlor));
-            }
+            ExecuteGameAction(matchCode, (m, pid) => m.RespondToFlor(pid, response), nameof(RespondToFlor));
         }
 
         public void GoToDeck(string matchCode)
         {
-            try
-            {
-                if (GetMatchAndPlayerID(matchCode, out TrucoMatch match, out int playerID))
-                {
-                    match.PlayerGoesToDeck(playerID);
-                }
-            }
-            catch (InvalidOperationException ex)
-            {
-                LogManager.LogError(ex, nameof(GoToDeck));
-            }
-            catch (Exception ex)
-            {
-                LogManager.LogError(ex, nameof(GoToDeck));
-            }
+            ExecuteGameAction(matchCode, (m, pid) => m.PlayerGoesToDeck(pid), nameof(GoToDeck));
         }
 
         public void SwitchTeam(string matchCode, string username)
         {
+            if (!ServerValidator.IsMatchCodeValid(matchCode) || !ServerValidator.IsUsernameValid(username))
+            {
+                return;
+            }
+
             try
             {
                 bool switchSuccess = false;
@@ -613,59 +498,81 @@ namespace TrucoServer.Services
             }
         }
 
-        public List<PlayerInfo> GetLobbyPlayers(string matchCode)
+        private void ExecuteGameAction(string matchCode, Action<TrucoMatch, int> action, string callerName)
         {
+            if (!ServerValidator.IsMatchCodeValid(matchCode))
+            {
+                return;
+            }
+
             try
             {
-                using (var context = new baseDatosTrucoEntities())
+                if (GetMatchAndPlayerID(matchCode, out TrucoMatch match, out int playerID))
                 {
-                    Lobby lobby = FindLobbyByMatchCode(context, matchCode, false);
-
-                    if (lobby == null)
-                    {
-                        return GetGuestPlayersFromMemory(matchCode);
-                    }
-
-                    string ownerUsername = GetLobbyOwnerName(context, lobby.ownerID);
-
-                    var dbPlayers = GetDatabasePlayers(context, lobby, ownerUsername);
-
-                    var guestPlayers = GetGuestPlayersFromMemory(matchCode, ownerUsername);
-
-                    MergePlayersLists(dbPlayers, guestPlayers);
-
-                    return dbPlayers;
+                    action(match, playerID);
                 }
-            }
-            catch (FormatException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(GetLobbyPlayers)} - Code Format Error");
-                return new List<PlayerInfo>();
-            }
-            catch (OverflowException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(GetLobbyPlayers)} - Code Out of Range");
-                return new List<PlayerInfo>();
-            }
-            catch (SqlException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(GetLobbyPlayers)} - SQL Server Error");
-                return new List<PlayerInfo>();
-            }
-            catch (NotSupportedException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(GetLobbyPlayers)} - LINQ Not Supported");
-                return new List<PlayerInfo>();
             }
             catch (InvalidOperationException ex)
             {
-                LogManager.LogError(ex, $"{nameof(GetLobbyPlayers)} - Invalid Operation (DataBase Context)");
-                return new List<PlayerInfo>();
+                LogManager.LogError(ex, $"{callerName} - Invalid Operation");
             }
             catch (Exception ex)
             {
-                LogManager.LogError(ex, nameof(GetLobbyPlayers));
-                return new List<PlayerInfo>();
+                LogManager.LogError(ex, callerName);
+            }
+        }
+
+        private void InitializeAndRegisterGame(string matchCode, int lobbyId, List<PlayerInformation> gamePlayers, Dictionary<int, ITrucoCallback> gameCallbacks)
+        {
+            var newDeck = new Deck(shuffler);
+            var newGame = new TrucoMatch(matchCode, lobbyId, gamePlayers, gameCallbacks, newDeck, gameManager);
+
+            if (!runningGames.TryAdd(matchCode, newGame))
+            {
+                LogManager.LogError(new Exception($"Failed to add running game {matchCode}"), nameof(InitializeAndRegisterGame));
+            }
+        }
+
+        private bool RegisterChatCallback(string matchCode, string player, ITrucoCallback callback)
+        {
+            lock (matchCallbacks)
+            {
+                if (!matchCallbacks.ContainsKey(matchCode))
+                {
+                    matchCallbacks[matchCode] = new List<ITrucoCallback>();
+                }
+
+                if (!matchCallbacks[matchCode].Any(cb => ReferenceEquals(cb, callback)))
+                {
+                    PlayerInfo playerInfo = CreatePlayerInfoForChat(matchCode, player);
+                    matchCallbacks[matchCode].Add(callback);
+                    matchCallbackToPlayer[callback] = playerInfo;
+                    return true;
+                }
+                return false;
+            }
+        }
+
+        private void NotifyPlayerLeftChat(string matchCode, string player)
+        {
+            BroadcastToMatchCallbacksAsync(matchCode, cb =>
+            {
+                try
+                {
+                    cb.OnPlayerLeft(matchCode, player);
+                }
+                catch (CommunicationException ex) { LogManager.LogError(ex, $"{nameof(NotifyPlayerLeftChat)} - Comm Error"); }
+                catch (TimeoutException ex) { LogManager.LogError(ex, $"{nameof(NotifyPlayerLeftChat)} - Timeout"); }
+                catch (Exception ex) { LogManager.LogError(ex, nameof(NotifyPlayerLeftChat)); }
+            });
+        }
+
+        private void TerminateRunningGameIfExist(string matchCode, string player)
+        {
+            if (runningGames.TryGetValue(matchCode, out TrucoMatch match))
+            {
+                match.AbortMatch(player);
+                runningGames.TryRemove(matchCode, out _);
             }
         }
 
@@ -685,11 +592,6 @@ namespace TrucoServer.Services
             catch (SqlException ex)
             {
                 LogManager.LogError(ex, $"{nameof(ResolveVersionId)} - SQL Server Error");
-                return 0;
-            }
-            catch (InvalidOperationException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(ResolveVersionId)} - Invalid Operation (DataBase Context)");
                 return 0;
             }
             catch (Exception ex)
@@ -714,18 +616,7 @@ namespace TrucoServer.Services
 
                 context.Lobby.Add(newLobby);
                 context.SaveChanges();
-
                 return newLobby;
-            }
-            catch (DbUpdateException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(CreateNewLobby)} - DataBase Saving Error");
-                return null;
-            }
-            catch (SqlException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(CreateNewLobby)} - SQL Server Error");
-                return null;
             }
             catch (Exception ex)
             {
@@ -746,16 +637,6 @@ namespace TrucoServer.Services
                     team = TEAM_1
                 });
             }
-            catch (ArgumentNullException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(AddLobbyOwner)} - Null Argument");
-                throw;
-            }
-            catch (SqlException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(AddLobbyOwner)} - SQL Server Error on Query");
-                throw;
-            }
             catch (Exception ex)
             {
                 LogManager.LogError(ex, nameof(AddLobbyOwner));
@@ -768,14 +649,13 @@ namespace TrucoServer.Services
             try
             {
                 int numericCode = GenerateNumericCodeFromString(matchCode);
-
                 var previousInvitations = context.Invitation
-                    .Where(i => i.senderID == host.userID && i.status == PENDING_STATUS)
+                    .Where(i => i.senderID == host.userID && i.status == STATUS_PENDING)
                     .ToList();
 
                 foreach (var inv in previousInvitations)
                 {
-                    inv.status = EXPIRED_STATUS;
+                    inv.status = STATUS_EXPIRED;
                     inv.expiresAt = DateTime.Now;
                 }
 
@@ -784,19 +664,9 @@ namespace TrucoServer.Services
                     senderID = host.userID,
                     receiverEmail = null,
                     code = numericCode,
-                    status = PENDING_STATUS,
+                    status = STATUS_PENDING,
                     expiresAt = DateTime.Now.AddHours(2)
                 });
-            }
-            catch (FormatException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(CreatePrivateInvitation)} - Code Format Error");
-                throw;
-            }
-            catch (SqlException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(CreatePrivateInvitation)} - SQL Server Error on Query");
-                throw;
             }
             catch (Exception ex)
             {
@@ -818,56 +688,36 @@ namespace TrucoServer.Services
                 if (matchCodeToLobbyId.TryGetValue(matchCode, out int lobbyId))
                 {
                     var lobby = context.Lobby.FirstOrDefault(l => l.lobbyID == lobbyId);
-
-                    if (lobby != null && !lobby.status.Equals(CLOSED_STATUS, StringComparison.OrdinalIgnoreCase))
+                    if (lobby != null && !lobby.status.Equals(STATUS_CLOSED, StringComparison.OrdinalIgnoreCase))
                     {
                         return lobby;
                     }
-
-                    Console.WriteLine($"[SECURITY] Lobby {lobbyId} ({matchCode}) is closed or invalid.");
                     matchCodeToLobbyId.TryRemove(matchCode, out _);
                     return null;
                 }
 
                 int numericCode = GenerateNumericCodeFromString(matchCode);
                 var invitation = context.Invitation.FirstOrDefault(i =>
-                    i.code == numericCode &&
-                    i.status == PENDING_STATUS &&
-                    i.expiresAt > DateTime.Now);
+                    i.code == numericCode && i.status == STATUS_PENDING && i.expiresAt > DateTime.Now);
 
                 if (invitation == null)
                 {
-                    Console.WriteLine($"[SECURITY] No valid invitation found for {matchCode}.");
                     return null;
                 }
 
                 var lobbyCandidate = context.Lobby.FirstOrDefault(l =>
-                    l.ownerID == invitation.senderID &&
-                    !l.status.Equals(CLOSED_STATUS, StringComparison.OrdinalIgnoreCase));
+                    l.ownerID == invitation.senderID && !l.status.Equals(STATUS_CLOSED, StringComparison.OrdinalIgnoreCase));
 
-                if (lobbyCandidate == null)
+                if (lobbyCandidate != null)
                 {
-                    Console.WriteLine($"[SECURITY] Invitation {matchCode} points to closed or missing lobby.");
-                    return null;
+                    matchCodeToLobbyId.TryAdd(matchCode, lobbyCandidate.lobbyID);
                 }
-
-                matchCodeToLobbyId.TryAdd(matchCode, lobbyCandidate.lobbyID);
 
                 return lobbyCandidate;
             }
             catch (SqlException ex)
             {
-                LogManager.LogError(ex, $"{nameof(ResolveLobbyForJoin)} - SQL Server Error");
-                return null;
-            }
-            catch (FormatException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(ResolveLobbyForJoin)} - Code Format Error");
-                return null;
-            }
-            catch (InvalidOperationException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(ResolveLobbyForJoin)} - Invalid Operation (DataBase Context)");
+                LogManager.LogError(ex, $"{nameof(ResolveLobbyForJoin)} - SQL Error");
                 return null;
             }
             catch (Exception ex)
@@ -882,31 +732,21 @@ namespace TrucoServer.Services
             using (var context = new baseDatosTrucoEntities())
             {
                 var freshLobby = context.Lobby.Find(lobbyId);
-
-                if (freshLobby == null || freshLobby.status.Equals(CLOSED_STATUS, StringComparison.OrdinalIgnoreCase))
+                if (freshLobby == null || freshLobby.status.Equals(STATUS_CLOSED, StringComparison.OrdinalIgnoreCase))
                 {
                     Console.WriteLine($"[JOIN] Denied: Lobby closed while waiting for lock.");
                     return false;
                 }
 
                 bool isGuest = player.StartsWith(GUEST_PREFIX);
-
-                if (isGuest)
-                {
-                    return TryJoinAsGuest(context, freshLobby, matchCode, player);
-                }
-                else
-                {
-                    return TryJoinAsUser(context, freshLobby, player);
-                }
+                return isGuest ? TryJoinAsGuest(context, freshLobby, matchCode, player) : TryJoinAsUser(context, freshLobby, player);
             }
         }
 
         private bool TryJoinAsGuest(baseDatosTrucoEntities context, Lobby lobby, string matchCode, string player)
         {
-            if (!lobby.status.Equals(PUBLIC_STATUS, StringComparison.OrdinalIgnoreCase))
+            if (!lobby.status.Equals(STATUS_PUBLIC, StringComparison.OrdinalIgnoreCase))
             {
-                Console.WriteLine($"[JOIN] Denied: Guest player {player} tried to join a private lobby.");
                 return false;
             }
 
@@ -916,7 +756,7 @@ namespace TrucoServer.Services
             if (matchCallbacks.TryGetValue(matchCode, out var callbacks))
             {
                 guestCount = callbacks.Select(cb => GetPlayerInfoFromCallback(cb))
-                                      .Count(info => info != null && info.Username.StartsWith(GUEST_PREFIX));
+                    .Count(info => info != null && info.Username.StartsWith(GUEST_PREFIX));
             }
 
             if ((currentDbPlayers + guestCount) >= lobby.maxPlayers)
@@ -924,15 +764,12 @@ namespace TrucoServer.Services
                 Console.WriteLine($"[JOIN] Denied: Public lobby {lobby.lobbyID} is full.");
                 return false;
             }
-
-            Console.WriteLine($"[SERVER] Guest player {player} approved for public lobby {matchCode}.");
             return true;
         }
 
         private bool TryJoinAsUser(baseDatosTrucoEntities context, Lobby lobby, string player)
         {
             User playerUser = context.User.FirstOrDefault(u => u.username == player);
-
             if (!ValidateJoinConditions(context, lobby, playerUser))
             {
                 return false;
@@ -946,32 +783,22 @@ namespace TrucoServer.Services
         {
             if (playerUser == null)
             {
-                Console.WriteLine($"[JOIN] Player not found.");
                 return false;
             }
-
-            if (lobby == null || lobby.status.Equals(CLOSED_STATUS, StringComparison.OrdinalIgnoreCase))
+            if (lobby == null || lobby.status.Equals(STATUS_CLOSED, StringComparison.OrdinalIgnoreCase))
             {
-                Console.WriteLine($"[JOIN] Denied: Lobby {lobby.lobbyID} is closed.");
                 return false;
             }
 
             try
             {
                 int count = context.LobbyMember.Count(lm => lm.lobbyID == lobby.lobbyID);
-
                 if (count >= lobby.maxPlayers)
                 {
-                    Console.WriteLine($"[JOIN] Lobby {lobby.lobbyID} is full ({count}/{lobby.maxPlayers}).");
+                    Console.WriteLine($"[JOIN] Lobby {lobby.lobbyID} is full.");
                     return false;
                 }
-
                 return true;
-            }
-            catch (SqlException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(ValidateJoinConditions)} - SQL Server Error");
-                return false;
             }
             catch (Exception ex)
             {
@@ -991,7 +818,6 @@ namespace TrucoServer.Services
 
                 int team1Count = context.LobbyMember.Count(lm => lm.lobbyID == lobby.lobbyID && lm.team == TEAM_1);
                 int team2Count = context.LobbyMember.Count(lm => lm.lobbyID == lobby.lobbyID && lm.team == TEAM_2);
-
                 string assignedTeam = DetermineTeamForNewPlayer(lobby.maxPlayers, team1Count, team2Count, playerUser.username);
 
                 context.LobbyMember.Add(new LobbyMember
@@ -1001,21 +827,12 @@ namespace TrucoServer.Services
                     role = ROLE_PLAYER,
                     team = assignedTeam
                 });
-
                 context.SaveChanges();
-                Console.WriteLine($"[JOIN] Player '{playerUser.username}' added to lobby {lobby.lobbyID}.");
-            }
-            catch (DbUpdateException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(AddPlayerToLobby)} - DataBase Saving Error");
-            }
-            catch (SqlException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(AddPlayerToLobby)} - SQL Server Error");
             }
             catch (Exception ex)
             {
                 LogManager.LogError(ex, nameof(AddPlayerToLobby));
+                throw;
             }
         }
 
@@ -1023,12 +840,8 @@ namespace TrucoServer.Services
         {
             if (maxPlayers == 2)
             {
-                string team = (team1Count <= team2Count) ? TEAM_1 : TEAM_2;
-
-                Console.WriteLine($"[JOIN] 1v1 match detected, assigning player {username} to {team}.");
-                return team;
+                return (team1Count <= team2Count) ? TEAM_1 : TEAM_2;
             }
-
             return (team1Count > team2Count) ? TEAM_2 : TEAM_1;
         }
 
@@ -1036,54 +849,26 @@ namespace TrucoServer.Services
         {
             BroadcastToMatchCallbacksAsync(matchCode, cb =>
             {
-                try
-                {
-                    cb.OnPlayerJoined(matchCode, player);
-                }
-                catch (CommunicationException ex)
-                {
-                    LogManager.LogError(ex, $"{nameof(NotifyPlayerJoined)} - Callback Communication Error");
-                }
-                catch (TimeoutException ex)
-                {
-                    LogManager.LogError(ex, $"{nameof(NotifyPlayerJoined)} - Timeout Error");
-                }
-                catch (Exception ex)
-                {
-                    LogManager.LogError(ex, nameof(NotifyPlayerJoined));
-                }
+                try { cb.OnPlayerJoined(matchCode, player); }
+                catch (Exception ex) { LogManager.LogError(ex, nameof(NotifyPlayerJoined)); }
             });
         }
 
         private Lobby ResolveLobbyForLeave(baseDatosTrucoEntities context, string matchCode, string username, out User player)
         {
+            player = null;
             try
             {
                 player = context.User.FirstOrDefault(u => u.username == username);
-
                 if (player == null)
                 {
                     return null;
                 }
-
                 return FindLobbyByMatchCode(context, matchCode, true);
-            }
-            catch (SqlException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(ResolveLobbyForLeave)} - SQL Server Error");
-                player = null;
-                return null;
-            }
-            catch (InvalidOperationException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(ResolveLobbyForLeave)} - Invalid Operation (DataBase Context)");
-                player = null;
-                return null;
             }
             catch (Exception ex)
             {
                 LogManager.LogError(ex, nameof(ResolveLobbyForLeave));
-                player = null;
                 return null;
             }
         }
@@ -1101,17 +886,10 @@ namespace TrucoServer.Services
                     Console.WriteLine($"[LEAVE] Player '{player.username}' removed from lobby {lobby.lobbyID}.");
                 }
             }
-            catch (DbUpdateException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(RemovePlayerFromLobby)} - SQL Server Error");
-            }
-            catch (SqlException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(RemovePlayerFromLobby)} - Invalid Operation (DataBase Context)");
-            }
             catch (Exception ex)
             {
                 LogManager.LogError(ex, nameof(RemovePlayerFromLobby));
+                throw;
             }
         }
 
@@ -1119,22 +897,8 @@ namespace TrucoServer.Services
         {
             BroadcastToMatchCallbacksAsync(matchCode, cb =>
             {
-                try
-                {
-                    cb.OnPlayerLeft(matchCode, username);
-                }
-                catch (CommunicationException ex)
-                {
-                    LogManager.LogError(ex, $"{nameof(NotifyPlayerLeft)} - Callback Communication Error");
-                }
-                catch (TimeoutException ex)
-                {
-                    LogManager.LogError(ex, $"{nameof(NotifyPlayerLeft)} - Timeout Error");
-                }
-                catch (Exception ex)
-                {
-                    LogManager.LogError(ex, nameof(NotifyPlayerLeft));
-                }
+                try { cb.OnPlayerLeft(matchCode, username); }
+                catch (Exception ex) { LogManager.LogError(ex, nameof(NotifyPlayerLeft)); }
             });
         }
 
@@ -1146,23 +910,13 @@ namespace TrucoServer.Services
 
                 if (isEmpty)
                 {
-                    bool closed = CloseLobbyById(lobby.lobbyID);
-                    bool expired = ExpireInvitationByMatchCode(matchCode);
-                    bool removed = RemoveLobbyMembersById(lobby.lobbyID);
-
-                    Console.WriteLine($"[CLEANUP] Lobby {lobby.lobbyID} cleanup result: closedLobby={closed}, expiredInvitation={expired}, removedMembers={removed}");
-
+                    CloseLobbyById(lobby.lobbyID);
+                    ExpireInvitationByMatchCode(matchCode);
+                    RemoveLobbyMembersById(lobby.lobbyID);
                     matchCodeToLobbyId.TryRemove(matchCode, out _);
                     lobbyLocks.TryRemove(lobby.lobbyID, out _);
+                    Console.WriteLine($"[CLEANUP] Lobby {lobby.lobbyID} closed.");
                 }
-            }
-            catch (SqlException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(HandleEmptyLobbyCleanup)} - SQL Server Error on Check");
-            }
-            catch (InvalidOperationException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(HandleEmptyLobbyCleanup)} - Invalid Operation (DataBase Context)");
             }
             catch (Exception ex)
             {
@@ -1178,62 +932,23 @@ namespace TrucoServer.Services
 
                 if (lobby == null)
                 {
-                    Console.WriteLine($"[START FAILED] Lobby not found for code {matchCode}");
                     return null;
                 }
 
                 var dbMembers = context.LobbyMember.Where(lm => lm.lobbyID == lobby.lobbyID).ToList();
-
                 int guestCount = 0;
-                List<PlayerInfo> guestInfos = new List<PlayerInfo>();
-
                 if (matchCallbacks.TryGetValue(matchCode, out var callbacks))
                 {
-                    guestInfos = callbacks
-                        .Select(cb => GetPlayerInfoFromCallback(cb))
-                        .Where(info => info != null && info.Username != null && info.Username.StartsWith(GUEST_PREFIX))
-                        .ToList();
-
-                    guestCount = guestInfos.Count;
+                    guestCount = callbacks.Select(cb => GetPlayerInfoFromCallback(cb))
+                        .Count(info => info != null && info.Username != null && info.Username.StartsWith(GUEST_PREFIX));
                 }
 
                 if ((dbMembers.Count + guestCount) != lobby.maxPlayers)
                 {
-                    Console.WriteLine($"[START FAILED] Lobby {matchCode} is not full (DB:{dbMembers.Count}, Guest:{guestCount} / Total:{lobby.maxPlayers}).");
                     return null;
                 }
 
-                int team1Count = dbMembers.Count(m => m.team == TEAM_1) + guestInfos.Count(g => string.Equals(g.Team, TEAM_1, StringComparison.OrdinalIgnoreCase));
-                int team2Count = dbMembers.Count(m => m.team == TEAM_2) + guestInfos.Count(g => string.Equals(g.Team, TEAM_2, StringComparison.OrdinalIgnoreCase));
-
-                if (lobby.maxPlayers > 2)
-                {
-                    if (team1Count != team2Count)
-                    {
-                        Console.WriteLine($"[START FAILED] Teams are unbalanced in {matchCode} (T1:{team1Count} vs T2:{team2Count}).");
-                        return null;
-                    }
-                }
-                else
-                {
-                    Console.WriteLine($"[INFO] Skipping team balance check for 1v1 match {matchCode}.");
-                }
-
-                return new ValidatedLobbyData
-                {
-                    Lobby = lobby,
-                    Members = dbMembers
-                };
-            }
-            catch (SqlException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(GetAndValidateLobbyForStart)} - SQL Server Error");
-                return null;
-            }
-            catch (InvalidOperationException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(GetAndValidateLobbyForStart)} - Invalid Operation (Data Context)");
-                return null;
+                return new ValidatedLobbyData { Lobby = lobby, Members = dbMembers };
             }
             catch (Exception ex)
             {
@@ -1270,32 +985,7 @@ namespace TrucoServer.Services
                     return false;
                 }
 
-                return true;
-            }
-            catch (SqlException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(BuildGamePlayersAndCallbacks)} - SQL Server Error");
-                return false;
-            }
-            catch (InvalidOperationException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(BuildGamePlayersAndCallbacks)} - Invalid Operation (DataBase Context)");
-                return false;
-            }
-            catch (CommunicationException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(BuildGamePlayersAndCallbacks)} - Callback Communication Error");
-                return false;
-            }
-            catch (TimeoutException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(BuildGamePlayersAndCallbacks)} - Timeout Error");
-                return false;
-            }
-            catch (ArgumentNullException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(BuildGamePlayersAndCallbacks)} - Null Argument");
-                return false;
+                return gamePlayers.Count == gameCallbacks.Count;
             }
             catch (Exception ex)
             {
@@ -1307,9 +997,7 @@ namespace TrucoServer.Services
         private static void ProcessGuestPlayer(PlayerInfo pInfo, List<PlayerInformation> gamePlayers, Dictionary<int, ITrucoCallback> gameCallbacks)
         {
             int guestTempId = -Math.Abs(pInfo.Username.GetHashCode());
-
             gamePlayers.Add(new PlayerInformation(guestTempId, pInfo.Username, pInfo.Team));
-
             var guestCb = matchCallbackToPlayer.FirstOrDefault(kvp => kvp.Value.Username == pInfo.Username).Key;
 
             if (guestCb != null)
@@ -1325,7 +1013,6 @@ namespace TrucoServer.Services
             if (user != null)
             {
                 gamePlayers.Add(new PlayerInformation(user.userID, user.username, pInfo.Team));
-
                 var userCallbacks = matchCallbackToPlayer
                     .Where(kvp => kvp.Value.Username == pInfo.Username)
                     .Select(kvp => kvp.Key)
@@ -1351,7 +1038,7 @@ namespace TrucoServer.Services
                 }
                 else
                 {
-                    Console.WriteLine($"[WARNING] User {pInfo.Username} is in the lobby but has no active WCF connection.");
+                    Console.WriteLine($"[WARNING] User {pInfo.Username} is in lobby but has no active connection.");
                 }
             }
         }
@@ -1360,94 +1047,53 @@ namespace TrucoServer.Services
         {
             BroadcastToMatchCallbacksAsync(matchCode, cb =>
             {
-                try
-                {
-                    cb.OnMatchStarted(matchCode, players);
+                try 
+                { 
+                    cb.OnMatchStarted(matchCode, players); 
                 }
-                catch (CommunicationException ex)
-                {
-                    LogManager.LogError(ex, $"{nameof(NotifyMatchStart)} - Callback Communication Error");
-                }
-                catch (TimeoutException ex)
-                {
-                    LogManager.LogError(ex, $"{nameof(NotifyMatchStart)} - Timeout Error");
-                }
-                catch (Exception ex)
-                {
-                    LogManager.LogError(ex, nameof(NotifyMatchStart));
+                catch (Exception ex) 
+                { 
+                    LogManager.LogError(ex, nameof(NotifyMatchStart)); 
                 }
             });
-
-            Console.WriteLine($"[SERVER] Match {matchCode} started by the owner.");
+            Console.WriteLine($"[SERVER] Match {matchCode} started.");
         }
 
         private void HandleMatchStartupCleanup(string matchCode)
         {
             if (!matchCodeToLobbyId.TryGetValue(matchCode, out int lobbyId))
             {
-                Console.WriteLine($"[WARNING] No lobby found for {matchCode} during match start cleanup.");
                 return;
             }
-
             try
             {
-                bool closedLobby = CloseLobbyById(lobbyId);
-                bool expiredInvitation = ExpireInvitationByMatchCode(matchCode);
-
-                Task.Delay(300).Wait();
-                bool removedLobby = RemoveLobbyMembersById(lobbyId);
-
-                if (!closedLobby || !expiredInvitation || !removedLobby)
-                {
-                    Console.WriteLine($"[WARNING] Partial cleanup for {matchCode} (closed={closedLobby}, expired={expiredInvitation}, removed={removedLobby}).");
-                }
-                else
-                {
-                    Console.WriteLine($"[SERVER] Lobby {matchCode} fully cleaned after match start.");
-                }
-
+                CloseLobbyById(lobbyId);
+                ExpireInvitationByMatchCode(matchCode);
+                RemoveLobbyMembersById(lobbyId);
                 matchCodeToLobbyId.TryRemove(matchCode, out _);
                 lobbyLocks.TryRemove(lobbyId, out _);
             }
-            catch (CommunicationException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(HandleMatchStartupCleanup)} - Callback Communication Error");
-            }
-            catch (Exception ex)
-            {
-                LogManager.LogError(ex, nameof(HandleMatchStartupCleanup));
-            }
+            catch (Exception ex) { LogManager.LogError(ex, nameof(HandleMatchStartupCleanup)); }
         }
 
         private bool SwitchGuestTeam(string matchCode, string username)
         {
-            PlayerInfo guestInfo = null;
-
             if (matchCallbacks.TryGetValue(matchCode, out var callbacks))
             {
-                guestInfo = callbacks.Select(cb => GetPlayerInfoFromCallback(cb))
-                                     .FirstOrDefault(info => info != null && info.Username == username);
+                var guestInfo = callbacks.Select(cb => GetPlayerInfoFromCallback(cb))
+                    .FirstOrDefault(info => info != null && info.Username == username);
+
+                if (guestInfo != null)
+                {
+                    string newTeam = (guestInfo.Team == TEAM_1) ? TEAM_2 : TEAM_1;
+                    if (CanJoinTeam(matchCode, newTeam))
+                    {
+                        guestInfo.Team = newTeam;
+                        return true;
+                    }
+                }
             }
-
-            if (guestInfo == null)
-            {
-                LogManager.LogWarn($"[TEAM SWITCH]: Guest {username} not found in callbacks", nameof(SwitchTeam));
-                return false;
-            }
-
-            string currentTeam = guestInfo.Team;
-            string newTeam = (currentTeam == TEAM_1) ? TEAM_2 : TEAM_1;
-
-            if (!CanJoinTeam(matchCode, newTeam))
-            {
-                Console.WriteLine($"[TEAM SWITCH] Denied: Guest {username} tried join to {newTeam} (full) in {matchCode}.");
-                return false;
-            }
-
-            guestInfo.Team = newTeam;
-
-            Console.WriteLine($"[TEAM SWITCH] Guest {username} changed to {newTeam} in {matchCode}.");
-            return true;
+            return false;
         }
 
         private bool SwitchUserTeam(string matchCode, string username)
@@ -1455,46 +1101,32 @@ namespace TrucoServer.Services
             using (var context = new baseDatosTrucoEntities())
             {
                 var lobby = FindLobbyByMatchCode(context, matchCode, true);
-
-                if (lobby == null)
+                if (lobby == null || lobby.maxPlayers == 2)
                 {
-                    LogManager.LogWarn($"[TEAM SWITCH]: Lobby not found {matchCode}", nameof(SwitchTeam));
-                    return false;
-                }
-
-                if (lobby.maxPlayers == 2)
-                {
-                    Console.WriteLine($"[TEAM SWITCH] Ignored for 1v1 match {matchCode} (no team balance needed).");
                     return false;
                 }
 
                 var user = context.User.FirstOrDefault(u => u.username == username);
-
                 if (user == null)
                 {
                     return false;
                 }
 
                 var member = context.LobbyMember.FirstOrDefault(lm => lm.lobbyID == lobby.lobbyID && lm.userID == user.userID);
-
                 if (member == null)
                 {
                     return false;
                 }
 
                 string newTeam = (member.team == TEAM_1) ? TEAM_2 : TEAM_1;
-
-                if (!CanJoinTeam(matchCode, newTeam))
+                if (CanJoinTeam(matchCode, newTeam))
                 {
-                    Console.WriteLine($"[TEAM SWITCH] Denied: {username} attempted to join {newTeam} (full) in {matchCode}");
-                    return false;
+                    member.team = newTeam;
+                    context.SaveChanges();
+                    return true;
                 }
 
-                member.team = newTeam;
-                context.SaveChanges();
-                Console.WriteLine($"[TEAM SWITCH] {username} switched to {newTeam} at {matchCode}.");
-
-                return true;
+                return false;
             }
         }
 
@@ -1503,23 +1135,20 @@ namespace TrucoServer.Services
             using (var context = new baseDatosTrucoEntities())
             {
                 var lobby = FindLobbyByMatchCode(context, matchCode, true);
-
                 if (lobby == null)
                 {
                     return false;
                 }
 
-                int maxPerTeam = lobby.maxPlayers / 2;
                 int dbCount = context.LobbyMember.Count(lm => lm.lobbyID == lobby.lobbyID && lm.team == targetTeam);
                 int memCount = 0;
-
                 if (matchCallbacks.TryGetValue(matchCode, out var callbacks))
                 {
                     memCount = callbacks.Select(cb => GetPlayerInfoFromCallback(cb))
-                                        .Count(info => info != null && info.Username.StartsWith(GUEST_PREFIX) && info.Team == targetTeam);
+                        .Count(info => info != null && info.Username.StartsWith(GUEST_PREFIX) && info.Team == targetTeam);
                 }
 
-                return (dbCount + memCount) < maxPerTeam;
+                return (dbCount + memCount) < (lobby.maxPlayers / 2);
             }
         }
 
@@ -1527,24 +1156,14 @@ namespace TrucoServer.Services
         {
             match = null;
             playerID = -1;
-
             if (!runningGames.TryGetValue(matchCode, out match))
             {
-                LogManager.LogWarn($"Method call on non-existent running game: {matchCode}", nameof(GetMatchAndPlayerID));
                 return false;
             }
 
             var callback = OperationContext.Current.GetCallbackChannel<ITrucoCallback>();
-
-            if (callback == null)
+            if (callback == null || !matchCallbackToPlayer.TryGetValue(callback, out PlayerInfo playerInfo))
             {
-                LogManager.LogWarn($"Method call with no callback context: {matchCode}", nameof(GetMatchAndPlayerID));
-                return false;
-            }
-
-            if (!matchCallbackToPlayer.TryGetValue(callback, out PlayerInfo playerInfo))
-            {
-                LogManager.LogWarn($"Method call from unknown callback: {matchCode}", nameof(GetMatchAndPlayerID));
                 return false;
             }
 
@@ -1552,36 +1171,19 @@ namespace TrucoServer.Services
             {
                 using (var context = new baseDatosTrucoEntities())
                 {
-                    var user = context.User.FirstOrDefault(u => u.username == playerInfo.Username); 
-                    
+                    var user = context.User.FirstOrDefault(u => u.username == playerInfo.Username);
                     if (user == null)
                     {
-                        LogManager.LogWarn($"Callback {playerInfo.Username} not found in DB: {matchCode}", nameof(GetMatchAndPlayerID));
                         return false;
                     }
-                    playerID = user.userID; 
-                    
+
+                    playerID = user.userID;
                     return true;
                 }
             }
-            catch (SqlException ex)
-            {
-                LogManager.LogError(ex, "GetMatchAndPlayerID (DataBase Query)");
-                return false;
-            }
-            catch (InvalidOperationException ex)
-            {
-                LogManager.LogError(ex, "GetMatchAndPlayerID (WCF Context or DataBase Operation)");
-                return false;
-            }
-            catch (CommunicationException ex)
-            {
-                LogManager.LogError(ex, "GetMatchAndPlayerID (WCF Channel)");
-                return false;
-            }
             catch (Exception ex)
             {
-                LogManager.LogError(ex, "GetMatchAndPlayerID (General)");
+                LogManager.LogError(ex, nameof(GetMatchAndPlayerID));
                 return false;
             }
         }
@@ -1590,24 +1192,21 @@ namespace TrucoServer.Services
         {
             if (player.StartsWith(GUEST_PREFIX))
             {
-                string assignedTeam = TEAM_1; using (var context = new baseDatosTrucoEntities())
+                string assignedTeam = TEAM_1;
+                using (var context = new baseDatosTrucoEntities())
                 {
-                    var lobby = FindLobbyByMatchCode(context, matchCode, true); 
-                    
+                    var lobby = FindLobbyByMatchCode(context, matchCode, true);
                     if (lobby != null && lobby.maxPlayers > 2)
                     {
-                        int team1DbCount = context.LobbyMember.Count(lm => lm.lobbyID == lobby.lobbyID && lm.team == TEAM_1);
-                        int team2DbCount = context.LobbyMember.Count(lm => lm.lobbyID == lobby.lobbyID && lm.team == TEAM_2); 
+                        int t1Count = context.LobbyMember.Count(lm => lm.lobbyID == lobby.lobbyID && lm.team == TEAM_1);
+                        int t2Count = context.LobbyMember.Count(lm => lm.lobbyID == lobby.lobbyID && lm.team == TEAM_2);
 
-                        int team1MemCount = matchCallbacks[matchCode]
-                            .Select(cb => GetPlayerInfoFromCallback(cb))
-                            .Count(info => info != null && info.Username.StartsWith(GUEST_PREFIX) && info.Team == TEAM_1); 
-                        
-                        int team2MemCount = matchCallbacks[matchCode]
-                            .Select(cb => GetPlayerInfoFromCallback(cb))
-                            .Count(info => info != null && info.Username.StartsWith(GUEST_PREFIX) && info.Team == TEAM_2); 
-                        
-                        if ((team1DbCount + team1MemCount) >= (team2DbCount + team2MemCount))
+                        if (matchCallbacks.TryGetValue(matchCode, out var callbacks))
+                        {
+                            t1Count += callbacks.Select(GetPlayerInfoFromCallback).Count(i => i != null && i.Team == TEAM_1);
+                            t2Count += callbacks.Select(GetPlayerInfoFromCallback).Count(i => i != null && i.Team == TEAM_2);
+                        }
+                        if (t1Count >= t2Count)
                         {
                             assignedTeam = TEAM_2;
                         }
@@ -1615,10 +1214,7 @@ namespace TrucoServer.Services
                 }
                 return new PlayerInfo { Username = player, Team = assignedTeam, AvatarId = DEFAULT_AVATAR_ID };
             }
-            else
-            {
-                return new PlayerInfo { Username = player };
-            }
+            return new PlayerInfo { Username = player };
         }
 
         private void RemoveInactiveCallbacks(string matchCode)
@@ -1627,57 +1223,32 @@ namespace TrucoServer.Services
             {
                 return;
             }
-
             try
             {
                 lock (matchCallbacks)
                 {
-                    if (!matchCallbacks.TryGetValue(matchCode, out var list))
+                    if (matchCallbacks.TryGetValue(matchCode, out var list))
                     {
-                        return;
-                    }
-
-                    list.RemoveAll(cb =>
-                    {
-                        try
-                        {
+                        list.RemoveAll(cb => {
                             var comm = (ICommunicationObject)cb;
-
                             if (comm.State != CommunicationState.Opened)
                             {
-                                try
-                                {
-                                    comm.Abort();
+                                try 
+                                { 
+                                    comm.Abort(); 
+                                } 
+                                catch 
+                                { 
+                                    /* noop */ 
                                 }
-                                catch
-                                {
-                                    /* noop */
-                                }
-
                                 return true;
                             }
-                        }
-                        catch (Exception)
-                        {
-                            return true;
-                        }
-
-                        return false;
-                    });
+                            return false;
+                        });
+                    }
                 }
             }
-            catch (SynchronizationLockException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(RemoveInactiveCallbacks)} - Synchronization Block Error");
-            }
-            catch (OutOfMemoryException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(RemoveInactiveCallbacks)} - Insufficient Memory For Operation");
-            }
-            catch (Exception ex)
-            {
-                LogManager.LogError(ex, nameof(RemoveInactiveCallbacks));
-            }
+            catch (Exception ex) { LogManager.LogError(ex, nameof(RemoveInactiveCallbacks)); }
         }
 
         private void BroadcastToMatchCallbacksAsync(string matchCode, Action<ITrucoCallback> invocation)
@@ -1692,48 +1263,38 @@ namespace TrucoServer.Services
                 {
                     return;
                 }
+                var snapshot = callbacksList.ToArray();
 
-                var snapshot = callbacksList.ToArray(); 
-                
                 foreach (var cb in snapshot)
                 {
-                    Task.Run(() =>
-                    {
-                        ProcessSingleCallbackAsync(matchCode, cb, invocation);
-                    });
+                    Task.Run(() => ProcessSingleCallbackAsync(matchCode, cb, invocation));
                 }
             }
-            catch (OutOfMemoryException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(BroadcastToMatchCallbacksAsync)} - Insufficient Memory For Snapshot");
-            }
-            catch (Exception ex)
-            {
-                LogManager.LogError(ex, nameof(BroadcastToMatchCallbacksAsync));
-            }
+            catch (Exception ex) { LogManager.LogError(ex, nameof(BroadcastToMatchCallbacksAsync)); }
         }
 
         private void ProcessSingleCallbackAsync(string matchCode, ITrucoCallback cb, Action<ITrucoCallback> invocation)
         {
             try
             {
-                var comm = (ICommunicationObject)cb; 
-                
+                var comm = (ICommunicationObject)cb;
                 if (comm.State != CommunicationState.Opened)
                 {
                     lock (matchCallbacks)
                     {
-                        RemoveInactiveCallbacks(matchCode);
+                        if (matchCallbacks.ContainsKey(matchCode))
+                        {
+                            matchCallbacks[matchCode].Remove(cb);
+                        }
                     }
-                    try
-                    {
+                    try 
+                    { 
                         comm.Abort();
+                    } 
+                    catch 
+                    { 
+                        /* noop */ 
                     }
-                    catch
-                    {
-                        /* noop */
-                    }
-
                     return;
                 }
                 invocation(cb);
@@ -1749,41 +1310,28 @@ namespace TrucoServer.Services
                     }
                 }
             }
-            catch (SynchronizationLockException ex)
+            catch (Exception ex) 
             {
-                LogManager.LogError(ex, $"{nameof(ProcessSingleCallbackAsync)} - Synchronization Block Error");
-            }
-            catch (Exception ex)
-            {
-                LogManager.LogError(ex, nameof(ProcessSingleCallbackAsync));
+                LogManager.LogError(ex, nameof(ProcessSingleCallbackAsync)); 
             }
         }
 
         private static string GenerateMatchCode()
         {
-            const string CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"; 
-            
-            char[] result = new char[MATCH_CODE_LENGTH]; 
-            
+            const string CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+            char[] result = new char[MATCH_CODE_LENGTH];
             try
             {
                 using (var rng = new RNGCryptoServiceProvider())
                 {
                     byte[] randomBytes = new byte[result.Length];
-                    rng.GetBytes(randomBytes); 
-                    
+                    rng.GetBytes(randomBytes);
                     for (int i = 0; i < result.Length; i++)
                     {
-                        int index = randomBytes[i] % CHARS.Length;
-                        result[i] = CHARS[index];
+                        result[i] = CHARS[randomBytes[i] % CHARS.Length];
                     }
                 }
                 return new string(result);
-            }
-            catch (SynchronizationLockException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(GenerateMatchCode)} - Synchronization Block Error");
-                return string.Empty;
             }
             catch (Exception ex)
             {
@@ -1797,12 +1345,10 @@ namespace TrucoServer.Services
             unchecked
             {
                 int hash = 17;
-
                 foreach (char c in code)
                 {
                     hash = hash * 31 + c;
                 }
-
                 return Math.Abs(hash % 999999);
             }
         }
@@ -1811,15 +1357,14 @@ namespace TrucoServer.Services
         {
             try
             {
-                int numericCode = GenerateNumericCodeFromString(matchCode); Lobby lobby = GetLobbyByMapping(context, matchCode, onlyOpen);
-
+                int numericCode = GenerateNumericCodeFromString(matchCode);
+                Lobby lobby = GetLobbyByMapping(context, matchCode, onlyOpen);
                 if (lobby != null)
                 {
                     return lobby;
                 }
 
                 var invitation = context.Invitation.FirstOrDefault(i => i.code == numericCode);
-
                 if (invitation == null)
                 {
                     return null;
@@ -1827,23 +1372,11 @@ namespace TrucoServer.Services
 
                 return GetLobbyByOwner(context, invitation.senderID, onlyOpen);
             }
-            catch (SqlException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(FindLobbyByMatchCode)} - SQL Server Error");
-            }
-            catch (InvalidOperationException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(FindLobbyByMatchCode)} - Invalid Operation (Database Context/Mapping)");
-            }
-            catch (FormatException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(FindLobbyByMatchCode)} - Code Format Error");
-            }
             catch (Exception ex)
             {
                 LogManager.LogError(ex, nameof(FindLobbyByMatchCode));
+                return null;
             }
-            return null;
         }
 
         private Lobby GetLobbyByMapping(baseDatosTrucoEntities context, string matchCode, bool onlyOpen)
@@ -1853,11 +1386,11 @@ namespace TrucoServer.Services
                 return null;
             }
 
-            IQueryable<Lobby> query = context.Lobby.Where(l => l.lobbyID == mappedLobbyId); 
-            
+            var query = context.Lobby.Where(l => l.lobbyID == mappedLobbyId);
+
             if (onlyOpen)
             {
-                query = query.Where(l => l.status == PUBLIC_STATUS || l.status == PRIVATE_STATUS);
+                query = query.Where(l => l.status == STATUS_PUBLIC || l.status == STATUS_PRIVATE);
             }
 
             return query.FirstOrDefault();
@@ -1865,11 +1398,11 @@ namespace TrucoServer.Services
 
         private static Lobby GetLobbyByOwner(baseDatosTrucoEntities context, int ownerId, bool onlyOpen)
         {
-            IQueryable<Lobby> query = context.Lobby.Where(l => l.ownerID == ownerId); 
-            
+            var query = context.Lobby.Where(l => l.ownerID == ownerId);
+
             if (onlyOpen)
             {
-                query = query.Where(l => l.status == PUBLIC_STATUS || l.status == PRIVATE_STATUS);
+                query = query.Where(l => l.status == STATUS_PUBLIC || l.status == STATUS_PRIVATE);
             }
 
             return query.FirstOrDefault();
@@ -1877,10 +1410,7 @@ namespace TrucoServer.Services
 
         private static string GetLobbyOwnerName(baseDatosTrucoEntities context, int ownerId)
         {
-            return context.User
-                .Where(u => u.userID == ownerId)
-                .Select(u => u.username)
-                .FirstOrDefault();
+            return context.User.Where(u => u.userID == ownerId).Select(u => u.username).FirstOrDefault();
         }
 
         private List<PlayerInfo> GetDatabasePlayers(baseDatosTrucoEntities context, Lobby lobby, string ownerUsername)
@@ -1906,16 +1436,9 @@ namespace TrucoServer.Services
                 return new List<PlayerInfo>();
             }
 
-            return callbacks
-                .Select(cb => GetPlayerInfoFromCallback(cb))
+            return callbacks.Select(cb => GetPlayerInfoFromCallback(cb))
                 .Where(info => info != null && info.Username.StartsWith(GUEST_PREFIX))
-                .Select(g => new PlayerInfo
-                {
-                    Username = g.Username,
-                    AvatarId = g.AvatarId ?? DEFAULT_AVATAR_ID,
-                    OwnerUsername = ownerUsername,
-                    Team = g.Team ?? TEAM_1
-                })
+                .Select(g => new PlayerInfo { Username = g.Username, AvatarId = DEFAULT_AVATAR_ID, OwnerUsername = ownerUsername, Team = g.Team ?? TEAM_1 })
                 .ToList();
         }
 
@@ -1932,17 +1455,11 @@ namespace TrucoServer.Services
                 {
                     return info;
                 }
-
-                return null;
-            }
-            catch (CommunicationException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(GetPlayerInfoFromCallback)} - Callback Communication Error");
                 return null;
             }
             catch (Exception ex)
             {
-                LogManager.LogError(ex, $"{nameof(GetPlayerInfoFromCallback)} - Error retrieving player info from callback");
+                LogManager.LogError(ex, nameof(GetPlayerInfoFromCallback));
                 return null;
             }
         }
@@ -1954,45 +1471,17 @@ namespace TrucoServer.Services
                 using (var context = new baseDatosTrucoEntities())
                 {
                     var lobby = context.Lobby.FirstOrDefault(l => l.lobbyID == lobbyId);
-
                     if (lobby == null)
                     {
                         return false;
                     }
-
-                    if (lobby.status != CLOSED_STATUS)
+                    if (lobby.status != STATUS_CLOSED)
                     {
-                        lobby.status = CLOSED_STATUS;
+                        lobby.status = STATUS_CLOSED;
                         context.SaveChanges();
                     }
-
                     return true;
                 }
-            }
-            catch (DbUpdateConcurrencyException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(CloseLobbyById)} - Concurrency");
-                return false;
-            }
-            catch (UpdateException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(CloseLobbyById)} - Update Error");
-                return false;
-            }
-            catch (DbEntityValidationException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(CloseLobbyById)} - Entity Validation");
-                return false;
-            }
-            catch (DbUpdateException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(CloseLobbyById)} - DataBase Saving Error");
-                return false;
-            }
-            catch (SqlException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(CloseLobbyById)} - SQL Error");
-                return false;
             }
             catch (Exception ex)
             {
@@ -2006,47 +1495,21 @@ namespace TrucoServer.Services
             try
             {
                 int numericCode = GenerateNumericCodeFromString(matchCode);
-
                 using (var context = new baseDatosTrucoEntities())
                 {
-                    var invitations = context.Invitation
-                        .Where(i => i.code == numericCode && i.status == PENDING_STATUS)
-                        .ToList(); 
-                    
+                    var invitations = context.Invitation.Where(i => i.code == numericCode && i.status == STATUS_PENDING).ToList();
                     if (!invitations.Any())
                     {
                         return true;
                     }
-
                     foreach (var inv in invitations)
                     {
-                        inv.status = EXPIRED_STATUS;
+                        inv.status = STATUS_EXPIRED;
                         inv.expiresAt = DateTime.Now;
                     }
-
                     context.SaveChanges();
                     return true;
                 }
-            }
-            catch (FormatException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(ExpireInvitationByMatchCode)} - Invalid Code");
-                return false;
-            }
-            catch (OverflowException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(ExpireInvitationByMatchCode)} - Code Out of Range");
-                return false;
-            }
-            catch (DbUpdateException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(ExpireInvitationByMatchCode)} - DataBase Saving Error");
-                return false;
-            }
-            catch (SqlException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(ExpireInvitationByMatchCode)} - SQL Error");
-                return false;
             }
             catch (Exception ex)
             {
@@ -2054,6 +1517,7 @@ namespace TrucoServer.Services
                 return false;
             }
         }
+
         private static bool RemoveLobbyMembersById(int lobbyId)
         {
             try
@@ -2061,32 +1525,14 @@ namespace TrucoServer.Services
                 using (var context = new baseDatosTrucoEntities())
                 {
                     var members = context.LobbyMember.Where(lm => lm.lobbyID == lobbyId).ToList();
-
                     if (!members.Any())
                     {
                         return true;
                     }
-
                     context.LobbyMember.RemoveRange(members);
                     context.SaveChanges();
-
                     return true;
                 }
-            }
-            catch (UpdateException ex) when (ex.InnerException is SqlException sqlEx && (sqlEx.Number == 547))
-            {
-                LogManager.LogError(ex, $"{nameof(RemoveLobbyMembersById)} - FK Restriction (Code 547)");
-                return false;
-            }
-            catch (DbUpdateException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(RemoveLobbyMembersById)} - Database Deleting Error");
-                return false;
-            }
-            catch (SqlException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(RemoveLobbyMembersById)} - SQL Error");
-                return false;
             }
             catch (Exception ex)
             {
