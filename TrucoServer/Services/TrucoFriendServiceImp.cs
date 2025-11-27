@@ -7,6 +7,7 @@ using System.ServiceModel;
 using TrucoServer.Contracts;
 using TrucoServer.Data.DTOs;
 using TrucoServer.Utilities;
+using TrucoServer.Helpers.Friends;
 
 namespace TrucoServer.Services
 {
@@ -14,6 +15,15 @@ namespace TrucoServer.Services
     {
         private const string STATUS_ACCEPTED = "Accepted";
         private const string STATUS_PENDING = "Pending";
+
+        private readonly IFriendRepository friendshipRepository;
+        private readonly IFriendNotifier notificationService;
+
+        public TrucoFriendServiceImp()
+        {
+            this.friendshipRepository = new FriendRepository();
+            this.notificationService = new FriendNotifier();
+        }
 
         public bool SendFriendRequest(string fromUser, string toUser)
         {
@@ -28,18 +38,18 @@ namespace TrucoServer.Services
             {
                 using (var context = new baseDatosTrucoEntities())
                 {
-                    if (!GetUsersFromDatabase(context, fromUser, toUser, out User requester, out User target))
+                    if (!friendshipRepository.GetUsersFromDatabase(context, fromUser, toUser, out User requester, out User target))
                     {
                         return false;
                     }
 
-                    if (CheckFriendshipExists(context, requester.userID, target.userID))
+                    if (friendshipRepository.CheckFriendshipExists(context, requester.userID, target.userID))
                     {
                         return false;
                     }
 
-                    RegisterFriendRequest(context, requester.userID, target.userID);
-                    NotifyRequestReceived(toUser, fromUser);
+                    friendshipRepository.RegisterFriendRequest(context, requester.userID, target.userID, STATUS_PENDING);
+                    notificationService.NotifyRequestReceived(toUser, fromUser);
 
                     return true;
                 }
@@ -82,19 +92,19 @@ namespace TrucoServer.Services
             {
                 using (var context = new baseDatosTrucoEntities())
                 {
-                    if (!GetUsersFromDatabase(context, fromUser, toUser, out User requester, out User acceptor))
+                    if (!friendshipRepository.GetUsersFromDatabase(context, fromUser, toUser, out User requester, out User acceptor))
                     {
                         return false;
                     }
 
-                    var request = FindPendingFriendship(context, requester.userID, acceptor.userID);
+                    var request = friendshipRepository.FindPendingFriendship(context, requester.userID, acceptor.userID, STATUS_PENDING);
                     if (request == null)
                     {
                         return false;
                     }
 
-                    CommitFriendshipAcceptance(context, request, requester.userID, acceptor.userID);
-                    NotifyRequestAccepted(fromUser, toUser);
+                    friendshipRepository.CommitFriendshipAcceptance(context, request, requester.userID, acceptor.userID, STATUS_ACCEPTED);
+                    notificationService.NotifyRequestAccepted(fromUser, toUser);
 
                     return true;
                 }
@@ -137,12 +147,12 @@ namespace TrucoServer.Services
             {
                 using (var context = new baseDatosTrucoEntities())
                 {
-                    if (!GetUsersFromDatabase(context, user1, user2, out User u1, out User u2))
+                    if (!friendshipRepository.GetUsersFromDatabase(context, user1, user2, out User u1, out User u2))
                     {
                         return false;
                     }
 
-                    return DeleteFriendships(context, u1.userID, u2.userID);
+                    return friendshipRepository.DeleteFriendships(context, u1.userID, u2.userID);
                 }
             }
             catch (DbUpdateException ex)
@@ -184,7 +194,7 @@ namespace TrucoServer.Services
                         return new List<FriendData>();
                     }
 
-                    return QueryFriendsList(context, user.userID);
+                    return friendshipRepository.QueryFriendsList(context, user.userID, STATUS_ACCEPTED);
                 }
             }
             catch (SqlException ex)
@@ -216,12 +226,13 @@ namespace TrucoServer.Services
                 using (var context = new baseDatosTrucoEntities())
                 {
                     var user = context.User.SingleOrDefault(u => u.username == username);
+
                     if (user == null)
                     {
                         return new List<FriendData>();
                     }
 
-                    return QueryPendingRequests(context, user.userID);
+                    return friendshipRepository.QueryPendingRequests(context, user.userID, STATUS_PENDING);
                 }
             }
             catch (SqlException ex)
@@ -238,140 +249,6 @@ namespace TrucoServer.Services
             {
                 LogManager.LogError(ex, nameof(GetPendingFriendRequests));
                 return new List<FriendData>();
-            }
-        }
-
-        private bool GetUsersFromDatabase(baseDatosTrucoEntities context, string username1, string username2, out User user1, out User user2)
-        {
-            user1 = context.User.FirstOrDefault(u => u.username == username1);
-            user2 = context.User.FirstOrDefault(u => u.username == username2);
-
-            return user1 != null && user2 != null;
-        }
-
-        private bool CheckFriendshipExists(baseDatosTrucoEntities context, int userId1, int userId2)
-        {
-            return context.Friendship.Any(f =>
-                (f.userID == userId1 && f.friendID == userId2) ||
-                (f.userID == userId2 && f.friendID == userId1));
-        }
-
-        private void RegisterFriendRequest(baseDatosTrucoEntities context, int requesterId, int targetId)
-        {
-            var newRequest = new Friendship
-            {
-                userID = requesterId,
-                friendID = targetId,
-                status = STATUS_PENDING
-            };
-
-            context.Friendship.Add(newRequest);
-            context.SaveChanges();
-            Console.WriteLine($"[FRIEND] Request sent from ID {requesterId} to ID {targetId}");
-        }
-
-        private Friendship FindPendingFriendship(baseDatosTrucoEntities context, int requesterId, int acceptorId)
-        {
-            return context.Friendship.FirstOrDefault(f =>
-                f.userID == requesterId &&
-                f.friendID == acceptorId &&
-                f.status == STATUS_PENDING);
-        }
-
-        private void CommitFriendshipAcceptance(baseDatosTrucoEntities context, Friendship request, int requesterId, int acceptorId)
-        {
-            request.status = STATUS_ACCEPTED;
-
-            var reciprocalFriendship = new Friendship
-            {
-                userID = acceptorId,
-                friendID = requesterId,
-                status = STATUS_ACCEPTED
-            };
-
-            context.Friendship.Add(reciprocalFriendship);
-            context.SaveChanges();
-            Console.WriteLine($"[FRIEND] Friendship accepted between ID {requesterId} and ID {acceptorId}");
-        }
-
-        private bool DeleteFriendships(baseDatosTrucoEntities context, int userId1, int userId2)
-        {
-            var toRemove = context.Friendship.Where(f =>
-                (f.userID == userId1 && f.friendID == userId2) ||
-                (f.userID == userId2 && f.friendID == userId1)).ToList();
-
-            if (!toRemove.Any())
-            {
-                return false;
-            }
-
-            context.Friendship.RemoveRange(toRemove);
-            context.SaveChanges();
-            Console.WriteLine($"[FRIEND] Relationship removed between ID {userId1} and ID {userId2}");
-            return true;
-        }
-
-        private List<FriendData> QueryFriendsList(baseDatosTrucoEntities context, int currentUserId)
-        {
-            return context.Friendship
-                .Where(f => (f.userID == currentUserId || f.friendID == currentUserId) && f.status == STATUS_ACCEPTED)
-                .Select(f => f.userID == currentUserId ? f.friendID : f.userID)
-                .Distinct()
-                .Join(context.User.Include("UserProfile"),
-                      friendId => friendId,
-                      u => u.userID,
-                      (friendId, u) => new FriendData
-                      {
-                          Username = u.username,
-                          AvatarId = u.UserProfile.avatarID
-                      })
-                .ToList();
-        }
-
-        private List<FriendData> QueryPendingRequests(baseDatosTrucoEntities context, int currentUserId)
-        {
-            return context.Friendship
-                .Where(f => f.friendID == currentUserId && f.status == STATUS_PENDING)
-                .Join(context.User.Include("UserProfile"),
-                      f => f.userID,
-                      u => u.userID,
-                      (f, u) => new FriendData
-                      {
-                          Username = u.username,
-                          AvatarId = u.UserProfile.avatarID
-                      })
-                .ToList();
-        }
-
-        private void NotifyRequestReceived(string targetUsername, string fromUsername)
-        {
-            try
-            {
-                var callback = TrucoUserServiceImp.GetUserCallback(targetUsername);
-                if (callback != null)
-                {
-                    callback.OnFriendRequestReceived(fromUsername);
-                }
-            }
-            catch (Exception ex)
-            {
-                LogManager.LogError(ex, $"{nameof(NotifyRequestReceived)} - Failed to notify {targetUsername}");
-            }
-        }
-
-        private void NotifyRequestAccepted(string targetUsername, string fromUsername)
-        {
-            try
-            {
-                var callback = TrucoUserServiceImp.GetUserCallback(targetUsername);
-                if (callback != null)
-                {
-                    callback.OnFriendRequestAccepted(fromUsername);
-                }
-            }
-            catch (Exception ex)
-            {
-                LogManager.LogError(ex, $"{nameof(NotifyRequestAccepted)} - Failed to notify {targetUsername}");
             }
         }
     }

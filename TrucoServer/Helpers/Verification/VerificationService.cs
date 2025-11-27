@@ -22,7 +22,7 @@ namespace TrucoServer.Helpers.Verification
 
         public bool RequestEmailVerification(string email, string languageCode)
         {
-            if (ServerValidator.IsEmailValid(email))
+            if (!ServerValidator.IsEmailValid(email))
             {
                 return false;
             }
