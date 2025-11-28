@@ -80,6 +80,23 @@
     <Compile Include="ConfigurationFileWrapperSTests.cs" />
     <Compile Include="ConfigurationFileWrapperTests.cs" />
     <Compile Include="ConfigurationReaderTests.cs" />
+    <Compile Include="DataTests\DTOsTests\AttemptInfoTests.cs" />
+    <Compile Include="DataTests\DTOsTests\BannedWordListTests.cs" />
+    <Compile Include="DataTests\DTOsTests\EmblemLayerTests.cs" />
+    <Compile Include="DataTests\DTOsTests\FriendDataTests.cs" />
+    <Compile Include="DataTests\DTOsTests\LoginFaultTests.cs" />
+    <Compile Include="DataTests\DTOsTests\MatchResultTests.cs" />
+    <Compile Include="DataTests\DTOsTests\MatchScoreTests.cs" />
+    <Compile Include="DataTests\DTOsTests\PlayerInformationTests.cs" />
+    <Compile Include="DataTests\DTOsTests\PlayerInfoTests.cs" />
+    <Compile Include="DataTests\DTOsTests\PlayerStatsTests.cs" />
+    <Compile Include="DataTests\DTOsTests\PublicLobbyInfoTests.cs" />
+    <Compile Include="DataTests\DTOsTests\SocialLinksTests.cs" />
+    <Compile Include="DataTests\DTOsTests\UserProfileDataTests.cs" />
+    <Compile Include="DataTests\DTOsTests\ValidatedLobbyDataTests.cs" />
+    <Compile Include="DataTests\EntititesTests\BannedWordEntityTests.cs" />
+    <Compile Include="DataTests\EntititesTests\EfHelpersTests.cs" />
+    <Compile Include="DataTests\EntititesTests\FriendShipMappingTests.cs" />
     <Compile Include="DeckTests.cs" />
     <Compile Include="EfHelpersTests.cs" />
     <Compile Include="EmailSettingsTests.cs" />
@@ -88,7 +105,31 @@
     <Compile Include="FriendDataTests.cs" />
     <Compile Include="FriendShipMappingSTests.cs" />
     <Compile Include="FriendShipMappingTests.cs" />
+    <Compile Include="GameLogic\ActiveMatchTests.cs" />
+    <Compile Include="GameLogic\DeckTests.cs" />
+    <Compile Include="GameLogic\DefaultDeckShufflerTests.cs" />
+    <Compile Include="GameLogic\IDeckShufflerTests.cs" />
+    <Compile Include="GameLogic\IGameManagerTests.cs" />
+    <Compile Include="GameLogic\ITrucoDeckTests.cs" />
+    <Compile Include="GameLogic\TrucoCardTests.cs" />
+    <Compile Include="GameLogic\TrucoGameManagerTests.cs" />
+    <Compile Include="GameLogic\TrucoMatchTests.cs" />
+    <Compile Include="GameLogic\TrucoRulesTests.cs" />
     <Compile Include="GameManagerTests.cs" />
+    <Compile Include="HelpersTests\AuthenticationTests\IUserAuthenticationHelperTests.cs" />
+    <Compile Include="HelpersTests\AuthenticationTests\UserAuthenticationHelperTests.cs" />
+    <Compile Include="HelpersTests\EmailTests\EmailSenderTests.cs" />
+    <Compile Include="HelpersTests\EmailTests\IEmailSenderTests.cs" />
+    <Compile Include="HelpersTests\FriendsTests\FriendNotifierTests.cs" />
+    <Compile Include="HelpersTests\FriendsTests\FriendRepositoryTests.cs" />
+    <Compile Include="HelpersTests\FriendsTests\IFriendNotifierTests.cs" />
+    <Compile Include="HelpersTests\FriendsTests\IFriendRepositoryTests.cs" />
+    <Compile Include="HelpersTests\MappingTests\IUserMapperTests.cs" />
+    <Compile Include="HelpersTests\MappingTests\UserMapperTests.cs" />
+    <Compile Include="HelpersTests\SessionsTests\IUserSessionManagerTests.cs" />
+    <Compile Include="HelpersTests\SessionsTests\UserSessionManagerTests.cs" />
+    <Compile Include="HelpersTests\VerificationTests\IVerificationServiceTests.cs" />
+    <Compile Include="HelpersTests\VerificationTests\VerificationServiceTests.cs" />
     <Compile Include="LogManagerTests.cs" />
     <Compile Include="MatchResultSTests.cs" />
     <Compile Include="MatchResultTests.cs" />
@@ -126,6 +167,15 @@
       <Project>{58b1747c-6ba5-4518-9536-f30ff3031219}</Project>
       <Name>TrucoServer</Name>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="HelpersTests\MatchTests\" />
+    <Folder Include="HelpersTests\PasswordTests\" />
+    <Folder Include="HelpersTests\ProfanityTests\" />
+    <Folder Include="HelpersTests\ProfilesTests\" />
+    <Folder Include="HelpersTests\RankingTests\" />
+    <Folder Include="ServicesTests\" />
+    <Folder Include="UtilitiesTests\" />
   </ItemGroup>
   <Import Project="$(VSToolsPath)\TeamTest\Microsoft.TestTools.targets" Condition="Exists('$(VSToolsPath)\TeamTest\Microsoft.TestTools.targets')" />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
