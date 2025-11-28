@@ -6,7 +6,8 @@ using System.Threading.Tasks;
 
 namespace TrucoServer.Tests.UtilitiesTests
 {
-    internal class EmailSettingsTests
+    [TestClass]
+    public class EmailSettingsTests
     {
     }
 }
