@@ -126,6 +126,20 @@
     <Compile Include="HelpersTests\FriendsTests\IFriendRepositoryTests.cs" />
     <Compile Include="HelpersTests\MappingTests\IUserMapperTests.cs" />
     <Compile Include="HelpersTests\MappingTests\UserMapperTests.cs" />
+    <Compile Include="HelpersTests\MatchTests\GameRegistryTests.cs" />
+    <Compile Include="HelpersTests\MatchTests\IGameRegistryTests.cs" />
+    <Compile Include="HelpersTests\MatchTests\IJoinServiceTests.cs" />
+    <Compile Include="HelpersTests\MatchTests\ILobbyCoordinatorTests.cs" />
+    <Compile Include="HelpersTests\MatchTests\ILobbyRepositoryTests.cs" />
+    <Compile Include="HelpersTests\MatchTests\IMatchCodeGeneratorTests.cs" />
+    <Compile Include="HelpersTests\MatchTests\IMatchStarterTests.cs" />
+    <Compile Include="HelpersTests\MatchTests\JoinServiceTests.cs" />
+    <Compile Include="HelpersTests\MatchTests\LobbyCoordinatorTests.cs" />
+    <Compile Include="HelpersTests\MatchTests\LobbyRepositoryTests.cs" />
+    <Compile Include="HelpersTests\MatchTests\MatchCodeGeneratorTests.cs" />
+    <Compile Include="HelpersTests\MatchTests\MatchStarterTests.cs" />
+    <Compile Include="HelpersTests\PasswordTests\IPasswordManagerTests.cs" />
+    <Compile Include="HelpersTests\PasswordTests\PasswordManagerTests.cs" />
     <Compile Include="HelpersTests\ProfanityTests\BannedWordRepositoryTests.cs" />
     <Compile Include="HelpersTests\ProfanityTests\IBannedWordRepositoryTests.cs" />
     <Compile Include="HelpersTests\ProfanityTests\IProfanityServiceTests.cs" />
@@ -179,8 +193,6 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="HelpersTests\MatchTests\" />
-    <Folder Include="HelpersTests\PasswordTests\" />
     <Folder Include="ServicesTests\" />
     <Folder Include="UtilitiesTests\" />
   </ItemGroup>
