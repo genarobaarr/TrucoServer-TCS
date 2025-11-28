@@ -126,6 +126,10 @@
     <Compile Include="HelpersTests\FriendsTests\IFriendRepositoryTests.cs" />
     <Compile Include="HelpersTests\MappingTests\IUserMapperTests.cs" />
     <Compile Include="HelpersTests\MappingTests\UserMapperTests.cs" />
+    <Compile Include="HelpersTests\ProfanityTests\BannedWordRepositoryTests.cs" />
+    <Compile Include="HelpersTests\ProfanityTests\IBannedWordRepositoryTests.cs" />
+    <Compile Include="HelpersTests\ProfanityTests\IProfanityServiceTests.cs" />
+    <Compile Include="HelpersTests\ProfanityTests\ProfanityServiceTests.cs" />
     <Compile Include="HelpersTests\ProfilesTests\IProfileUpdaterTests.cs" />
     <Compile Include="HelpersTests\ProfilesTests\ProfileUpdaterTests.cs" />
     <Compile Include="HelpersTests\RankingTests\IMatchHistoryServiceTests.cs" />
@@ -177,7 +181,6 @@
   <ItemGroup>
     <Folder Include="HelpersTests\MatchTests\" />
     <Folder Include="HelpersTests\PasswordTests\" />
-    <Folder Include="HelpersTests\ProfanityTests\" />
     <Folder Include="ServicesTests\" />
     <Folder Include="UtilitiesTests\" />
   </ItemGroup>
