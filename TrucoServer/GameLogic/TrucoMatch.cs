@@ -557,34 +557,15 @@ namespace TrucoServer.GameLogic
 
                 if (response == NO_QUIERO_STATUS)
                 {
-                    int pointsToAward;
-
-                    if (proposedEnvidoBet == EnvidoBet.FaltaEnvido)
-                    {
-                        pointsToAward = 1;
-                    }
-                    else
-                    {
-                        pointsToAward = (currentEnvidoPoints == 0) ? 1 : (currentEnvidoPoints - GetPointsForEnvidoBet(proposedEnvidoBet));
-
-                        if (pointsToAward == 0)
-                        {
-                            pointsToAward = 1;
-                        }
-                    }
-                    NotifyResponse(response, caller.Username, TrucoBetValue.ToString());
-                    AwardEnvidoPoints(caller.Team, pointsToAward);
-                    ResetEnvidoState();
+                    HandleEnvidoNoQuiero(caller);
                 }
                 else if (response == QUIERO_STATUS)
                 {
-                    NotifyResponse(response, caller.Username, TrucoBetValue.ToString());
-                    ResolveEnvido();
+                    HandleEnvidoQuiero(caller);
                 }
                 else
                 {
-                    ResetEnvidoState(false);
-                    CallEnvido(playerID, response);
+                    HandleEnvidoRaise(playerID, response);
                 }
             }
             catch (InvalidOperationException ex)
@@ -707,7 +688,7 @@ namespace TrucoServer.GameLogic
                     waitingForFlorResponseId = opponent.PlayerID;
                     FlorBetValue = FlorBet.Flor;
 
-                    NotifyFlorCallHelper(playerID, FLOR_BET, POINTS_FLOR_DIRECT, opponent.PlayerID);
+                    NotifyFlorCallHelper(playerID, FLOR_BET, opponent.PlayerID);
 
                     return true;
                 }
@@ -852,6 +833,41 @@ namespace TrucoServer.GameLogic
             {
                 LogManager.LogError(ex, nameof(ResolveContraFlor));
             }
+        }
+
+        private void HandleEnvidoNoQuiero(PlayerInformation caller)
+        {
+            int pointsToAward;
+
+            if (proposedEnvidoBet == EnvidoBet.FaltaEnvido)
+            {
+                pointsToAward = 1;
+            }
+            else
+            {
+                pointsToAward = (currentEnvidoPoints == 0) ? 1 : (currentEnvidoPoints - GetPointsForEnvidoBet(proposedEnvidoBet));
+
+                if (pointsToAward == 0)
+                {
+                    pointsToAward = 1;
+                }
+            }
+
+            NotifyResponse(NO_QUIERO_STATUS, caller.Username, TrucoBetValue.ToString());
+            AwardEnvidoPoints(caller.Team, pointsToAward);
+            ResetEnvidoState();
+        }
+
+        private void HandleEnvidoQuiero(PlayerInformation caller)
+        {
+            NotifyResponse(QUIERO_STATUS, caller.Username, TrucoBetValue.ToString());
+            ResolveEnvido();
+        }
+
+        private void HandleEnvidoRaise(int playerID, string response)
+        {
+            ResetEnvidoState(false);
+            CallEnvido(playerID, response);
         }
 
         private void AwardEnvidoPoints(string winningTeam, int points)
@@ -1509,7 +1525,7 @@ namespace TrucoServer.GameLogic
             }
         }
 
-        private void NotifyFlorCallHelper(int callerId, string betName, int currentPoints, int responderId)
+        private void NotifyFlorCallHelper(int callerId, string betName, int responderId)
         {
             try
             {
@@ -1614,7 +1630,7 @@ namespace TrucoServer.GameLogic
             }
         }
 
-        private int GetPointsForEnvidoBet(EnvidoBet bet)
+        private static int GetPointsForEnvidoBet(EnvidoBet bet)
         {
             try
             {

@@ -52,14 +52,14 @@ namespace TrucoServer.GameLogic
             FileName = GenerateFileName(rank, suit);
         }
 
-        private string GenerateFileName(Rank rank, Suit suit)
+        private static string GenerateFileName(Rank rank, Suit suit)
         {
             string suitPrefix = GetSuitPrefix(suit);
 
             return $"{suitPrefix}{(int)rank}";
         }
 
-        private string GetSuitPrefix(Suit suit)
+        private static string GetSuitPrefix(Suit suit)
         {
             switch (suit)
             {

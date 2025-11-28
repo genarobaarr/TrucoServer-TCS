@@ -27,13 +27,11 @@ namespace TrucoServer.Helpers.Profanity
                 lock (lockObject)
                 {
                     cachedBannedWords.Clear();
-                    foreach (var word in words)
-                    {
-                        if (!string.IsNullOrWhiteSpace(word))
-                        {
-                            cachedBannedWords.Add(word.Trim());
-                        }
-                    }
+
+                    cachedBannedWords.UnionWith(
+                        words.Where(word => !string.IsNullOrWhiteSpace(word))
+                             .Select(word => word.Trim())
+                    );
                 }
             }
             catch (Exception ex)

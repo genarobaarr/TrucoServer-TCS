@@ -22,11 +22,11 @@ namespace TrucoServer.Services
 
         private readonly IGameRegistry gameRegistry;
         private readonly IJoinService joinService;
-        private readonly ILobbyCoordinator coordinator;
-        private readonly ILobbyRepository repository;
+        private readonly ILobbyCoordinator lobbyCoordinator;
+        private readonly ILobbyRepository lobbyRepository;
         private readonly IMatchCodeGenerator codeGenerator;
         private readonly IMatchStarter starter;
-        private readonly IProfanityServerService profanity;
+        private readonly IProfanityServerService profanityService;
 
         public TrucoMatchServiceImp()
         {
@@ -39,9 +39,9 @@ namespace TrucoServer.Services
             var shuffler = new DefaultDeckShuffler();
 
 
-            var joinService = new JoinService(coordinator, repository);
+            var join = new JoinService(coordinator);
 
-            var starter = new MatchStarter(
+            var matchStarter = new MatchStarter(
                 registry,
                 coordinator,
                 repository,
@@ -50,14 +50,14 @@ namespace TrucoServer.Services
             );
 
             this.gameRegistry = registry;
-            this.joinService = joinService;
-            this.coordinator = coordinator;
-            this.repository = repository;
+            this.joinService = join;
+            this.lobbyCoordinator = coordinator;
+            this.lobbyRepository = repository;
             this.codeGenerator = generator;
-            this.starter = starter;
-            this.profanity = new ProfanityServerService(profanity);
+            this.starter = matchStarter;
+            this.profanityService = new ProfanityServerService(profanity);
 
-            this.profanity.LoadBannedWords();
+            this.profanityService.LoadBannedWords();
         }
 
         public string CreateLobby(string hostUsername, int maxPlayers, string privacy)
@@ -78,28 +78,28 @@ namespace TrucoServer.Services
                         throw new InvalidOperationException("Host user not found.");
                     }
 
-                    int versionId = repository.ResolveVersionId(context, maxPlayers);
+                    int versionId = lobbyRepository.ResolveVersionId(context, maxPlayers);
                     string matchCode = codeGenerator.GenerateMatchCode();
                     string normalizedStatus = privacy.Equals("public", StringComparison.OrdinalIgnoreCase) ? STATUS_PUBLIC : STATUS_PRIVATE;
 
-                    var lobby = repository.CreateNewLobby(context, host, versionId, maxPlayers, normalizedStatus);
+                    var lobby = lobbyRepository.CreateNewLobby(context, host, versionId, maxPlayers, normalizedStatus);
 
                     if (lobby == null)
                     {
                         return string.Empty;
                     }
 
-                    repository.AddLobbyOwner(context, lobby, host);
+                    lobbyRepository.AddLobbyOwner(context, lobby, host);
 
                     if (lobby.status.Equals(STATUS_PRIVATE, StringComparison.OrdinalIgnoreCase))
                     {
-                        repository.CreatePrivateInvitation(context, host, matchCode);
+                        lobbyRepository.CreatePrivateInvitation(context, host, matchCode);
                     }
 
                     context.SaveChanges();
 
-                    coordinator.RegisterLobbyMapping(matchCode, lobby);
-                    coordinator.GetOrCreateLobbyLock(lobby.lobbyID);
+                    lobbyCoordinator.RegisterLobbyMapping(matchCode, lobby);
+                    lobbyCoordinator.GetOrCreateLobbyLock(lobby.lobbyID);
 
                     Console.WriteLine($"[SERVER] Lobby created by {hostUsername}, code={matchCode}, privacy={privacy}, maxPlayers={maxPlayers}.");
                     return matchCode;
@@ -127,14 +127,19 @@ namespace TrucoServer.Services
                 using (var context = new baseDatosTrucoEntities())
                 {
                     Lobby lobby = null;
-                    if (coordinator.TryGetLobbyIdFromCode(matchCode, out int id))
+                    if (lobbyCoordinator.TryGetLobbyIdFromCode(matchCode, out int id))
                     {
                         lobby = context.Lobby.FirstOrDefault(l => l.lobbyID == id);
                     }
 
                     if (lobby == null)
                     {
-                        lobby = repository.ResolveLobbyForJoin(context, matchCode);
+                        lobby = lobbyRepository.ResolveLobbyForJoin(context, matchCode);
+
+                        if (lobby != null && !lobby.status.Equals("Closed", StringComparison.OrdinalIgnoreCase))
+                        {
+                            lobbyCoordinator.RegisterLobbyMapping(matchCode, lobby);
+                        }
                     }
 
                     if (lobby == null || lobby.status.Equals(STATUS_CLOSED, StringComparison.OrdinalIgnoreCase))
@@ -145,7 +150,7 @@ namespace TrucoServer.Services
                     lobbyId = lobby.lobbyID;
                 }
 
-                object lobbyLock = coordinator.GetOrCreateLobbyLock(lobbyId);
+                object lobbyLock = lobbyCoordinator.GetOrCreateLobbyLock(lobbyId);
                 lock (lobbyLock)
                 {
                     joinSuccess = joinService.ProcessSafeJoin(lobbyId, matchCode, player);
@@ -173,14 +178,14 @@ namespace TrucoServer.Services
                 using (var context = new baseDatosTrucoEntities())
                 {
                     Lobby lobby = null;
-                    if (coordinator.TryGetLobbyIdFromCode(matchCode, out int id))
+                    if (lobbyCoordinator.TryGetLobbyIdFromCode(matchCode, out int id))
                     {
                         lobby = context.Lobby.FirstOrDefault(l => l.lobbyID == id);
                     }
 
                     if (lobby == null)
                     {
-                        lobby = repository.ResolveLobbyForLeave(context, matchCode, player, out _);
+                        lobby = lobbyRepository.ResolveLobbyForLeave(context, matchCode, player, out _);
                     }
 
                     var user = context.User.FirstOrDefault(u => u.username == player);
@@ -198,13 +203,13 @@ namespace TrucoServer.Services
                         Console.WriteLine($"[LEAVE] Player '{player}' removed from lobby {lobby.lobbyID}.");
                     }
 
-                    coordinator.NotifyPlayerLeft(matchCode, player);
+                    lobbyCoordinator.NotifyPlayerLeft(matchCode, player);
 
                     if (!context.LobbyMember.Any(lm => lm.lobbyID == lobby.lobbyID))
                     {
-                        repository.CloseLobbyById(lobby.lobbyID);
-                        repository.ExpireInvitationByMatchCode(matchCode);
-                        repository.RemoveLobbyMembersById(lobby.lobbyID);
+                        lobbyRepository.CloseLobbyById(lobby.lobbyID);
+                        lobbyRepository.ExpireInvitationByMatchCode(matchCode);
+                        lobbyRepository.RemoveLobbyMembersById(lobby.lobbyID);
                         starter.HandleMatchStartupCleanup(matchCode);
                         Console.WriteLine($"[CLEANUP] Lobby {lobby.lobbyID} closed.");
                     }
@@ -234,7 +239,7 @@ namespace TrucoServer.Services
                         int currentPlayers = context.LobbyMember.Count(lm => lm.lobbyID == lobby.lobbyID);
                         var owner = context.User.FirstOrDefault(u => u.userID == lobby.ownerID);
 
-                        string matchCode = coordinator.GetMatchCodeFromLobbyId(lobby.lobbyID) ?? "(unknown)"; ;
+                        string matchCode = lobbyCoordinator.GetMatchCodeFromLobbyId(lobby.lobbyID) ?? "(unknown)";
 
                         result.Add(new PublicLobbyInfo
                         {
@@ -266,24 +271,24 @@ namespace TrucoServer.Services
                 using (var context = new baseDatosTrucoEntities())
                 {
                     Lobby lobby = null;
-                    if (coordinator.TryGetLobbyIdFromCode(matchCode, out int id))
+                    if (lobbyCoordinator.TryGetLobbyIdFromCode(matchCode, out int id))
                     {
                         lobby = context.Lobby.FirstOrDefault(l => l.lobbyID == id);
                     }
 
                     if (lobby == null)
                     {
-                        lobby = repository.FindLobbyByMatchCode(context, matchCode, false);
+                        lobby = lobbyRepository.FindLobbyByMatchCode(context, matchCode, false);
                     }
 
                     if (lobby == null)
                     {
-                        return coordinator.GetGuestPlayersFromMemory(matchCode);
+                        return lobbyCoordinator.GetGuestPlayersFromMemory(matchCode);
                     }
 
-                    string ownerUsername = repository.GetLobbyOwnerName(context, lobby.ownerID);
-                    var dbPlayers = repository.GetDatabasePlayers(context, lobby, ownerUsername);
-                    var guestPlayers = coordinator.GetGuestPlayersFromMemory(matchCode, ownerUsername);
+                    string ownerUsername = lobbyRepository.GetLobbyOwnerName(context, lobby.ownerID);
+                    var dbPlayers = lobbyRepository.GetDatabasePlayers(context, lobby, ownerUsername);
+                    var guestPlayers = lobbyCoordinator.GetGuestPlayersFromMemory(matchCode, ownerUsername);
 
                     dbPlayers.AddRange(guestPlayers.Where(g => !dbPlayers.Any(p => p.Username == g.Username)));
                     return dbPlayers;
@@ -308,14 +313,14 @@ namespace TrucoServer.Services
                 using (var context = new baseDatosTrucoEntities())
                 {
                     Lobby lobby = null;
-                    if (coordinator.TryGetLobbyIdFromCode(matchCode, out int id))
+                    if (lobbyCoordinator.TryGetLobbyIdFromCode(matchCode, out int id))
                     {
                         lobby = context.Lobby.FirstOrDefault(l => l.lobbyID == id);
                     }
 
                     if (lobby == null)
                     {
-                        lobby = repository.FindLobbyByMatchCode(context, matchCode, true);
+                        lobby = lobbyRepository.FindLobbyByMatchCode(context, matchCode, true);
                     }
 
                     if (lobby == null)
@@ -324,7 +329,7 @@ namespace TrucoServer.Services
                     }
 
                     var dbMembers = context.LobbyMember.Where(lm => lm.lobbyID == lobby.lobbyID).ToList();
-                    int guestCount = coordinator.GetGuestCountInMemory(matchCode);
+                    int guestCount = lobbyCoordinator.GetGuestCountInMemory(matchCode);
 
                     if ((dbMembers.Count + guestCount) != lobby.maxPlayers)
                     {
@@ -341,11 +346,11 @@ namespace TrucoServer.Services
 
                 int lobbyId;
 
-                if (!coordinator.TryGetLobbyIdFromCode(matchCode, out lobbyId))
+                if (!lobbyCoordinator.TryGetLobbyIdFromCode(matchCode, out lobbyId))
                 {
                     using (var ctx = new baseDatosTrucoEntities())
                     {
-                        var l = repository.FindLobbyByMatchCode(ctx, matchCode, false);
+                        var l = lobbyRepository.FindLobbyByMatchCode(ctx, matchCode, false);
                         lobbyId = l?.lobbyID ?? 0;
                     }
                 }
@@ -378,14 +383,14 @@ namespace TrucoServer.Services
             try
             {
                 var callback = OperationContext.Current.GetCallbackChannel<ITrucoCallback>();
-                coordinator.RemoveInactiveCallbacks(matchCode);
+                lobbyCoordinator.RemoveInactiveCallbacks(matchCode);
 
-                bool isNew = coordinator.RegisterChatCallback(matchCode, player, callback);
+                bool isNew = lobbyCoordinator.RegisterChatCallback(matchCode, player, callback);
                 Console.WriteLine($"[CHAT] {player} joined lobby {matchCode}.");
 
                 if (isNew)
                 {
-                    coordinator.NotifyPlayerJoined(matchCode, player);
+                    lobbyCoordinator.NotifyPlayerJoined(matchCode, player);
                 }
             }
             catch (Exception ex)
@@ -404,8 +409,8 @@ namespace TrucoServer.Services
             try
             {
                 var callback = OperationContext.Current.GetCallbackChannel<ITrucoCallback>();
-                coordinator.RemoveCallbackFromMatch(matchCode, callback);
-                coordinator.NotifyPlayerLeft(matchCode, player);
+                lobbyCoordinator.RemoveCallbackFromMatch(matchCode, callback);
+                lobbyCoordinator.NotifyPlayerLeft(matchCode, player);
                 Console.WriteLine($"[CHAT] {player} left lobby {matchCode}.");
 
                 gameRegistry.AbortAndRemoveGame(matchCode, player);
@@ -425,16 +430,16 @@ namespace TrucoServer.Services
 
             try
             {
-                if (profanity.ContainsProfanity(message))
+                if (profanityService.ContainsProfanity(message))
                 {
                     Console.WriteLine($"[PROFANITY BLOCKED] {player} in {matchCode}: {message}");
                     return;
                 }
 
-                coordinator.RemoveInactiveCallbacks(matchCode);
+                lobbyCoordinator.RemoveInactiveCallbacks(matchCode);
                 var senderCallback = OperationContext.Current.GetCallbackChannel<ITrucoCallback>();
 
-                coordinator.BroadcastToMatchCallbacksAsync(matchCode, cb =>
+                lobbyCoordinator.BroadcastToMatchCallbacksAsync(matchCode, cb =>
                 {
                     if (!ReferenceEquals(cb, senderCallback))
                     {
@@ -479,7 +484,7 @@ namespace TrucoServer.Services
 
                 if (success)
                 {
-                    coordinator.BroadcastToMatchCallbacksAsync(matchCode, cb => cb.OnPlayerJoined(matchCode, username));
+                    lobbyCoordinator.BroadcastToMatchCallbacksAsync(matchCode, cb => cb.OnPlayerJoined(matchCode, username));
                 }
             }
             catch (Exception ex) 
@@ -509,7 +514,7 @@ namespace TrucoServer.Services
 
         public BannedWordList GetBannedWords()
         {
-            return profanity.GetBannedWordsForClient();
+            return profanityService.GetBannedWordsForClient();
         }
     }
 }

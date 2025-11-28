@@ -13,13 +13,11 @@ namespace TrucoServer.Security
 
         public static bool IsBlocked(string identifier)
         {
-            if (attempts.TryGetValue(identifier, out AttemptInfo info))
+            if (attempts.TryGetValue(identifier, out AttemptInfo info) && info.BlockedUntil > DateTime.UtcNow)
             {
-                if (info.BlockedUntil > DateTime.UtcNow)
-                {
-                    return true;
-                }
+                return true;
             }
+
             return false;
         }
 

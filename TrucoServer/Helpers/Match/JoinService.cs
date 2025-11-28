@@ -14,12 +14,10 @@ namespace TrucoServer.Helpers.Match
         private const string STATUS_PUBLIC = "Public";
 
         private readonly ILobbyCoordinator coordinator;
-        private readonly ILobbyRepository repository;
 
-        public JoinService(ILobbyCoordinator coordinator, ILobbyRepository repository)
+        public JoinService(ILobbyCoordinator coordinator)
         {
             this.coordinator = coordinator;
-            this.repository = repository;
         }
 
         public bool ProcessSafeJoin(int lobbyId, string matchCode, string player)

@@ -122,8 +122,23 @@ namespace TrucoServer.Helpers.Match
         {
             try
             {
-                var mapping = context;
-                return null;
+                int numericCode = new MatchCodeGenerator().GenerateNumericCodeFromString(matchCode);
+
+                var invitation = context.Invitation.FirstOrDefault(i =>
+                    i.code == numericCode &&
+                    i.status == STATUS_PENDING &&
+                    i.expiresAt > DateTime.Now);
+
+                if (invitation == null)
+                {
+                    return null;
+                }
+
+                var lobbyCandidate = context.Lobby.FirstOrDefault(l =>
+                    l.ownerID == invitation.senderID &&
+                    !l.status.Equals(STATUS_CLOSED));
+
+                return lobbyCandidate;
             }
             catch (Exception ex)
             {
@@ -177,7 +192,7 @@ namespace TrucoServer.Helpers.Match
             }
         }
 
-        private Lobby GetLobbyByMapping(baseDatosTrucoEntities context, string matchCode, bool onlyOpen)
+        private static Lobby GetLobbyByMapping(baseDatosTrucoEntities context, string matchCode, bool onlyOpen)
         {
             try
             {
@@ -197,7 +212,7 @@ namespace TrucoServer.Helpers.Match
             }
         }
 
-        private Lobby GetLobbyByOwner(baseDatosTrucoEntities context, int ownerId, bool onlyOpen)
+        private static Lobby GetLobbyByOwner(baseDatosTrucoEntities context, int ownerId, bool onlyOpen)
         {
             try
             {
