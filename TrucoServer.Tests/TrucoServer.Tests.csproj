@@ -168,6 +168,10 @@
     <Compile Include="PlayerStatsTests.cs" />
     <Compile Include="PublicLobyInfoSTests.cs" />
     <Compile Include="PublicLobyInfoTests.cs" />
+    <Compile Include="ServicesTests\TrucoFriendServiceImpTests.cs" />
+    <Compile Include="ServicesTests\TrucoMatchServiceImpTests.cs" />
+    <Compile Include="ServicesTests\TrucoServerTests.cs" />
+    <Compile Include="ServicesTests\TrucoUserServiceImpTests.cs" />
     <Compile Include="SocialLinksSTests.cs" />
     <Compile Include="SocialLinksTests.cs" />
     <Compile Include="TrucoCardSTests.cs" />
@@ -193,7 +197,6 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="ServicesTests\" />
     <Folder Include="UtilitiesTests\" />
   </ItemGroup>
   <Import Project="$(VSToolsPath)\TeamTest\Microsoft.TestTools.targets" Condition="Exists('$(VSToolsPath)\TeamTest\Microsoft.TestTools.targets')" />
