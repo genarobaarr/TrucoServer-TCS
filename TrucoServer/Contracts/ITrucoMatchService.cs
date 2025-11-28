@@ -60,5 +60,8 @@ namespace TrucoServer.Contracts
 
         [OperationContract(IsOneWay = true)]
         void RespondToFlor(string matchCode, string response);
+
+        [OperationContract]
+        BannedWordList GetBannedWords();
     }
 }

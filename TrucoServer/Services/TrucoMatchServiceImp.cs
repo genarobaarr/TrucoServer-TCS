@@ -8,6 +8,7 @@ using TrucoServer.Data.DTOs;
 using TrucoServer.GameLogic;
 using TrucoServer.Utilities;
 using TrucoServer.Helpers.Match;
+using TrucoServer.Helpers.Profanity;
 
 namespace TrucoServer.Services
 {
@@ -25,6 +26,7 @@ namespace TrucoServer.Services
         private readonly ILobbyRepository repository;
         private readonly IMatchCodeGenerator codeGenerator;
         private readonly IMatchStarter starter;
+        private readonly IProfanityServerService profanity;
 
         public TrucoMatchServiceImp()
         {
@@ -32,7 +34,7 @@ namespace TrucoServer.Services
             var registry = new GameRegistry();
             var repository = new LobbyRepository();
             var generator = new MatchCodeGenerator();
-
+            var profanity = new BannedWordRepository();
             var gameManager = new TrucoGameManager();
             var shuffler = new DefaultDeckShuffler();
 
@@ -53,6 +55,9 @@ namespace TrucoServer.Services
             this.repository = repository;
             this.codeGenerator = generator;
             this.starter = starter;
+            this.profanity = new ProfanityServerService(profanity);
+
+            this.profanity.LoadBannedWords();
         }
 
         public string CreateLobby(string hostUsername, int maxPlayers, string privacy)
@@ -420,6 +425,12 @@ namespace TrucoServer.Services
 
             try
             {
+                if (profanity.ContainsProfanity(message))
+                {
+                    Console.WriteLine($"[PROFANITY BLOCKED] {player} in {matchCode}: {message}");
+                    return;
+                }
+
                 coordinator.RemoveInactiveCallbacks(matchCode);
                 var senderCallback = OperationContext.Current.GetCallbackChannel<ITrucoCallback>();
 
@@ -494,6 +505,11 @@ namespace TrucoServer.Services
             { 
                 LogManager.LogError(ex, callerName);
             }
+        }
+
+        public BannedWordList GetBannedWords()
+        {
+            return profanity.GetBannedWordsForClient();
         }
     }
 }

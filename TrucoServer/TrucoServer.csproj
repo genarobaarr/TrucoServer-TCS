@@ -74,6 +74,8 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Data\DTOs\BannedWordList.cs" />
+    <Compile Include="Data\Entitites\BannedWordEntity.cs" />
     <Compile Include="GameLogic\IDeckShuffler.cs" />
     <Compile Include="GameLogic\ITrucoDeck.cs" />
     <Compile Include="Contracts\ITrucoFriendService.cs" />
@@ -129,6 +131,10 @@
     <Compile Include="Helpers\Match\MatchStarter.cs" />
     <Compile Include="Helpers\Password\IPasswordManager.cs" />
     <Compile Include="Helpers\Password\PasswordManager.cs" />
+    <Compile Include="Helpers\Profanity\BannedWordRepository.cs" />
+    <Compile Include="Helpers\Profanity\IBannedWordRepository.cs" />
+    <Compile Include="Helpers\Profanity\IProfanityService.cs" />
+    <Compile Include="Helpers\Profanity\ProfanityService.cs" />
     <Compile Include="Helpers\Profiles\IProfileUpdater.cs" />
     <Compile Include="Helpers\Profiles\ProfileUpdater.cs" />
     <Compile Include="Helpers\Ranking\IMatchHistoryService.cs" />

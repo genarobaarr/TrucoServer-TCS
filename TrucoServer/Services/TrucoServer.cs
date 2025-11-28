@@ -215,5 +215,10 @@ namespace TrucoServer.Services
         {
             return matchService.GetLobbyPlayers(matchCode);
         }
+
+        public BannedWordList GetBannedWords()
+        {
+            return matchService.GetBannedWords();
+        }
     }
 }
