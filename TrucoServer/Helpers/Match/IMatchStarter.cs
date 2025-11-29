@@ -10,5 +10,7 @@ namespace TrucoServer.Helpers.Match
         void NotifyMatchStart(string matchCode, List<PlayerInfo> players);
         void HandleMatchStartupCleanup(string matchCode);
         bool GetMatchAndPlayerID(string matchCode, out GameLogic.TrucoMatch match, out int playerID);
+        string GetAvatarIdForPlayer(string username);
+        string GetOwnerUsername(string matchCode);
     }
 }

@@ -394,6 +394,8 @@ namespace TrucoServer.GameLogic
 
                 NotifyTrucoCall(playerID, betType, opponent.PlayerID);
 
+                Console.WriteLine($"[CALL TRUCO] {caller.Username} called {betType}, waiting for {opponent.Username} response");
+
                 return true;
             }
             catch (ArgumentException ex)
@@ -1255,6 +1257,7 @@ namespace TrucoServer.GameLogic
             {
                 if (matchEnded)
                 {
+                    Console.WriteLine($"[ABORT] Match already ended, ignoring abort request from {playerUsername}");
                     return;
                 }
                 matchEnded = true;
@@ -1262,24 +1265,49 @@ namespace TrucoServer.GameLogic
 
             try
             {
-                var leaver = Players.FirstOrDefault(p => p.Username == playerUsername);
+                Console.WriteLine($"[ABORT] Match {MatchCode} - Player {playerUsername} is leaving");
+                Console.WriteLine($"[ABORT] Current players in match:");
+
+                foreach (var p in Players)
+                {
+                    Console.WriteLine($"  - {p.Username} (ID: {p.PlayerID}, Team: {p.Team})");
+                }
+
+                var leaver = Players.FirstOrDefault(p => p.Username.Equals(playerUsername, StringComparison.OrdinalIgnoreCase));
 
                 if (leaver == null)
                 {
-                    Console.WriteLine($"[ABORT] Player {playerUsername} not found in match");
-                    return;
+                    Console.WriteLine($"[ABORT ERROR] Player {playerUsername} not found in match players list");
+
+                    if (playerUsername.StartsWith("Guest_"))
+                    {
+                        int guestId = -Math.Abs(playerUsername.GetHashCode());
+                        leaver = Players.FirstOrDefault(p => p.PlayerID == guestId);
+
+                        if (leaver != null)
+                        {
+                            Console.WriteLine($"[ABORT] Found guest by ID: {guestId}");
+                        }
+                    }
+
+                    if (leaver == null)
+                    {
+                        Console.WriteLine($"[ABORT] Cannot determine winner - player not found");
+                        return;
+                    }
                 }
 
                 string loserTeam = leaver.Team;
-                string winnerTeam = (loserTeam == TEAM_1) ? TEAM_2 : TEAM_1;
+                string winnerTeam = (loserTeam == "Team 1") ? "Team 2" : "Team 1";
 
-                int winnerScore = (winnerTeam == TEAM_1) ? Team1Score : Team2Score;
-                int loserScore = (loserTeam == TEAM_1) ? Team1Score : Team2Score;
+                int winnerScore = (winnerTeam == "Team 1") ? Team1Score : Team2Score;
+                int loserScore = (loserTeam == "Team 1") ? Team1Score : Team2Score;
 
                 var winnerPlayer = Players.FirstOrDefault(p => p.Team == winnerTeam);
-                string matchWinnerName = winnerPlayer != null ? winnerPlayer.Username : "Oponent";
+                string matchWinnerName = winnerPlayer != null ? winnerPlayer.Username : "Oponente";
 
-                Console.WriteLine($"[ABORT] Match {MatchCode} aborted by {playerUsername}. Winner: {matchWinnerName} (Guest: {leaver.PlayerID < 0})");
+                Console.WriteLine($"[ABORT] Match {MatchCode} aborted by {playerUsername} ({loserTeam})");
+                Console.WriteLine($"[ABORT] Winner: {matchWinnerName} ({winnerTeam}), Score: {winnerScore} vs {loserScore}");
 
                 gameManager.SaveMatchResult(this.DbMatchId, winnerTeam, winnerScore, loserScore);
 
@@ -1334,26 +1362,40 @@ namespace TrucoServer.GameLogic
             try
             {
                 int numPlayers = Players.Count;
-                var currentTurnPlayer = GetCurrentTurnPlayer();
+                int callerIndex = Players.FindIndex(p => p.PlayerID == caller.PlayerID);
 
-                if (currentTurnPlayer.Team != caller.Team)
+                if (callerIndex == -1)
                 {
-                    return currentTurnPlayer;
+                    Console.WriteLine($"[GET OPPONENT] Caller {caller.Username} not found in players list");
+                    return null;
                 }
 
-                int nextOpponentIndex = (turnIndex + 1) % numPlayers;
-
-                while (Players[nextOpponentIndex].Team == caller.Team)
+                if (numPlayers == 2)
                 {
-                    nextOpponentIndex = (nextOpponentIndex + 1) % numPlayers;
+                    int opponentIndex = (callerIndex + 1) % 2;
+                    var opponent = Players[opponentIndex];
+                    Console.WriteLine($"[GET OPPONENT] 1v1 - Caller: {caller.Username} (idx {callerIndex}), Opponent: {opponent.Username} (idx {opponentIndex})");
+                    return opponent;
+                }
 
-                    if (nextOpponentIndex == turnIndex)
+                for (int i = 1; i < numPlayers; i++)
+                {
+                    int nextIndex = (callerIndex + i) % numPlayers;
+                    var candidate = Players[nextIndex];
+
+                    if (candidate.Team != caller.Team)
                     {
-                        return null;
+                        Console.WriteLine($"[GET OPPONENT] 2v2 - Caller: {caller.Username} (idx {callerIndex}, {caller.Team}), Responder: {candidate.Username} (idx {nextIndex}, {candidate.Team})");
+                        return candidate;
+                    }
+                    else
+                    {
+                        Console.WriteLine($"[GET OPPONENT] Skipping {candidate.Username} (idx {nextIndex}, {candidate.Team}) - same team as caller");
                     }
                 }
 
-                return Players[nextOpponentIndex];
+                Console.WriteLine($"[GET OPPONENT ERROR] No opponent found for {caller.Username}");
+                return null;
             }
             catch (ArgumentOutOfRangeException ex)
             {
@@ -1508,11 +1550,23 @@ namespace TrucoServer.GameLogic
             try
             {
                 var caller = Players.First(p => p.PlayerID == callerId);
-                NotifyPlayer(responderId, callback => callback.NotifyTrucoCall(caller.Username, betName, true));
+                var responder = Players.First(p => p.PlayerID == responderId);
+
+                Console.WriteLine($"[NOTIFY TRUCO] Caller: {caller.Username} (ID: {callerId}), Responder: {responder.Username} (ID: {responderId}), Bet: {betName}");
+
+                NotifyPlayer(responderId, callback =>
+                {
+                    Console.WriteLine($"[NOTIFY TRUCO] Sending to responder {responder.Username}: needsResponse=TRUE");
+                    callback.NotifyTrucoCall(caller.Username, betName, true);
+                });
 
                 foreach (var player in Players.Where(p => p.PlayerID != responderId))
                 {
-                    NotifyPlayer(player.PlayerID, callback => callback.NotifyTrucoCall(caller.Username, betName, false));
+                    NotifyPlayer(player.PlayerID, callback =>
+                    {
+                        Console.WriteLine($"[NOTIFY TRUCO] Sending to observer {player.Username}: needsResponse=FALSE");
+                        callback.NotifyTrucoCall(caller.Username, betName, false);
+                    });
                 }
             }
             catch (InvalidOperationException ex)
@@ -1534,11 +1588,23 @@ namespace TrucoServer.GameLogic
             try
             {
                 var caller = Players.First(p => p.PlayerID == callerId);
-                NotifyPlayer(responderId, callback => callback.NotifyFlorCall(caller.Username, betName, true));
+                var responder = Players.First(p => p.PlayerID == responderId);
+
+                Console.WriteLine($"[NOTIFY FLOR] Caller: {caller.Username}, Responder: {responder.Username}, Bet: {betName}");
+
+                NotifyPlayer(responderId, callback =>
+                {
+                    Console.WriteLine($"[NOTIFY FLOR] Sending to responder {responder.Username}: needsResponse=TRUE");
+                    callback.NotifyFlorCall(caller.Username, betName, true);
+                });
 
                 foreach (var player in Players.Where(p => p.PlayerID != responderId))
                 {
-                    NotifyPlayer(player.PlayerID, callback => callback.NotifyFlorCall(caller.Username, betName, false));
+                    NotifyPlayer(player.PlayerID, callback =>
+                    {
+                        Console.WriteLine($"[NOTIFY FLOR] Sending to observer {player.Username}: needsResponse=FALSE");
+                        callback.NotifyFlorCall(caller.Username, betName, false);
+                    });
                 }
             }
             catch (InvalidOperationException ex)

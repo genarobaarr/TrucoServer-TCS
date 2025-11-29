@@ -12,6 +12,8 @@ namespace TrucoServer.Helpers.Match
     public class MatchStarter : IMatchStarter
     {
         private const string GUEST_PREFIX = "Guest_";
+        private const string TEAM_1 = "Team 1";
+        private const string TEAM_2 = "Team 2";
 
         private readonly IGameRegistry gameRegistry;
         private readonly ILobbyCoordinator coordinator;
@@ -40,6 +42,13 @@ namespace TrucoServer.Helpers.Match
 
             try
             {
+                Console.WriteLine($"[BUILD PLAYERS] Processing {playersList.Count} players:");
+
+                foreach (var pInfo in playersList)
+                {
+                    Console.WriteLine($"  - {pInfo.Username} (Team: {pInfo.Team})");
+                }
+
                 using (var context = new baseDatosTrucoEntities())
                 {
                     foreach (var pInfo in playersList)
@@ -71,9 +80,10 @@ namespace TrucoServer.Helpers.Match
 
                 Console.WriteLine($"[BUILD PLAYERS] Successfully built {gamePlayers.Count} players ({gamePlayers.Count(p => p.PlayerID < 0)} guests)");
 
-                foreach (var player in gamePlayers)
+                Console.WriteLine("[BUILD PLAYERS] Final player list:");
+                for (int i = 0; i < gamePlayers.Count; i++)
                 {
-                    Console.WriteLine($"  -> {player.Username}: PlayerID={player.PlayerID}, Team={player.Team}");
+                    Console.WriteLine($"  [{i}] {gamePlayers[i].Username}: PlayerID={gamePlayers[i].PlayerID}, Team={gamePlayers[i].Team}");
                 }
 
                 return gamePlayers.Count == gameCallbacks.Count && gamePlayers.Count > 0;
@@ -151,18 +161,137 @@ namespace TrucoServer.Helpers.Match
         {
             try
             {
+                Console.WriteLine($"[MATCH INIT] Starting game initialization for {matchCode}");
+                Console.WriteLine($"[MATCH INIT] Received {gamePlayers.Count} players:");
+
+                foreach (var p in gamePlayers)
+                {
+                    Console.WriteLine($"  - {p.Username} (ID: {p.PlayerID}, Team: {p.Team})");
+                }
+
+                string ownerUsername = null;
+
+                using (var context = new baseDatosTrucoEntities())
+                {
+                    var lobby = context.Lobby.Find(lobbyId);
+
+                    if (lobby == null)
+                    {
+                        LogManager.LogError(new Exception($"Lobby {lobbyId} not found"), nameof(InitializeAndRegisterGame));
+                        return;
+                    }
+
+                    var owner = context.User.Find(lobby.ownerID);
+                    ownerUsername = owner?.username;
+
+                    if (string.IsNullOrEmpty(ownerUsername))
+                    {
+                        Console.WriteLine($"[MATCH INIT ERROR] Could not determine owner for lobby {lobbyId}");
+                        ownerUsername = gamePlayers.FirstOrDefault()?.Username;
+                    }
+
+                    Console.WriteLine($"[MATCH INIT] Lobby owner: {ownerUsername}");
+                }
+
+                var orderedPlayers = OrderPlayersForMatch(gamePlayers, ownerUsername);
+
+                if (orderedPlayers.Count != gamePlayers.Count)
+                {
+                    Console.WriteLine($"[MATCH INIT ERROR] Player count mismatch! Original: {gamePlayers.Count}, Ordered: {orderedPlayers.Count}");
+                    Console.WriteLine("[MATCH INIT] Using original order as fallback");
+                    orderedPlayers = gamePlayers;
+                }
+
+                Console.WriteLine($"[MATCH INIT] Final ordered players for match {matchCode}:");
+                for (int i = 0; i < orderedPlayers.Count; i++)
+                {
+                    Console.WriteLine($"  Position {i}: {orderedPlayers[i].Username} (ID: {orderedPlayers[i].PlayerID}, Team: {orderedPlayers[i].Team})");
+                }
+
                 var newDeck = new Deck(shuffler);
-                var newGame = new TrucoMatch(matchCode, lobbyId, gamePlayers, gameCallbacks, newDeck, gameManager);
+                var newGame = new TrucoMatch(matchCode, lobbyId, orderedPlayers, gameCallbacks, newDeck, gameManager);
 
                 if (!gameRegistry.TryAddGame(matchCode, newGame))
                 {
                     LogManager.LogError(new Exception($"Failed to add running game {matchCode}"), nameof(InitializeAndRegisterGame));
+                }
+                else
+                {
+                    Console.WriteLine($"[MATCH INIT] Game {matchCode} successfully registered");
                 }
             }
             catch (Exception ex)
             {
                 LogManager.LogError(ex, nameof(InitializeAndRegisterGame));
             }
+        }
+
+        private List<PlayerInformation> OrderPlayersForMatch(List<PlayerInformation> players, string ownerUsername)
+        {
+            if (players == null || players.Count == 0)
+            {
+                Console.WriteLine("[ORDER ERROR] Players list is null or empty");
+                return players;
+            }
+
+            if (players.Count == 2)
+            {
+                var owner = players.FirstOrDefault(p => p.Username.Equals(ownerUsername, StringComparison.OrdinalIgnoreCase));
+                var opponent = players.FirstOrDefault(p => !p.Username.Equals(ownerUsername, StringComparison.OrdinalIgnoreCase));
+
+                if (owner == null || opponent == null)
+                {
+                    Console.WriteLine("[ORDER ERROR] Could not find owner or opponent for 1v1");
+                    return players;
+                }
+
+                return new List<PlayerInformation> { owner, opponent };
+            }
+
+            var owner4 = players.FirstOrDefault(p => p.Username.Equals(ownerUsername, StringComparison.OrdinalIgnoreCase));
+
+            if (owner4 == null)
+            {
+                Console.WriteLine($"[ORDER ERROR] Owner {ownerUsername} not found in players list");
+
+                Console.WriteLine($"[ORDER DEBUG] Available players:");
+                foreach (var p in players)
+                {
+                    Console.WriteLine($"  - {p.Username} ({p.Team})");
+                }
+
+                return players;
+            }
+
+            var ownerTeam = owner4.Team;
+            var teammates = players.Where(p => p.Team == ownerTeam && p.Username != ownerUsername).ToList();
+            var opponents = players.Where(p => p.Team != ownerTeam).OrderBy(p => p.Username).ToList();
+
+            Console.WriteLine($"[ORDER DEBUG] Owner: {owner4.Username} ({ownerTeam})");
+            Console.WriteLine($"[ORDER DEBUG] Teammates: {string.Join(", ", teammates.Select(t => t.Username))}");
+            Console.WriteLine($"[ORDER DEBUG] Opponents: {string.Join(", ", opponents.Select(o => o.Username))}");
+
+            if (teammates.Count == 0)
+            {
+                Console.WriteLine("[ORDER ERROR] No teammates found!");
+                return players;
+            }
+
+            if (opponents.Count < 2)
+            {
+                Console.WriteLine($"[ORDER ERROR] Not enough opponents found! Count: {opponents.Count}");
+                return players;
+            }
+
+            var orderedPlayers = new List<PlayerInformation>
+            {
+                owner4,        
+                opponents[0],
+                teammates[0],
+                opponents[1] 
+            };
+
+            return orderedPlayers;
         }
 
         public void NotifyMatchStart(string matchCode, List<PlayerInfo> players)
@@ -254,6 +383,58 @@ namespace TrucoServer.Helpers.Match
                 LogManager.LogError(ex, nameof(GetMatchAndPlayerID));
                 return false;
             }
+        }
+
+        public string GetAvatarIdForPlayer(string username)
+        {
+            try
+            {
+                if (username.StartsWith("Guest_"))
+                {
+                    return "avatar_aaa_default";
+                }
+
+                using (var context = new baseDatosTrucoEntities())
+                {
+                    var user = context.User.FirstOrDefault(u => u.username == username);
+                    if (user != null)
+                    {
+                        var profile = context.UserProfile.FirstOrDefault(up => up.userID == user.userID);
+                        return profile?.avatarID ?? "avatar_aaa_default";
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError(ex, nameof(GetAvatarIdForPlayer));
+            }
+
+            return "avatar_aaa_default";
+        }
+
+        public string GetOwnerUsername(string matchCode)
+        {
+            try
+            {
+                if (coordinator.TryGetLobbyIdFromCode(matchCode, out int lobbyId))
+                {
+                    using (var context = new baseDatosTrucoEntities())
+                    {
+                        var lobby = context.Lobby.Find(lobbyId);
+                        if (lobby != null)
+                        {
+                            var owner = context.User.Find(lobby.ownerID);
+                            return owner?.username;
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError(ex, nameof(GetOwnerUsername));
+            }
+
+            return null;
         }
     }
 }

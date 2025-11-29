@@ -272,6 +272,31 @@ namespace TrucoServer.Services
 
             try
             {
+                Console.WriteLine($"[GET LOBBY PLAYERS] Called for match {matchCode}");
+
+                if (gameRegistry.TryGetGame(matchCode, out var match))
+                {
+                    Console.WriteLine($"[GET LOBBY PLAYERS] Match {matchCode} is running, returning game order");
+
+                    var gamePlayers = match.Players.Select(p => new PlayerInfo
+                    {
+                        Username = p.Username,
+                        Team = p.Team,
+                        AvatarId = starter.GetAvatarIdForPlayer(p.Username),
+                        OwnerUsername = starter.GetOwnerUsername(matchCode)
+                    }).ToList();
+
+                    Console.WriteLine($"[GET LOBBY PLAYERS] Returning {gamePlayers.Count} players in game order:");
+                    for (int i = 0; i < gamePlayers.Count; i++)
+                    {
+                        Console.WriteLine($"  [{i}] {gamePlayers[i].Username} - {gamePlayers[i].Team}");
+                    }
+
+                    return gamePlayers;
+                }
+
+                Console.WriteLine($"[GET LOBBY PLAYERS] Match {matchCode} not running yet, using lobby order");
+
                 using (var context = new baseDatosTrucoEntities())
                 {
                     Lobby lobby = null;
@@ -295,6 +320,8 @@ namespace TrucoServer.Services
                     var guestPlayers = lobbyCoordinator.GetGuestPlayersFromMemory(matchCode, ownerUsername);
 
                     dbPlayers.AddRange(guestPlayers.Where(g => !dbPlayers.Any(p => p.Username == g.Username)));
+
+                    Console.WriteLine($"[GET LOBBY PLAYERS] Returning {dbPlayers.Count} players from lobby");
                     return dbPlayers;
                 }
             }
@@ -521,6 +548,11 @@ namespace TrucoServer.Services
             }
         }
 
+        public BannedWordList GetBannedWords()
+        {
+            return profanityService.GetBannedWordsForClient();
+        }
+
         private void ExecuteGameAction(string matchCode, Action<TrucoMatch, int> action, string callerName)
         {
             if (!ServerValidator.IsMatchCodeValid(matchCode))
@@ -534,15 +566,10 @@ namespace TrucoServer.Services
                     action(match, playerID);
                 }
             }
-            catch (Exception ex) 
-            { 
+            catch (Exception ex)
+            {
                 LogManager.LogError(ex, callerName);
             }
-        }
-
-        public BannedWordList GetBannedWords()
-        {
-            return profanityService.GetBannedWordsForClient();
         }
     }
 }

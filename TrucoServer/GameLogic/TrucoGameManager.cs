@@ -13,6 +13,8 @@ namespace TrucoServer.GameLogic
     {
         private const string STATUS_INPROGRESS = "InProgress";
         private const string STATUS_FINISHED = "Finished";
+        private const string TEAM_1 = "Team 1";
+        private const string TEAM_2 = "Team 2";
 
         private const int INITIAL_SCORE = 0;
         private const int VERSION_1V1 = 1;
@@ -168,17 +170,21 @@ namespace TrucoServer.GameLogic
 
         private void AddPlayersToMatch(baseDatosTrucoEntities context, int matchId, List<PlayerInformation> players)
         {
+            Console.WriteLine($"[DB SAVE] Adding {players.Count} players to match {matchId}:");
+
             foreach (var p in players)
             {
                 if (p.PlayerID <= 0)
                 {
+                    Console.WriteLine($"  - {p.Username} (Guest, {p.Team}) - Skipping DB entry");
                     continue;
                 }
 
-                var user = context.User.FirstOrDefault(u => u.username == p.Username);
+                var user = context.User.FirstOrDefault(u => u.userID == p.PlayerID);
 
                 if (user == null)
                 {
+                    Console.WriteLine($"  - {p.Username} (ID: {p.PlayerID}) - User not found in DB");
                     continue;
                 }
 
@@ -190,7 +196,10 @@ namespace TrucoServer.GameLogic
                     score = INITIAL_SCORE,
                     isWinner = false
                 });
+
+                Console.WriteLine($"  - {p.Username} (ID: {p.PlayerID}, {p.Team}) - Added to DB");
             }
+
             context.SaveChanges();
         }
 
