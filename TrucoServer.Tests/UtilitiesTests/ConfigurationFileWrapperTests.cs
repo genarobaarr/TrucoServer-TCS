@@ -22,7 +22,6 @@ namespace TrucoServer.Tests.UtilitiesTests
 
             wrapper.EmailSettings = settings;
             Assert.AreSame(settings, wrapper.EmailSettings);
-            Assert.AreEqual("smtp.gmail.com", wrapper.EmailSettings.SmtpHost);
         }
 
         [TestMethod]

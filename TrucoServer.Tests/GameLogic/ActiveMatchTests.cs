@@ -13,11 +13,23 @@ namespace TrucoServer.Tests.GameLogic
     public class ActiveMatchTests
     {
         [TestMethod]
-        public void TestActiveMatchConstructorShouldInitializeLists()
+        public void TestActiveMatchConstructorShouldInitializePlayersList()
         {
             var match = new ActiveMatch();
-            Assert.IsNotNull(match.Players, "The list of players must not be null");
-            Assert.IsNotNull(match.TableCards, "The list of cards on the table must not be null");
+            Assert.IsNotNull(match.Players);
+        }
+
+        [TestMethod]
+        public void TestActiveMatchConstructorShouldInitializeTableCardsList()
+        {
+            var match = new ActiveMatch();
+            Assert.IsNotNull(match.TableCards);
+        }
+
+        [TestMethod]
+        public void TestActiveMatchConstructorShouldInitializeEmptyPlayersList()
+        {
+            var match = new ActiveMatch();
             Assert.AreEqual(0, match.Players.Count);
         }
 

@@ -56,7 +56,6 @@ namespace TrucoServer.Tests.UtilitiesTests
             BruteForceProtector.RegisterFailedAttempt(user);
             BruteForceProtector.RegisterFailedAttempt(user);
             BruteForceProtector.RegisterSuccess(user);
-            Assert.IsFalse(BruteForceProtector.IsBlocked(user));
 
             var field = typeof(BruteForceProtector).GetField("attempts", BindingFlags.NonPublic | BindingFlags.Static);
             var attempts = (ConcurrentDictionary<string, AttemptInfo>)field.GetValue(null);

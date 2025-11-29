@@ -14,9 +14,8 @@ namespace TrucoServer.Tests.UtilitiesTests
         [TestMethod]
         public void TestHashValidStringShouldReturnBase64String()
         {
-            string hash = PasswordHasher.Hash("password123");
-            Assert.IsNotNull(hash);
-            Assert.IsTrue(hash.Length > 0);
+            string hash = PasswordHasher.Hash("password123"); 
+            Assert.IsFalse(string.IsNullOrEmpty(hash));
         }
 
         [TestMethod]

@@ -45,9 +45,7 @@ namespace TrucoServer.Tests.UtilitiesTests
 
             File.WriteAllText(FILE_NAME, jsonContent);
             var settings = ConfigurationReader.EmailSettings;
-            Assert.IsNotNull(settings);
-            Assert.AreEqual("test@truco.com", settings.FromAddress);
-            Assert.AreEqual(587, settings.SmtpPort);
+            Assert.AreEqual(("test@truco.com", 587), (settings?.FromAddress, settings?.SmtpPort));
         }
 
         [TestMethod]

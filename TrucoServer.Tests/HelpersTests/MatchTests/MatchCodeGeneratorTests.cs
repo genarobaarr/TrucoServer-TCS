@@ -23,8 +23,7 @@ namespace TrucoServer.Tests.HelpersTests.MatchTests
         public void TestGenerateMatchCodeShouldReturnSixCharString()
         {
             string code = generator.GenerateMatchCode();
-            Assert.IsNotNull(code);
-            Assert.AreEqual(6, code.Length);
+            Assert.AreEqual(6, code?.Length);
         }
 
         [TestMethod]

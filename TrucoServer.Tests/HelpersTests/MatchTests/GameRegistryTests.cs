@@ -50,22 +50,36 @@ namespace TrucoServer.Tests.HelpersTests.MatchTests
         }
 
         [TestMethod]
-        public void TestTryGetGameExistingKeyShouldReturnMatch()
+        public void TestTryGetGameExistingKeyShouldReturnTrue()
         {
             registry.TryAddGame("MATCH1", mockMatch);
-            bool found = registry.TryGetGame("MATCH1", out var retrieved);
+            bool found = registry.TryGetGame("MATCH1", out _);
             Assert.IsTrue(found);
+        }
+
+        [TestMethod]
+        public void TestTryGetGameExistingKeyShouldReturnCorrectInstance()
+        {
+            registry.TryAddGame("MATCH1", mockMatch);
+            registry.TryGetGame("MATCH1", out var retrieved);
             Assert.AreSame(mockMatch, retrieved);
         }
 
         [TestMethod]
-        public void TestTryRemoveGameExistingKeyShouldRemoveAndReturnTrue()
+        public void TestTryRemoveGameExistingKeyShouldReturnTrue()
         {
             registry.TryAddGame("MATCH1", mockMatch);
             bool removed = registry.TryRemoveGame("MATCH1");
-            bool found = registry.TryGetGame("MATCH1", out _);
             Assert.IsTrue(removed);
-            Assert.IsFalse(found);
+        }
+
+        [TestMethod]
+        public void TestTryRemoveGameShouldActuallyRemoveItem()
+        {
+            registry.TryAddGame("MATCH1", mockMatch);
+            registry.TryRemoveGame("MATCH1");
+            bool foundAfterRemoval = registry.TryGetGame("MATCH1", out _);
+            Assert.IsFalse(foundAfterRemoval);
         }
     }
 }

@@ -73,65 +73,81 @@ namespace TrucoServer.Tests.HelpersTests.MatchTests
             }
         }
 
-        [TestMethod]
-        public void TestBuildGamePlayersRegisteredUserShouldResolveIdFromDb()
+        private void SetupMockForBuilder(string username, out List<PlayerInfo> inputList)
         {
-            var inputList = new List<PlayerInfo>
-        {
-            new PlayerInfo 
-            { 
-                Username = "StarterUser", 
-                Team = "Team 1"
-            }
-        };
+            inputList = new List<PlayerInfo>
+            {
+                new PlayerInfo
+                {
+                    Username = username,
+                    Team = "Team 1"
+                }
+            };
 
             ITrucoCallback dummyCb;
-            mockCoordinator.Setup(c => c.TryGetActiveCallbackForPlayer("StarterUser", out dummyCb))
-                .Returns(new TryGetCallbackDelegate((string user, out ITrucoCallback cb) => 
+            mockCoordinator.Setup(c => c.TryGetActiveCallbackForPlayer(username, out dummyCb))
+                .Returns(new TryGetCallbackDelegate((string user, out ITrucoCallback cb) =>
                 {
                     cb = mockCallback.Object;
                     return true;
                 }));
+        }
 
-            bool result = starter.BuildGamePlayersAndCallbacks(inputList, out var players, out var callbacks);
+        [TestMethod]
+        public void TestBuildGamePlayersRegisteredUserShouldReturnTrue()
+        {
+            SetupMockForBuilder("StarterUser", out var inputList);
+            bool result = starter.BuildGamePlayersAndCallbacks(inputList, out _, out _);
             Assert.IsTrue(result);
+        }
+
+        [TestMethod]
+        public void TestBuildGamePlayersRegisteredUserShouldPopulateList()
+        {
+            SetupMockForBuilder("StarterUser", out var inputList);
+            starter.BuildGamePlayersAndCallbacks(inputList, out var players, out _);
             Assert.AreEqual(1, players.Count);
+        }
+
+        [TestMethod]
+        public void TestBuildGamePlayersRegisteredUserShouldResolveIdFromDb()
+        {
+            SetupMockForBuilder("StarterUser", out var inputList);
+            starter.BuildGamePlayersAndCallbacks(inputList, out var players, out _);
             Assert.IsTrue(players[0].PlayerID > 0);
+        }
+
+        [TestMethod]
+        public void TestBuildGamePlayersRegisteredUserShouldPopulateCallbacks()
+        {
+            SetupMockForBuilder("StarterUser", out var inputList);
+            starter.BuildGamePlayersAndCallbacks(inputList, out var players, out var callbacks);
             Assert.IsTrue(callbacks.ContainsKey(players[0].PlayerID));
+        }
+
+        [TestMethod]
+        public void TestBuildGamePlayersGuestUserShouldReturnTrue()
+        {
+            SetupMockForBuilder("Guest_123", out var inputList);
+            bool result = starter.BuildGamePlayersAndCallbacks(inputList, out _, out _);
+            Assert.IsTrue(result);
         }
 
         [TestMethod]
         public void TestBuildGamePlayersGuestUserShouldGenerateNegativeId()
         {
-            var inputList = new List<PlayerInfo>
-        {
-            new PlayerInfo 
-            { 
-                Username = "Guest_123", 
-                Team = "Team 2" 
-            }
-        };
-
-            ITrucoCallback dummyCb;
-            mockCoordinator.Setup(c => c.TryGetActiveCallbackForPlayer("Guest_123", out dummyCb))
-                .Returns(new TryGetCallbackDelegate((string user, out ITrucoCallback cb) => 
-                {
-                    cb = mockCallback.Object;
-                    return true;
-                }));
-
-            bool result = starter.BuildGamePlayersAndCallbacks(inputList, out var players, out var callbacks);
-            Assert.IsTrue(result);
+            SetupMockForBuilder("Guest_123", out var inputList);
+            starter.BuildGamePlayersAndCallbacks(inputList, out var players, out _);
             Assert.IsTrue(players[0].PlayerID < 0);
         }
 
         [TestMethod]
-        public void TestInitializeAndRegisterGameShouldCreateMatchAndAddToRegistry()
+        public void TestInitializeAndRegisterGameShouldAddToRegistry()
         {
             var players = new List<PlayerInformation>();
             var cbs = new Dictionary<int, ITrucoCallback>();
 
-            mockGameManager.Setup(gm => gm.SaveMatchToDatabase(It.IsAny<string>(), 
+            mockGameManager.Setup(gm => gm.SaveMatchToDatabase(It.IsAny<string>(),
                 It.IsAny<int>(), It.IsAny<List<PlayerInformation>>())).Returns(1);
 
             mockRegistry.Setup(r => r.TryAddGame(It.IsAny<string>(), It.IsAny<TrucoMatch>()))
@@ -142,7 +158,7 @@ namespace TrucoServer.Tests.HelpersTests.MatchTests
         }
 
         [TestMethod]
-        public void TestHandleMatchStartupCleanupShouldCloseLobbyAndCleanMappings()
+        public void TestHandleMatchStartupCleanupShouldCloseLobby()
         {
             string code = "MATCH1";
             int lobbyId = 50;
@@ -150,7 +166,27 @@ namespace TrucoServer.Tests.HelpersTests.MatchTests
             mockCoordinator.Setup(c => c.TryGetLobbyIdFromCode(code, out lobbyId)).Returns(true);
             starter.HandleMatchStartupCleanup(code);
             mockRepo.Verify(r => r.CloseLobbyById(lobbyId), Times.Once);
+        }
+
+        [TestMethod]
+        public void TestHandleMatchStartupCleanupShouldExpireInvitations()
+        {
+            string code = "MATCH1";
+            int lobbyId = 50;
+
+            mockCoordinator.Setup(c => c.TryGetLobbyIdFromCode(code, out lobbyId)).Returns(true);
+            starter.HandleMatchStartupCleanup(code);
             mockRepo.Verify(r => r.ExpireInvitationByMatchCode(code), Times.Once);
+        }
+
+        [TestMethod]
+        public void TestHandleMatchStartupCleanupShouldRemoveLobbyMapping()
+        {
+            string code = "MATCH1";
+            int lobbyId = 50;
+
+            mockCoordinator.Setup(c => c.TryGetLobbyIdFromCode(code, out lobbyId)).Returns(true);
+            starter.HandleMatchStartupCleanup(code);
             mockCoordinator.Verify(c => c.RemoveLobbyMapping(code), Times.Once);
         }
     }

@@ -36,33 +36,72 @@ namespace TrucoServer.Tests.GameLogic
         }
 
         [TestMethod]
-        public void TestConstructorInitializationShouldSaveMatchToDatabase()
+        public void TestConstructorInitializationShouldSetCorrectLobbyId()
         {
             var match = new TrucoMatch("CODE123", 1, players, mockCallbacks, mockDeck, mockGameManager);
             Assert.AreEqual(1, match.LobbyID);
+        }
+
+        [TestMethod]
+        public void TestConstructorInitializationShouldCallSaveMatch()
+        {
+            var match = new TrucoMatch("CODE123", 1, players, mockCallbacks, mockDeck, mockGameManager);
             Assert.IsTrue(mockGameManager.SaveMatchCalled);
+        }
+
+        [TestMethod]
+        public void TestConstructorInitializationShouldSetStateToDeal()
+        {
+            var match = new TrucoMatch("CODE123", 1, players, mockCallbacks, mockDeck, mockGameManager);
             Assert.AreEqual(GameState.Deal, match.CurrentState);
         }
 
         [TestMethod]
-        public void TestStartNewHandShouldResetStateAndDealCards()
+        public void TestStartNewHandShouldSetStateToEnvido()
         {
             var match = new TrucoMatch("CODE", 1, players, mockCallbacks, mockDeck, mockGameManager);
             match.StartNewHand();
             Assert.AreEqual(GameState.Envido, match.CurrentState);
+        }
+
+        [TestMethod]
+        public void TestStartNewHandShouldDealCardsToPlayer1()
+        {
+            var match = new TrucoMatch("CODE", 1, players, mockCallbacks, mockDeck, mockGameManager);
+            match.StartNewHand();
             Assert.AreEqual(3, players[0].Hand.Count);
+        }
+
+        [TestMethod]
+        public void TestStartNewHandShouldDealCardsToPlayer2()
+        {
+            var match = new TrucoMatch("CODE", 1, players, mockCallbacks, mockDeck, mockGameManager);
+            match.StartNewHand();
             Assert.AreEqual(3, players[1].Hand.Count);
         }
 
         [TestMethod]
-        public void TestPlayCardValidTurnShouldRemoveCardFromHandAndAdvanceTurn()
+        public void TestPlayCardValidTurnShouldReturnTrue()
         {
             var match = new TrucoMatch("CODE", 1, players, mockCallbacks, mockDeck, mockGameManager);
             match.StartNewHand();
             string cardToPlay = "sword_1";
+
             bool result = match.PlayCard(1, cardToPlay);
-            Assert.IsTrue(result, "PlayCard should return true for valid move");
-            Assert.AreEqual(2, players[0].Hand.Count, "Hand should have 2 cards left");
+
+            Assert.IsTrue(result);
+        }
+
+        [TestMethod]
+        public void TestPlayCardValidTurnShouldRemoveCardFromHand()
+        {
+            var match = new TrucoMatch("CODE", 1, players, mockCallbacks, mockDeck, mockGameManager);
+            match.StartNewHand();
+            string cardToPlay = "sword_1";
+
+            match.PlayCard(1, cardToPlay);
+
+            Assert.AreEqual(2, players[0].Hand.Count);
         }
 
         [TestMethod]
@@ -70,17 +109,31 @@ namespace TrucoServer.Tests.GameLogic
         {
             var match = new TrucoMatch("CODE", 1, players, mockCallbacks, mockDeck, mockGameManager);
             match.StartNewHand();
+
             bool result = match.PlayCard(2, "gold_7");
-            Assert.IsFalse(result, "PlayCard should return false when playing out of turn");
+
+            Assert.IsFalse(result);
         }
 
         [TestMethod]
-        public void TestCallTrucoValidStateShouldUpdateGameStateToTruco()
+        public void TestCallTrucoValidStateShouldReturnTrue()
         {
             var match = new TrucoMatch("CODE", 1, players, mockCallbacks, mockDeck, mockGameManager);
             match.StartNewHand();
+
             bool result = match.CallTruco(1, "Truco");
+
             Assert.IsTrue(result);
+        }
+
+        [TestMethod]
+        public void TestCallTrucoValidStateShouldUpdateGameState()
+        {
+            var match = new TrucoMatch("CODE", 1, players, mockCallbacks, mockDeck, mockGameManager);
+            match.StartNewHand();
+
+            match.CallTruco(1, "Truco");
+
             Assert.AreEqual(GameState.Truco, match.CurrentState);
         }
 
@@ -90,17 +143,21 @@ namespace TrucoServer.Tests.GameLogic
             var match = new TrucoMatch("CODE", 1, players, mockCallbacks, mockDeck, mockGameManager);
             match.StartNewHand();
             match.CallTruco(1, "Truco");
+
             match.RespondToCall(2, "Quiero");
+
             Assert.AreEqual(TrucoBet.Truco, match.TrucoBetValue);
         }
 
         [TestMethod]
-        public void TestRespondToCallNoQuieroShouldEndHandAndAwardPoints()
+        public void TestRespondToCallNoQuieroShouldAwardPointsToOpponent()
         {
             var match = new TrucoMatch("CODE", 1, players, mockCallbacks, mockDeck, mockGameManager);
             match.StartNewHand();
             match.CallTruco(1, "Truco");
+
             match.RespondToCall(2, "NoQuiero");
+
             Assert.AreEqual(1, match.Team1Score);
         }
 
@@ -110,18 +167,21 @@ namespace TrucoServer.Tests.GameLogic
             var match = new TrucoMatch("CODE", 1, players, mockCallbacks, mockDeck, mockGameManager);
             match.StartNewHand();
             match.PlayCard(1, "sword_1");
+
             bool result = match.CallEnvido(2, "Envido");
-            Assert.IsFalse(result, "Cannot call Envido after a card is played");
+
+            Assert.IsFalse(result);
         }
 
         [TestMethod]
         public void TestCallFlorPlayerWithoutFlorShouldReturnFalse()
         {
-            // Arrange
             var match = new TrucoMatch("CODE", 1, players, mockCallbacks, mockDeck, mockGameManager);
             match.StartNewHand();
+
             bool result = match.CallFlor(1, "Flor");
-            Assert.IsFalse(result, "Should prevent calling Flor if player doesn't have 3 same suit cards");
+
+            Assert.IsFalse(result);
         }
     }
 
@@ -145,11 +205,11 @@ namespace TrucoServer.Tests.GameLogic
         public List<TrucoCard> DealHand()
         {
             return new List<TrucoCard>
-        {
-            new TrucoCard(Rank.Uno, Suit.Sword),
-            new TrucoCard(Rank.Siete, Suit.Gold),
-            new TrucoCard(Rank.Tres, Suit.Club)
-        };
+            {
+                new TrucoCard(Rank.Uno, Suit.Sword),
+                new TrucoCard(Rank.Siete, Suit.Gold),
+                new TrucoCard(Rank.Tres, Suit.Club)
+            };
         }
 
         public TrucoCard DrawCard() { return new TrucoCard(Rank.Cuatro, Suit.Gold); }

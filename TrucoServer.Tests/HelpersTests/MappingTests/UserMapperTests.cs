@@ -21,7 +21,7 @@ namespace TrucoServer.Tests.HelpersTests.MappingTests
         }
 
         [TestMethod]
-        public void TestMapUserToProfileDataValidUserShouldReturnDto()
+        public void TestMapUserToProfileDataValidUserShouldReturnDtoName()
         {
             var user = new User
             {
@@ -37,6 +37,24 @@ namespace TrucoServer.Tests.HelpersTests.MappingTests
             var result = mapper.MapUserToProfileData(user);
 
             Assert.AreEqual("NameTest", result.Username);
+        }
+
+        [TestMethod]
+        public void TestMapUserToProfileDataValidUserShouldReturnDtoAvatar()
+        {
+            var user = new User
+            {
+                username = "NameTest",
+                email = "test@gmail.com",
+                UserProfile = new UserProfile
+                {
+                    avatarID = "avatar_aaa_default",
+                    languageCode = "es-MX"
+                }
+            };
+
+            var result = mapper.MapUserToProfileData(user);
+
             Assert.AreEqual("avatar_aaa_default", result.AvatarId);
         }
 
@@ -80,7 +98,6 @@ namespace TrucoServer.Tests.HelpersTests.MappingTests
 
                 var results = mapper.FetchLastMatchesForUser(context, user.userID);
 
-                Assert.IsNotNull(results);
                 Assert.IsTrue(results.Count > 0);
                 Assert.AreEqual(match.matchID.ToString(), results[0].MatchID);
                 Assert.AreEqual(30, results[0].FinalScore);
