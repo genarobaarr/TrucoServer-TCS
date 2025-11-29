@@ -75,34 +75,62 @@ namespace TrucoServer.Tests.HelpersTests.MatchTests
         }
 
         [TestMethod]
-        public void TestCreateNewLobbyValidInputShouldCreateRecord()
+        public void TestCreateNewLobbyValidInputShouldSetCorrectOwner()
         {
             using (var context = new baseDatosTrucoEntities())
             {
                 int versionId = repository.ResolveVersionId(context, 2);
                 var lobby = repository.CreateNewLobby(context, testHost, versionId, 2, "Public");
-
-                Assert.IsNotNull(lobby);
                 Assert.AreEqual(testHost.userID, lobby.ownerID);
-                Assert.AreEqual("Public", lobby.status);
-                Assert.IsTrue(lobby.lobbyID > 0);
             }
         }
 
         [TestMethod]
+        public void TestCreateNewLobbyValidInputShouldSetStatusPublic()
+        {
+            using (var context = new baseDatosTrucoEntities())
+            {
+                int versionId = repository.ResolveVersionId(context, 2);
+                var lobby = repository.CreateNewLobby(context, testHost, versionId, 2, "Public");
+                Assert.AreEqual("Public", lobby.status);
+            }
+        }
+
+        [TestMethod]
+        public void TestCreateNewLobbyValidInputShouldGenerateValidId()
+        {
+            using (var context = new baseDatosTrucoEntities())
+            {
+                int versionId = repository.ResolveVersionId(context, 2);
+                var lobby = repository.CreateNewLobby(context, testHost, versionId, 2, "Public");
+                Assert.IsTrue(lobby.lobbyID > 0);
+            }
+        }
+
         public void TestAddLobbyOwnerShouldCreateMemberRecord()
         {
             using (var context = new baseDatosTrucoEntities())
             {
                 int versionId = repository.ResolveVersionId(context, 2);
                 var lobby = repository.CreateNewLobby(context, testHost, versionId, 2, "Public");
-
                 repository.AddLobbyOwner(context, lobby, testHost);
                 context.SaveChanges();
-
                 var member = context.LobbyMember.FirstOrDefault(m => m.lobbyID == lobby.lobbyID && m.userID == testHost.userID);
                 Assert.IsNotNull(member);
-                Assert.AreEqual("Owner", member.role);
+            }
+        }
+
+        [TestMethod]
+        public void TestAddLobbyOwnerShouldAssignOwnerRole()
+        {
+            using (var context = new baseDatosTrucoEntities())
+            {
+                int versionId = repository.ResolveVersionId(context, 2);
+                var lobby = repository.CreateNewLobby(context, testHost, versionId, 2, "Public");
+                repository.AddLobbyOwner(context, lobby, testHost);
+                context.SaveChanges();
+                var member = context.LobbyMember.FirstOrDefault(m => m.lobbyID == lobby.lobbyID && m.userID == testHost.userID);
+                Assert.AreEqual("Owner", member?.role);
             }
         }
 

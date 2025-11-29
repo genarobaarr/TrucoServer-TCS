@@ -78,7 +78,6 @@ namespace TrucoServer.Tests.HelpersTests.MatchTests
             bool result = coordinator.RegisterChatCallback(code, player, mockCallback.Object);
             Assert.IsTrue(result);
             var info = coordinator.GetPlayerInfoFromCallback(mockCallback.Object);
-            Assert.IsNotNull(info);
             Assert.AreEqual(player, info.Username);
         }
 
@@ -94,7 +93,7 @@ namespace TrucoServer.Tests.HelpersTests.MatchTests
 
             var mockGuest = new Mock<ITrucoCallback>();
             var mockUser = new Mock<ITrucoCallback>();
-            coordinator.RegisterChatCallback(code, "Guest_123", mockGuest.Object);
+            coordinator.RegisterChatCallback(code, "MATCH1", mockGuest.Object);
             coordinator.RegisterChatCallback(code, "User_123", mockUser.Object);
             var guests = coordinator.GetGuestPlayersFromMemory(code);
 
