@@ -78,7 +78,6 @@ namespace TrucoServer.Tests.DataTests.EntititesTests
             };
             
             var result = EfHelpers.GetNavigation(entity, "Child");
-            Assert.IsNotNull(result);
             Assert.IsInstanceOfType(result, typeof(DummyChild));
         }
     }

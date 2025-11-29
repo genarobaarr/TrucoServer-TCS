@@ -27,8 +27,7 @@ namespace TrucoServer.Tests.DataTests.EntititesTests
         {
             var property = typeof(FriendShipMapping).GetProperty("UserID");
             var columnAttr = property.GetCustomAttribute<ColumnAttribute>();
-            Assert.IsNotNull(columnAttr);
-            Assert.AreEqual("userID1", columnAttr.Name);
+            Assert.AreEqual("userID1", columnAttr?.Name);
         }
 
         [TestMethod]
@@ -36,8 +35,7 @@ namespace TrucoServer.Tests.DataTests.EntititesTests
         {
             var property = typeof(FriendShipMapping).GetProperty("FriendID");
             var columnAttr = property.GetCustomAttribute<ColumnAttribute>();
-            Assert.IsNotNull(columnAttr);
-            Assert.AreEqual("userID2", columnAttr.Name);
+            Assert.AreEqual("userID2", columnAttr?.Name);
         }
 
         [TestMethod]
