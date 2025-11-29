@@ -46,7 +46,7 @@ namespace TrucoServer.Tests.UtilitiesTests
         }
 
         [TestMethod]
-        [ExpectedException(typeof(System.FormatException))]
+        [ExpectedException(typeof(FormatException))]
         public void TestVerifyInvalidHashFormatShouldThrowException()
         {
             PasswordHasher.Verify("pass", "NotABase64String");
