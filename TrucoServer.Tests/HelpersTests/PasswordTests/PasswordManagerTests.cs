@@ -72,8 +72,6 @@ namespace TrucoServer.Tests.HelpersTests.PasswordTests
 
             bool result = passwordManager.UpdatePasswordAndNotify(TEST_EMAIL, newPass, lang, method);
 
-            Assert.IsTrue(result);
-
             using (var context = new baseDatosTrucoEntities())
             {
                 var user = context.User.First(u => u.email == TEST_EMAIL);

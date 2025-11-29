@@ -68,7 +68,6 @@ namespace TrucoServer.Tests.HelpersTests.AuthenticationTests
         public void TestAuthenticateUserCorrectCredentialsShouldReturnUserObject()
         {
             var user = helper.AuthenticateUser(TEST_USER, TEST_PASS);
-            Assert.IsNotNull(user);
             Assert.AreEqual(TEST_USER, user.username);
         }
 
@@ -91,6 +90,12 @@ namespace TrucoServer.Tests.HelpersTests.AuthenticationTests
         {
             string code = helper.GenerateSecureNumericCode();
             Assert.AreEqual(6, code.Length);
+        }
+
+        [TestMethod]
+        public void TestGenerateSecureNumericCodeShouldReturnTrue()
+        {
+            string code = helper.GenerateSecureNumericCode();
             Assert.IsTrue(int.TryParse(code, out _));
         }
 

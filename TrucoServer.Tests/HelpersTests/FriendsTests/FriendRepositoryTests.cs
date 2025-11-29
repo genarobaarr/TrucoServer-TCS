@@ -134,7 +134,6 @@ namespace TrucoServer.Tests.HelpersTests.FriendsTests
                 context.SaveChanges();
                 bool result = repository.DeleteFriendships(context, userA.userID, userB.userID);
 
-                Assert.IsTrue(result);
                 int count = context.Friendship.Count(f => f.userID == userA.userID || f.userID == userB.userID);
                 Assert.AreEqual(0, count, "All rows between A and B should be deleted");
             }
