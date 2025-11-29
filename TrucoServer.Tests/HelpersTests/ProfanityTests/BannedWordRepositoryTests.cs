@@ -23,12 +23,12 @@ namespace TrucoServer.Tests.HelpersTests.ProfanityTests
                 context.Database.ExecuteSqlCommand("DELETE FROM BannedWord");
                 context.BannedWord.Add(new BannedWord 
                 { 
-                    word = "IntegrationTestWord1" 
+                    word = "TestWord1" 
                 });
                 
                 context.BannedWord.Add(new BannedWord
                 { 
-                    word = "IntegrationTestWord2" 
+                    word = "TestWord2" 
                 });
 
                 context.SaveChanges();
@@ -51,7 +51,7 @@ namespace TrucoServer.Tests.HelpersTests.ProfanityTests
 
             Assert.IsNotNull(result);
             Assert.AreEqual(2, result.Count());
-            Assert.IsTrue(result.Contains("IntegrationTestWord1"));
+            Assert.IsTrue(result.Contains("TestWord1"));
         }
 
         [TestMethod]
