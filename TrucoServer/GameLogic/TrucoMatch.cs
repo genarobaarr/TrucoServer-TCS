@@ -1263,8 +1263,10 @@ namespace TrucoServer.GameLogic
             try
             {
                 var leaver = Players.FirstOrDefault(p => p.Username == playerUsername);
+
                 if (leaver == null)
                 {
+                    Console.WriteLine($"[ABORT] Player {playerUsername} not found in match");
                     return;
                 }
 
@@ -1275,7 +1277,9 @@ namespace TrucoServer.GameLogic
                 int loserScore = (loserTeam == TEAM_1) ? Team1Score : Team2Score;
 
                 var winnerPlayer = Players.FirstOrDefault(p => p.Team == winnerTeam);
-                string matchWinnerName = winnerPlayer != null ? winnerPlayer.Username : "Oponente";
+                string matchWinnerName = winnerPlayer != null ? winnerPlayer.Username : "Oponent";
+
+                Console.WriteLine($"[ABORT] Match {MatchCode} aborted by {playerUsername}. Winner: {matchWinnerName} (Guest: {leaver.PlayerID < 0})");
 
                 gameManager.SaveMatchResult(this.DbMatchId, winnerTeam, winnerScore, loserScore);
 

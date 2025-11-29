@@ -35,7 +35,12 @@ namespace TrucoServer.GameLogic
                     
                     if (players != null && players.Any())
                     {
-                        AddPlayersToMatch(context, match.matchID, players);
+                        var registeredPlayers = players.Where(p => p.PlayerID > 0).ToList();
+
+                        if (registeredPlayers.Any())
+                        {
+                            AddPlayersToMatch(context, match.matchID, registeredPlayers);
+                        }
                     }
 
                     return match.matchID;
@@ -165,6 +170,11 @@ namespace TrucoServer.GameLogic
         {
             foreach (var p in players)
             {
+                if (p.PlayerID <= 0)
+                {
+                    continue;
+                }
+
                 var user = context.User.FirstOrDefault(u => u.username == p.Username);
 
                 if (user == null)

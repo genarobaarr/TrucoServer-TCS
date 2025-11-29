@@ -41,18 +41,21 @@ namespace TrucoServer.Helpers.Match
         {
             if (!lobby.status.Equals(STATUS_PUBLIC, StringComparison.OrdinalIgnoreCase))
             {
+                Console.WriteLine($"[JOIN GUEST] Denied: Lobby {lobby.lobbyID} is not public");
                 return false;
             }
 
             int currentDbPlayers = context.LobbyMember.Count(lm => lm.lobbyID == lobby.lobbyID);
             int guestCount = coordinator.GetGuestCountInMemory(matchCode);
+            int totalPlayers = currentDbPlayers + guestCount;
 
-            if ((currentDbPlayers + guestCount) >= lobby.maxPlayers)
+            if (totalPlayers >= lobby.maxPlayers)
             {
-                Console.WriteLine($"[JOIN] Denied: Public lobby {lobby.lobbyID} is full.");
+                Console.WriteLine($"[JOIN GUEST] Denied: Public lobby {lobby.lobbyID} is full ({totalPlayers}/{lobby.maxPlayers})");
                 return false;
             }
 
+            Console.WriteLine($"[JOIN GUEST] Approved: Guest {player} joining lobby {lobby.lobbyID} ({totalPlayers + 1}/{lobby.maxPlayers})");
             return true;
         }
 
@@ -131,7 +134,12 @@ namespace TrucoServer.Helpers.Match
         {
             if (maxPlayers == 2)
             {
-                return (team1Count <= team2Count) ? TEAM_1 : TEAM_2;
+                if (team1Count == 0 && team2Count == 0)
+                {
+                    return TEAM_1;
+                }
+
+                return TEAM_2;
             }
 
             return (team1Count > team2Count) ? TEAM_2 : TEAM_1;

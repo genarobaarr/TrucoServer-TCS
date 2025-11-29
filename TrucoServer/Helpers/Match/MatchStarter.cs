@@ -46,11 +46,19 @@ namespace TrucoServer.Helpers.Match
                     {
                         if (pInfo.Username.StartsWith(GUEST_PREFIX))
                         {
-                            ProcessGuestPlayer(pInfo, gamePlayers, gameCallbacks);
+                            if (!ProcessGuestPlayer(pInfo, gamePlayers, gameCallbacks))
+                            {
+                                Console.WriteLine($"[WARNING] Failed to process guest {pInfo.Username}");
+                                return false;
+                            }
                         }
                         else
                         {
-                            ProcessRegisteredPlayer(context, pInfo, gamePlayers, gameCallbacks);
+                            if (!ProcessRegisteredPlayer(context, pInfo, gamePlayers, gameCallbacks))
+                            {
+                                Console.WriteLine($"[WARNING] Failed to process registered player {pInfo.Username}");
+                                return false;
+                            }
                         }
                     }
                 }
@@ -61,7 +69,14 @@ namespace TrucoServer.Helpers.Match
                     return false;
                 }
 
-                return gamePlayers.Count == gameCallbacks.Count;
+                Console.WriteLine($"[BUILD PLAYERS] Successfully built {gamePlayers.Count} players ({gamePlayers.Count(p => p.PlayerID < 0)} guests)");
+
+                foreach (var player in gamePlayers)
+                {
+                    Console.WriteLine($"  -> {player.Username}: PlayerID={player.PlayerID}, Team={player.Team}");
+                }
+
+                return gamePlayers.Count == gameCallbacks.Count && gamePlayers.Count > 0;
             }
             catch (Exception ex)
             {
@@ -70,37 +85,65 @@ namespace TrucoServer.Helpers.Match
             }
         }
 
-        private void ProcessGuestPlayer(PlayerInfo pInfo, List<PlayerInformation> gamePlayers, Dictionary<int, ITrucoCallback> gameCallbacks)
+        private bool ProcessGuestPlayer(PlayerInfo pInfo, List<PlayerInformation> gamePlayers, Dictionary<int, ITrucoCallback> gameCallbacks)
         {
-            int guestTempId = -Math.Abs(pInfo.Username.GetHashCode());
-            gamePlayers.Add(new PlayerInformation(guestTempId, pInfo.Username, pInfo.Team));
-
-            if (coordinator.TryGetActiveCallbackForPlayer(pInfo.Username, out var guestCb))
+            try
             {
-                gameCallbacks[guestTempId] = guestCb;
-            }
-            else
-            {
-                Console.WriteLine($"[WARNING] Guest {pInfo.Username} not found or disconnected during start.");
-            }
-        }
+                int guestTempId = (int)-Math.Abs((long)pInfo.Username.GetHashCode());
 
-        private void ProcessRegisteredPlayer(baseDatosTrucoEntities context, PlayerInfo pInfo, List<PlayerInformation> gamePlayers, Dictionary<int, ITrucoCallback> gameCallbacks)
-        {
-            var user = context.User.FirstOrDefault(u => u.username == pInfo.Username);
-
-            if (user != null)
-            {
-                gamePlayers.Add(new PlayerInformation(user.userID, user.username, pInfo.Team));
-
-                if (coordinator.TryGetActiveCallbackForPlayer(pInfo.Username, out ITrucoCallback activeCallback))
+                if (coordinator.TryGetActiveCallbackForPlayer(pInfo.Username, out var guestCb))
                 {
-                    gameCallbacks[user.userID] = activeCallback;
+                    var registeredInfo = coordinator.GetPlayerInfoFromCallback(guestCb);
+                    string team = registeredInfo?.Team ?? pInfo.Team ?? "Team 1";
+
+                    gamePlayers.Add(new PlayerInformation(guestTempId, pInfo.Username, pInfo.Team));
+                    gameCallbacks[guestTempId] = guestCb;
+
+                    Console.WriteLine($"[GUEST PROCESSING] Guest {pInfo.Username} added with ID {guestTempId}, Team: {pInfo.Team}");
+                    return true;
                 }
                 else
                 {
-                    Console.WriteLine($"[WARNING] User {pInfo.Username} is in lobby but has no active connection.");
+                    Console.WriteLine($"[WARNING] Guest {pInfo.Username} not found or disconnected during start.");
+                    return false;
                 }
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError(ex, nameof(ProcessGuestPlayer));
+                return false;
+            }
+        }
+
+        private bool ProcessRegisteredPlayer(baseDatosTrucoEntities context, PlayerInfo pInfo, List<PlayerInformation> gamePlayers, Dictionary<int, ITrucoCallback> gameCallbacks)
+        {
+            try
+            {
+                var user = context.User.FirstOrDefault(u => u.username == pInfo.Username);
+
+                if (user != null)
+                {
+                    if (coordinator.TryGetActiveCallbackForPlayer(pInfo.Username, out ITrucoCallback activeCallback))
+                    {
+                        gamePlayers.Add(new PlayerInformation(user.userID, user.username, pInfo.Team));
+                        gameCallbacks[user.userID] = activeCallback;
+
+                        Console.WriteLine($"[USER PROCESSING] User {pInfo.Username} added with ID {user.userID}, Team: {pInfo.Team}");
+                        return true;
+                    }
+                    else
+                    {
+                        Console.WriteLine($"[WARNING] User {pInfo.Username} is in lobby but has no active connection.");
+                        return false;
+                    }
+                }
+                Console.WriteLine($"[ERROR] User {pInfo.Username} not found in database");
+                return false;
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError(ex, nameof(ProcessRegisteredPlayer));
+                return false;
             }
         }
 

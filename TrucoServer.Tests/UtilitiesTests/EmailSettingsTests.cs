@@ -5,9 +5,9 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace TrucoServer.Tests.UtilitiesTests
-{
+{/*
     [TestClass]
     public class EmailSettingsTests
     {
-    }
+    }*/
 }
