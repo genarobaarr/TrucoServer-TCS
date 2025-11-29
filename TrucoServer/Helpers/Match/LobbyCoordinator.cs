@@ -56,14 +56,29 @@ namespace TrucoServer.Helpers.Match
                     matchCallbacks[matchCode] = new List<Contracts.ITrucoCallback>();
                 }
 
-                if (!matchCallbacks[matchCode].Any(cb => ReferenceEquals(cb, callback)))
+                var existingCallbackIndex = matchCallbacks[matchCode].FindIndex(cb => ReferenceEquals(cb, callback));
+
+                if (existingCallbackIndex >= 0)
                 {
-                    PlayerInfo playerInfo = CreatePlayerInfoForChat(matchCode, player);
-                    matchCallbacks[matchCode].Add(callback);
-                    matchCallbackToPlayer[callback] = playerInfo;
-                    return true;
+                    if (matchCallbackToPlayer.TryGetValue(callback, out var existingInfo))
+                    {
+                        Console.WriteLine($"[CHAT] Callback already registered for {player} with team {existingInfo.Team}");
+                        return false;
+                    }
                 }
-                return false;
+
+                PlayerInfo playerInfo = CreatePlayerInfoForChat(matchCode, player);
+
+                if (existingCallbackIndex < 0)
+                {
+                    matchCallbacks[matchCode].Add(callback);
+                }
+
+                matchCallbackToPlayer[callback] = playerInfo;
+
+                Console.WriteLine($"[CHAT] {player} registered in {matchCode} - Team: {playerInfo.Team}");
+
+                return true;
             }
         }
 
@@ -85,10 +100,31 @@ namespace TrucoServer.Helpers.Match
                 return new List<PlayerInfo>();
             }
 
-            return callbacks.Select(cb => GetPlayerInfoFromCallback(cb))
-                .Where(info => info != null && info.Username.StartsWith(GUEST_PREFIX))
-                .Select(g => new PlayerInfo { Username = g.Username, AvatarId = DEFAULT_AVATAR_ID, OwnerUsername = ownerUsername, Team = g.Team ?? TEAM_1 })
-                .ToList();
+            lock (matchCallbacks)
+            {
+                return callbacks
+                    .Where(cb =>
+                    {
+                        try
+                        {
+                            return ((ICommunicationObject)cb).State == CommunicationState.Opened;
+                        }
+                        catch
+                        {
+                            return false;
+                        }
+                    })
+                    .Select(cb => GetPlayerInfoFromCallback(cb))
+                    .Where(info => info != null && info.Username.StartsWith(GUEST_PREFIX))
+                    .Select(g => new PlayerInfo
+                    {
+                        Username = g.Username,
+                        AvatarId = DEFAULT_AVATAR_ID,
+                        OwnerUsername = ownerUsername,
+                        Team = g.Team ?? TEAM_1
+                    })
+                    .ToList();
+            }
         }
 
         public PlayerInfo GetPlayerInfoFromCallback(Contracts.ITrucoCallback callback)
@@ -116,13 +152,20 @@ namespace TrucoServer.Helpers.Match
         public void RemoveMatchCallbackMapping(Contracts.ITrucoCallback callback)
         {
             matchCallbackToPlayer.TryRemove(callback, out _);
+            Console.WriteLine($"[CALLBACK MAPPING] Removed callback mapping");
         }
 
         public int GetGuestCountInMemory(string matchCode)
         {
             if (matchCallbacks.TryGetValue(matchCode, out var callbacks))
             {
-                return callbacks.Select(cb => GetPlayerInfoFromCallback(cb)).Count(info => info != null && info.Username.StartsWith(GUEST_PREFIX));
+                lock (matchCallbacks)
+                {
+                    return callbacks
+                        .Where(cb => ((ICommunicationObject)cb).State == CommunicationState.Opened)
+                        .Select(cb => GetPlayerInfoFromCallback(cb))
+                        .Count(info => info != null && info.Username.StartsWith(GUEST_PREFIX));
+                }
             }
             return 0;
         }
@@ -146,9 +189,9 @@ namespace TrucoServer.Helpers.Match
                     Task.Run(() => ProcessSingleCallbackAsync(matchCode, cb, invocation));
                 }
             }
-            catch (Exception ex) 
-            { 
-                LogManager.LogError(ex, nameof(BroadcastToMatchCallbacksAsync)); 
+            catch (Exception ex)
+            {
+                LogManager.LogError(ex, nameof(BroadcastToMatchCallbacksAsync));
             }
         }
 
@@ -169,13 +212,13 @@ namespace TrucoServer.Helpers.Match
                             var comm = (ICommunicationObject)cb;
                             if (comm.State != CommunicationState.Opened)
                             {
-                                try 
-                                { 
-                                    comm.Abort(); 
-                                } 
-                                catch 
-                                { 
-                                    /* noop */ 
+                                try
+                                {
+                                    comm.Abort();
+                                }
+                                catch
+                                {
+                                    /* noop */
                                 }
                                 return true;
                             }
@@ -201,13 +244,13 @@ namespace TrucoServer.Helpers.Match
                             matchCallbacks[matchCode].Remove(cb);
                         }
                     }
-                    try 
-                    { 
-                        comm.Abort(); 
-                    } 
-                    catch 
+                    try
                     {
-                        /* noop */ 
+                        comm.Abort();
+                    }
+                    catch
+                    {
+                        /* noop */
                     }
                     return;
                 }
@@ -234,13 +277,13 @@ namespace TrucoServer.Helpers.Match
         {
             BroadcastToMatchCallbacksAsync(matchCode, cb =>
             {
-                try 
-                { 
-                    cb.OnPlayerJoined(matchCode, player); 
+                try
+                {
+                    cb.OnPlayerJoined(matchCode, player);
                 }
-                catch (Exception ex) 
-                { 
-                    LogManager.LogError(ex, nameof(NotifyPlayerJoined)); 
+                catch (Exception ex)
+                {
+                    LogManager.LogError(ex, nameof(NotifyPlayerJoined));
                 }
             });
         }
@@ -249,13 +292,13 @@ namespace TrucoServer.Helpers.Match
         {
             BroadcastToMatchCallbacksAsync(matchCode, cb =>
             {
-                try 
-                { 
-                    cb.OnPlayerLeft(matchCode, player); 
-                }
-                catch (Exception ex) 
+                try
                 {
-                    LogManager.LogError(ex, nameof(NotifyPlayerLeft)); 
+                    cb.OnPlayerLeft(matchCode, player);
+                }
+                catch (Exception ex)
+                {
+                    LogManager.LogError(ex, nameof(NotifyPlayerLeft));
                 }
             });
         }
@@ -317,36 +360,136 @@ namespace TrucoServer.Helpers.Match
 
         private PlayerInfo CreatePlayerInfoForChat(string matchCode, string player)
         {
-            if (player.StartsWith(GUEST_PREFIX))
+            try
             {
-                string assignedTeam = TEAM_1;
-                using (var context = new baseDatosTrucoEntities())
-                {
-                    var lobby = new LobbyRepository().FindLobbyByMatchCode(context, matchCode, true);
-                    if (lobby != null && lobby.maxPlayers > 2)
-                    {
-                        int t1Count = context.LobbyMember.Count(lm => lm.lobbyID == lobby.lobbyID && lm.team == TEAM_1);
-                        int t2Count = context.LobbyMember.Count(lm => lm.lobbyID == lobby.lobbyID && lm.team == TEAM_2);
+                int lobbyId;
 
-                        if (matchCallbacks.TryGetValue(matchCode, out var callbacks))
+                if (!TryGetLobbyIdFromCode(matchCode, out lobbyId))
+                {
+                    Console.WriteLine($"[CHAT REGISTRATION ERROR] Mapping not found for match {matchCode}");
+
+                    using (var context = new baseDatosTrucoEntities())
+                    {
+                        var lobby = new LobbyRepository().FindLobbyByMatchCode(context, matchCode, true);
+
+                        if (lobby != null)
                         {
-                            t1Count += callbacks.Select(GetPlayerInfoFromCallback).Count(i => i != null && i.Team == TEAM_1);
-                            t2Count += callbacks.Select(GetPlayerInfoFromCallback).Count(i => i != null && i.Team == TEAM_2);
+                            lobbyId = lobby.lobbyID;
+                            Console.WriteLine($"[CHAT REGISTRATION] Found lobby {lobbyId} via DB fallback for match {matchCode}");
                         }
-                        if (t1Count >= t2Count)
+                        else
                         {
-                            assignedTeam = TEAM_2;
+                            Console.WriteLine($"[CHAT REGISTRATION ERROR] Lobby not found for match {matchCode}");
+                            return new PlayerInfo { Username = player };
                         }
                     }
                 }
-                return new PlayerInfo 
-                { 
-                    Username = player, 
-                    Team = assignedTeam, 
-                    AvatarId = DEFAULT_AVATAR_ID 
-                };
+
+                using (var context = new baseDatosTrucoEntities())
+                {
+                    var lobby = context.Lobby.Find(lobbyId);
+
+                    if (lobby == null)
+                    {
+                        Console.WriteLine($"[CHAT REGISTRATION ERROR] Lobby not found for match {matchCode}");
+                        return new PlayerInfo { Username = player };
+                    }
+
+                    if (player.StartsWith(GUEST_PREFIX))
+                    {
+                        return CreateGuestPlayerInfo(context, lobby, matchCode, player);
+                    }
+
+                    var user = context.User.FirstOrDefault(u => u.username == player);
+
+                    if (user != null)
+                    {
+                        var member = context.LobbyMember.FirstOrDefault(lm =>
+                            lm.lobbyID == lobby.lobbyID && lm.userID == user.userID);
+
+                        if (member != null)
+                        {
+                            Console.WriteLine($"[CHAT REGISTRATION] User {player} found in DB with team {member.team}");
+                            return new PlayerInfo
+                            {
+                                Username = player,
+                                Team = member.team
+                            };
+                        }
+                        else
+                        {
+                            Console.WriteLine($"[CHAT REGISTRATION WARNING] User {player} not yet in LobbyMember table");
+                            return new PlayerInfo
+                            {
+                                Username = player,
+                                Team = TEAM_1
+                            };
+                        }
+                    }
+                }
             }
+            catch (Exception ex)
+            {
+                LogManager.LogError(ex, nameof(CreatePlayerInfoForChat));
+            }
+
             return new PlayerInfo { Username = player };
+        }
+
+        private PlayerInfo CreateGuestPlayerInfo(baseDatosTrucoEntities context, Lobby lobby, string matchCode, string player)
+        {
+            string assignedTeam = TEAM_1;
+
+            try
+            {
+                int t1CountDb = context.LobbyMember.Count(lm => lm.lobbyID == lobby.lobbyID && lm.team == TEAM_1);
+                int t2CountDb = context.LobbyMember.Count(lm => lm.lobbyID == lobby.lobbyID && lm.team == TEAM_2);
+
+                int t1CountMem = 0;
+                int t2CountMem = 0;
+
+                if (matchCallbacks.TryGetValue(matchCode, out var callbacks))
+                {
+                    lock (matchCallbacks)
+                    {
+                        var guestInfos = callbacks
+                            .Select(GetPlayerInfoFromCallback)
+                            .Where(i => i != null && 
+                                i.Username.StartsWith(GUEST_PREFIX) && 
+                                i.Username != player && 
+                                !string.IsNullOrEmpty(i.Team))
+                            .ToList();
+
+                        t1CountMem = guestInfos.Count(i => i.Team == TEAM_1);
+                        t2CountMem = guestInfos.Count(i => i.Team == TEAM_2);
+                    }
+                }
+
+                int t1Total = t1CountDb + t1CountMem;
+                int t2Total = t2CountDb + t2CountMem;
+
+                if (lobby.maxPlayers == 2)
+                {
+                    assignedTeam = (t1Total > 0) ? TEAM_2 : TEAM_1;
+                }
+                else
+                {
+                    assignedTeam = (t1Total <= t2Total) ? TEAM_1 : TEAM_2;
+                }
+
+                Console.WriteLine($"[GUEST TEAM ASSIGNMENT] Guest {player} -> {assignedTeam} | Lobby {lobby.lobbyID} ({lobby.maxPlayers}P) | Team1: DB={t1CountDb} Mem={t1CountMem} Total={t1Total} | Team2: DB={t2CountDb} Mem={t2CountMem} Total={t2Total}");
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError(ex, $"{nameof(CreateGuestPlayerInfo)} error");
+            }
+
+            return new PlayerInfo
+            {
+                Username = player,
+                Team = assignedTeam,
+                AvatarId = DEFAULT_AVATAR_ID
+            };
         }
     }
 }

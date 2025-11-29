@@ -171,6 +171,7 @@ namespace TrucoServer.Helpers.Match
             try
             {
                 int numericCode = new MatchCodeGenerator().GenerateNumericCodeFromString(matchCode);
+
                 Lobby lobby = GetLobbyByMapping(context, matchCode, onlyOpen);
                 if (lobby != null)
                 {

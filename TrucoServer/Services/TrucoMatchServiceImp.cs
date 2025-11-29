@@ -69,6 +69,8 @@ namespace TrucoServer.Services
 
             try
             {
+                string matchCode = codeGenerator.GenerateMatchCode();
+
                 using (var context = new baseDatosTrucoEntities())
                 {
                     var host = context.User.FirstOrDefault(u => u.username == hostUsername);
@@ -79,7 +81,6 @@ namespace TrucoServer.Services
                     }
 
                     int versionId = lobbyRepository.ResolveVersionId(context, maxPlayers);
-                    string matchCode = codeGenerator.GenerateMatchCode();
                     string normalizedStatus = privacy.Equals("public", StringComparison.OrdinalIgnoreCase) ? STATUS_PUBLIC : STATUS_PRIVATE;
 
                     var lobby = lobbyRepository.CreateNewLobby(context, host, versionId, maxPlayers, normalizedStatus);
@@ -91,17 +92,19 @@ namespace TrucoServer.Services
 
                     lobbyRepository.AddLobbyOwner(context, lobby, host);
 
-                    if (lobby.status.Equals(STATUS_PRIVATE, StringComparison.OrdinalIgnoreCase))
-                    {
-                        lobbyRepository.CreatePrivateInvitation(context, host, matchCode);
-                    }
-
                     context.SaveChanges();
 
                     lobbyCoordinator.RegisterLobbyMapping(matchCode, lobby);
                     lobbyCoordinator.GetOrCreateLobbyLock(lobby.lobbyID);
 
-                    Console.WriteLine($"[SERVER] Lobby created by {hostUsername}, code={matchCode}, privacy={privacy}, maxPlayers={maxPlayers}.");
+                    if (lobby.status.Equals(STATUS_PRIVATE, StringComparison.OrdinalIgnoreCase))
+                    {
+                        lobbyRepository.CreatePrivateInvitation(context, host, matchCode);
+                        context.SaveChanges();
+                    }
+
+                    Console.WriteLine($"[SERVER] Lobby created by {hostUsername}, code={matchCode}, privacy={privacy}, maxPlayers={maxPlayers}, lobbyID={lobby.lobbyID}.");
+
                     return matchCode;
                 }
             }
@@ -151,6 +154,7 @@ namespace TrucoServer.Services
                 }
 
                 object lobbyLock = lobbyCoordinator.GetOrCreateLobbyLock(lobbyId);
+
                 lock (lobbyLock)
                 {
                     joinSuccess = joinService.ProcessSafeJoin(lobbyId, matchCode, player);
@@ -310,9 +314,13 @@ namespace TrucoServer.Services
                 
             try
             {
+                int lobbyId = 0;
+                int expectedPlayers = 0;
+
                 using (var context = new baseDatosTrucoEntities())
                 {
                     Lobby lobby = null;
+
                     if (lobbyCoordinator.TryGetLobbyIdFromCode(matchCode, out int id))
                     {
                         lobby = context.Lobby.FirstOrDefault(l => l.lobbyID == id);
@@ -325,34 +333,41 @@ namespace TrucoServer.Services
 
                     if (lobby == null)
                     {
+                        Console.WriteLine($"[START MATCH] Lobby not found for code {matchCode}");
                         return;
                     }
 
+                    lobbyId = lobby.lobbyID;
+                    expectedPlayers = lobby.maxPlayers;
+
                     var dbMembers = context.LobbyMember.Where(lm => lm.lobbyID == lobby.lobbyID).ToList();
+                    int dbCount = dbMembers.Count;
+
                     int guestCount = lobbyCoordinator.GetGuestCountInMemory(matchCode);
 
-                    if ((dbMembers.Count + guestCount) != lobby.maxPlayers)
+                    int totalPlayers = dbCount + guestCount;
+
+                    Console.WriteLine($"[START MATCH] Code: {matchCode}, DB Players: {dbCount}, Guests: {guestCount}, Total: {totalPlayers}, Expected: {expectedPlayers}");
+
+                    if (totalPlayers != expectedPlayers)
                     {
+                        Console.WriteLine($"[START MATCH] Not enough players. Expected: {expectedPlayers}, Got: {totalPlayers}");
                         return;
                     }
                 }
 
                 List<PlayerInfo> playersList = GetLobbyPlayers(matchCode);
 
-                if (!starter.BuildGamePlayersAndCallbacks(playersList, out var gamePlayers, out var gameCallbacks))
+                if (playersList.Count != expectedPlayers)
                 {
+                    Console.WriteLine($"[START MATCH] Player list count mismatch. Expected: {expectedPlayers}, Got: {playersList.Count}");
                     return;
                 }
 
-                int lobbyId;
-
-                if (!lobbyCoordinator.TryGetLobbyIdFromCode(matchCode, out lobbyId))
+                if (!starter.BuildGamePlayersAndCallbacks(playersList, out var gamePlayers, out var gameCallbacks))
                 {
-                    using (var ctx = new baseDatosTrucoEntities())
-                    {
-                        var l = lobbyRepository.FindLobbyByMatchCode(ctx, matchCode, false);
-                        lobbyId = l?.lobbyID ?? 0;
-                    }
+                    Console.WriteLine($"[START MATCH] Failed to build players and callbacks for match {matchCode}");
+                    return;
                 }
 
                 starter.InitializeAndRegisterGame(matchCode, lobbyId, gamePlayers, gameCallbacks);
@@ -366,6 +381,8 @@ namespace TrucoServer.Services
                         match.StartNewHand();
                     }
                 });
+
+                Console.WriteLine($"[START MATCH] Match {matchCode} started successfully with {playersList.Count} players ({gamePlayers.Count(p => p.PlayerID < 0)} guests)");
             }
             catch (Exception ex)
             {
@@ -386,11 +403,19 @@ namespace TrucoServer.Services
                 lobbyCoordinator.RemoveInactiveCallbacks(matchCode);
 
                 bool isNew = lobbyCoordinator.RegisterChatCallback(matchCode, player, callback);
-                Console.WriteLine($"[CHAT] {player} joined lobby {matchCode}.");
 
                 if (isNew)
                 {
-                    lobbyCoordinator.NotifyPlayerJoined(matchCode, player);
+                    Console.WriteLine($"[CHAT JOIN] {player} joined lobby {matchCode} chat.");
+
+                    Task.Delay(100).ContinueWith(_ =>
+                    {
+                        lobbyCoordinator.NotifyPlayerJoined(matchCode, player);
+                    });
+                }
+                else
+                {
+                    Console.WriteLine($"[CHAT JOIN] {player} already in lobby {matchCode} chat, skipping notification.");
                 }
             }
             catch (Exception ex)
@@ -409,7 +434,10 @@ namespace TrucoServer.Services
             try
             {
                 var callback = OperationContext.Current.GetCallbackChannel<ITrucoCallback>();
+
                 lobbyCoordinator.RemoveCallbackFromMatch(matchCode, callback);
+                lobbyCoordinator.RemoveMatchCallbackMapping(callback);
+
                 lobbyCoordinator.NotifyPlayerLeft(matchCode, player);
                 Console.WriteLine($"[CHAT] {player} left lobby {matchCode}.");
 
