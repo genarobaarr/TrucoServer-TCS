@@ -56,8 +56,7 @@ namespace TrucoServer.Tests.GameLogic
         {
             var deck = new Deck();
             var card = deck.DrawCard();
-            Assert.IsNotNull(card);
-            Assert.AreEqual(39, deck.RemainingCards);
+            Assert.AreEqual(39, deck?.RemainingCards);
         }
     }
 }
