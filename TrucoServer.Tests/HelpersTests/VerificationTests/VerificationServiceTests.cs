@@ -29,7 +29,7 @@ namespace TrucoServer.Tests.HelpersTests.VerificationTests
         [TestMethod]
         public void TestRequestEmailVerificationValidEmailShouldSendCodeAndReturnTrue()
         {
-            string email = "valid@test.com";
+            string email = "valid@gmail.com";
             string code = "123456";
             mockAuth.Setup(a => a.GenerateSecureNumericCode()).Returns(code);
 
@@ -53,7 +53,7 @@ namespace TrucoServer.Tests.HelpersTests.VerificationTests
         [TestMethod]
         public void TestConfirmEmailVerificationCorrectCodeShouldReturnTrue()
         {
-            string email = "user@test.com";
+            string email = "user@gmail.com";
             string code = "999999";
             mockAuth.Setup(a => a.GenerateSecureNumericCode()).Returns(code);
             service.RequestEmailVerification(email, "en-US");
@@ -66,7 +66,7 @@ namespace TrucoServer.Tests.HelpersTests.VerificationTests
         [TestMethod]
         public void TestConfirmEmailVerificationIncorrectCodeShouldReturnFalse()
         {
-            string email = "user@test.com";
+            string email = "user@gmail.com";
             mockAuth.Setup(a => a.GenerateSecureNumericCode()).Returns("111111");
             service.RequestEmailVerification(email, "en-US");
 
@@ -78,7 +78,7 @@ namespace TrucoServer.Tests.HelpersTests.VerificationTests
         [TestMethod]
         public void TestConfirmEmailVerificationCodeUsedTwiceShouldReturnFalse()
         {
-            string email = "once@test.com";
+            string email = "willy@gmail.com";
             string code = "555555";
             mockAuth.Setup(a => a.GenerateSecureNumericCode()).Returns(code);
             service.RequestEmailVerification(email, "en-US");
