@@ -19,15 +19,37 @@ namespace TrucoServer.Tests.HelpersTests.RankingTests
             historyService = new Helpers.Ranking.MatchHistoryService();
             using (var context = new baseDatosTrucoEntities())
             {
-                var user = new User { username = TEST_USER, email = "h@gmail.com", passwordHash = "password" };
+                var user = new User 
+                { 
+                    username = TEST_USER, 
+                    email = "h@gmail.com", 
+                    passwordHash = "password" 
+                };
+
                 context.User.Add(user);
                 context.SaveChanges();
 
-                var match = new Match { lobbyID = 1, status = "Finished", endedAt = DateTime.Now, versionID = 1 };
+                var match = new Match 
+                {
+                    lobbyID = 1, 
+                    status = "Finished",
+                    startedAt = DateTime.Now.AddMinutes(-30),
+                    endedAt = DateTime.Now, 
+                    versionID = 1 
+                };
+
                 context.Match.Add(match);
                 context.SaveChanges();
 
-                var mp = new MatchPlayer { matchID = match.matchID, userID = user.userID, team = "Team 1", score = 30, isWinner = true };
+                var mp = new MatchPlayer 
+                { 
+                    matchID = match.matchID, 
+                    userID = user.userID,
+                    team = "Team 1",
+                    score = 30,
+                    isWinner = true 
+                };
+
                 context.MatchPlayer.Add(mp);
                 context.SaveChanges();
             }
@@ -50,13 +72,17 @@ namespace TrucoServer.Tests.HelpersTests.RankingTests
         }
 
         [TestMethod]
-        public void TestGetLastMatchesExistingUserShouldReturnMatches()
+        public void TestGetLastMatchesExistingUserShouldReturnNonEmptyList()
         {
             var result = historyService.GetLastMatches(TEST_USER);
+            Assert.IsTrue(result?.Count > 0);
+        }
 
-            Assert.IsNotNull(result);
-            Assert.IsTrue(result.Count > 0);
-            Assert.IsTrue(result[0].IsWin);
+        [TestMethod]
+        public void TestGetLastMatchesMostRecentMatchShouldBeWin()
+        {
+            var result = historyService.GetLastMatches(TEST_USER);
+            Assert.IsTrue(result?[0].IsWin ?? false);
         }
 
         [TestMethod]

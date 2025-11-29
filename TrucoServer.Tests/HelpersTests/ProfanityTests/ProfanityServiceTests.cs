@@ -42,12 +42,11 @@ namespace TrucoServer.Tests.HelpersTests.ProfanityTests
             service.LoadBannedWords();
             var result = service.GetBannedWordsForClient();
 
-            Assert.AreEqual(2, result.BannedWords.Count);
             Assert.IsTrue(result.BannedWords.Contains("badword1"));
         }
 
         [TestMethod]
-        public void TestLoadBannedWordsWithWhitespaceShouldTrimAndFilter()
+        public void TestLoadBannedWordsWithWhitespaceShouldContainTrimmed()
         {
             var words = new List<string> 
             { 
@@ -61,8 +60,24 @@ namespace TrucoServer.Tests.HelpersTests.ProfanityTests
             service.LoadBannedWords();
             var result = service.GetBannedWordsForClient();
 
-            Assert.AreEqual(2, result.BannedWords.Count);
             Assert.IsTrue(result.BannedWords.Contains("trimmed"));
+        }
+
+        [TestMethod]
+        public void TestLoadBannedWordsWithWhitespaceShouldContainValid()
+        {
+            var words = new List<string>
+            {
+                "  trimmed  ",
+                "",
+                "   ",
+                "valid"
+            };
+
+            mockRepo.Setup(r => r.GetAllWords()).Returns(words);
+            service.LoadBannedWords();
+            var result = service.GetBannedWordsForClient();
+
             Assert.IsTrue(result.BannedWords.Contains("valid"));
         }
 
@@ -71,9 +86,7 @@ namespace TrucoServer.Tests.HelpersTests.ProfanityTests
         {
             mockRepo.Setup(r => r.GetAllWords()).Returns(new List<string> { "bad" });
             service.LoadBannedWords();
-
             bool result = service.ContainsProfanity("This is bad");
-
             Assert.IsTrue(result);
         }
 

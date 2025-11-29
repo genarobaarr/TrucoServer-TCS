@@ -17,6 +17,7 @@ namespace TrucoServer.Tests.HelpersTests.ProfilesTests
         public void Setup()
         {
             updater = new Helpers.Profiles.ProfileUpdater();
+            
             testUser = new User
             {
                 username = "TestUser",
@@ -73,6 +74,15 @@ namespace TrucoServer.Tests.HelpersTests.ProfilesTests
             {
                 bool result = updater.TryUpdateUsername(context, testUser, "TestUser", 3);
                 Assert.IsTrue(result);
+            }
+        }
+
+        [TestMethod]
+        public void TestTryUpdateUsernameSameNameShouldNotIncrementCount()
+        {
+            using (var context = new baseDatosTrucoEntities())
+            {
+                updater.TryUpdateUsername(context, testUser, "TestUser", 3);
                 Assert.AreEqual(0, testUser.nameChangeCount);
             }
         }

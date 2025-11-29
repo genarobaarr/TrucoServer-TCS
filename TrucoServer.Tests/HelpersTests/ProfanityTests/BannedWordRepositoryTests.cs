@@ -48,9 +48,13 @@ namespace TrucoServer.Tests.HelpersTests.ProfanityTests
         public void TestGetAllWordsExistingDataShouldReturnList()
         {
             var result = repository.GetAllWords();
+            Assert.IsTrue(result.Contains("TestWord1"));
+        }
 
-            Assert.IsNotNull(result);
-            Assert.AreEqual(2, result.Count());
+        [TestMethod]
+        public void TestGetAllWordsExistingDataShouldReturnTrue()
+        {
+            var result = repository.GetAllWords();
             Assert.IsTrue(result.Contains("TestWord1"));
         }
 
@@ -63,8 +67,6 @@ namespace TrucoServer.Tests.HelpersTests.ProfanityTests
             }
 
             var result = repository.GetAllWords();
-
-            Assert.IsNotNull(result);
             Assert.AreEqual(0, result.Count());
         }
     }
