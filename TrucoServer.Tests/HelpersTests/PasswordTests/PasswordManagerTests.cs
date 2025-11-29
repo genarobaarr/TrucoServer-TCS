@@ -16,7 +16,7 @@ namespace TrucoServer.Tests.HelpersTests.PasswordTests
     {
         private Mock<Helpers.Email.IEmailSender> mockEmailSender;
         private PasswordManager passwordManager;
-        private const string TEST_EMAIL = "pm_test@email.com";
+        private const string TEST_EMAIL = "test@gmail.com";
         private const string OLD_PASS = "OldPass123";
 
         [TestInitialize]
@@ -37,7 +37,7 @@ namespace TrucoServer.Tests.HelpersTests.PasswordTests
 
                 var user = new User
                 {
-                    username = "PM_User",
+                    username = "TestUser",
                     email = TEST_EMAIL,
                     passwordHash = PasswordHasher.Hash(OLD_PASS),
                     nameChangeCount = 0,
@@ -87,7 +87,7 @@ namespace TrucoServer.Tests.HelpersTests.PasswordTests
         [TestMethod]
         public void TestUpdatePasswordAndNotifyNonExistentUserShouldReturnFalse()
         {
-            bool result = passwordManager.UpdatePasswordAndNotify("test@email.com", "pass", "en", "Test");
+            bool result = passwordManager.UpdatePasswordAndNotify("test@gmail.com", "pass", "en-US", "Test");
             Assert.IsFalse(result);
             mockEmailSender.Verify(e => e.NotifyPasswordChange(It.IsAny<User>()), Times.Never);
         }
@@ -98,7 +98,7 @@ namespace TrucoServer.Tests.HelpersTests.PasswordTests
             mockEmailSender.Setup(e => e.NotifyPasswordChange(It.IsAny<User>()))
                            .Throws(new SmtpException("Server down"));
 
-            bool result = passwordManager.UpdatePasswordAndNotify(TEST_EMAIL, "NewPass", "en", "Test");
+            bool result = passwordManager.UpdatePasswordAndNotify(TEST_EMAIL, "NewPass", "en-US", "Test");
             Assert.IsTrue(result, "Should return true because DB update succeeded despite email failure");
 
             using (var context = new baseDatosTrucoEntities())
