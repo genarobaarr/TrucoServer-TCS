@@ -26,7 +26,8 @@ namespace TrucoServer.Tests.HelpersTests.MatchTests
             using (var context = new baseDatosTrucoEntities())
             {
                 testUser = new User
-                { username = "JoinUser",
+                { 
+                    username = "JoinUser",
                     email = "JU@gmail.com", 
                     passwordHash = "password", 
                     nameChangeCount = 0, 
