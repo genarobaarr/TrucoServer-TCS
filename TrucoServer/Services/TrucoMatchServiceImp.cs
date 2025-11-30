@@ -108,7 +108,7 @@ namespace TrucoServer.Services
             }
             catch (Exception ex)
             {
-                LogManager.LogError(ex, nameof(CreateLobby));
+                ServerException.HandleException(ex, nameof(CreateLobby));
                 return string.Empty;
             }
         }
@@ -128,6 +128,7 @@ namespace TrucoServer.Services
                 using (var context = new baseDatosTrucoEntities())
                 {
                     Lobby lobby = null;
+                   
                     if (lobbyCoordinator.TryGetLobbyIdFromCode(matchCode, out int id))
                     {
                         lobby = context.Lobby.FirstOrDefault(l => l.lobbyID == id);
@@ -147,6 +148,7 @@ namespace TrucoServer.Services
                     {
                         return false;
                     }
+                    
                     lobbyId = lobby.lobbyID;
                 }
 
@@ -164,7 +166,7 @@ namespace TrucoServer.Services
             }
             catch (Exception ex)
             {
-                LogManager.LogError(ex, nameof(JoinMatch));
+                ServerException.HandleException(ex, nameof(JoinMatch));
             }
 
             return joinSuccess;
@@ -179,6 +181,7 @@ namespace TrucoServer.Services
                 using (var context = new baseDatosTrucoEntities())
                 {
                     Lobby lobby = null;
+                  
                     if (lobbyCoordinator.TryGetLobbyIdFromCode(matchCode, out int id))
                     {
                         lobby = context.Lobby.FirstOrDefault(l => l.lobbyID == id);
@@ -197,6 +200,7 @@ namespace TrucoServer.Services
                     }
 
                     var member = context.LobbyMember.FirstOrDefault(lm => lm.lobbyID == lobby.lobbyID && lm.userID == user.userID);
+                    
                     if (member != null)
                     {
                         context.LobbyMember.Remove(member);
@@ -216,7 +220,7 @@ namespace TrucoServer.Services
             }
             catch (Exception ex)
             {
-                LogManager.LogError(ex, nameof(LeaveMatch));
+                ServerException.HandleException(ex, nameof(LeaveMatch));
             }
         }
 
@@ -253,7 +257,7 @@ namespace TrucoServer.Services
             }
             catch (Exception ex)
             {
-                LogManager.LogError(ex, nameof(GetPublicLobbies));
+                ServerException.HandleException(ex, nameof(GetPublicLobbies));
                 return new List<PublicLobbyInfo>();
             }
         }
@@ -289,6 +293,7 @@ namespace TrucoServer.Services
                 using (var context = new baseDatosTrucoEntities())
                 {
                     Lobby lobby = null;
+                  
                     if (lobbyCoordinator.TryGetLobbyIdFromCode(matchCode, out int id))
                     {
                         lobby = context.Lobby.FirstOrDefault(l => l.lobbyID == id);
@@ -314,7 +319,7 @@ namespace TrucoServer.Services
             }
             catch (Exception ex)
             {
-                LogManager.LogError(ex, nameof(GetLobbyPlayers));
+                ServerException.HandleException(ex, nameof(GetLobbyPlayers));
                 return new List<PlayerInfo>();
             }
         }
@@ -392,7 +397,7 @@ namespace TrucoServer.Services
             }
             catch (Exception ex)
             {
-                LogManager.LogError(ex, nameof(StartMatch));
+                ServerException.HandleException(ex, nameof(StartMatch));
             }
         }
 
@@ -425,7 +430,7 @@ namespace TrucoServer.Services
             }
             catch (Exception ex)
             {
-                LogManager.LogError(ex, nameof(JoinMatchChat));
+                ServerException.HandleException(ex, nameof(JoinMatchChat));
             }
         }
 
@@ -448,7 +453,7 @@ namespace TrucoServer.Services
             }
             catch (Exception ex)
             {
-                LogManager.LogError(ex, nameof(LeaveMatchChat));
+                ServerException.HandleException(ex, nameof(LeaveMatchChat));
             }
         }
 
@@ -478,15 +483,15 @@ namespace TrucoServer.Services
                             cb.OnChatMessage(matchCode, player, message); 
                         }
                         catch (Exception ex)
-                        { 
-                            LogManager.LogError(ex, "Chat send error"); 
+                        {
+                            // Log and ignore exceptions from individual callbacks
                         }
                     }
                 });
             }
             catch (Exception ex) 
             { 
-                LogManager.LogError(ex, nameof(SendChatMessage)); 
+                ServerException.HandleException(ex, nameof(SendChatMessage));
             }
         }
 
@@ -518,7 +523,7 @@ namespace TrucoServer.Services
             }
             catch (Exception ex) 
             { 
-                LogManager.LogError(ex, nameof(SwitchTeam)); 
+                ServerException.HandleException(ex, nameof(SwitchTeam));
             }
         }
 
@@ -542,7 +547,7 @@ namespace TrucoServer.Services
             }
             catch (Exception ex)
             {
-                LogManager.LogError(ex, callerName);
+                ServerException.HandleException(ex, nameof(ExecuteGameAction);
             }
         }
     }

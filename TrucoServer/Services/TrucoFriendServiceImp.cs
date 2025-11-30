@@ -54,29 +54,9 @@ namespace TrucoServer.Services
                     return true;
                 }
             }
-            catch (DbUpdateException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(SendFriendRequest)} - Database Update Error");
-                return false;
-            }
-            catch (SqlException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(SendFriendRequest)} - SQL Server Error");
-                return false;
-            }
-            catch (CommunicationException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(SendFriendRequest)} - WCF Communication Error");
-                return true;
-            }
-            catch (TimeoutException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(SendFriendRequest)} - Timeout Error");
-                return false;
-            }
             catch (Exception ex)
             {
-                LogManager.LogError(ex, nameof(SendFriendRequest));
+                ServerException.HandleException(ex, nameof(SendFriendRequest));
                 return false;
             }
         }
@@ -98,6 +78,7 @@ namespace TrucoServer.Services
                     }
 
                     var request = friendshipRepository.FindPendingFriendship(context, requester.userID, acceptor.userID, STATUS_PENDING);
+                    
                     if (request == null)
                     {
                         return false;
@@ -109,29 +90,9 @@ namespace TrucoServer.Services
                     return true;
                 }
             }
-            catch (DbUpdateException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(AcceptFriendRequest)} - Database Update Error");
-                return false;
-            }
-            catch (SqlException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(AcceptFriendRequest)} - SQL Server Error");
-                return false;
-            }
-            catch (CommunicationException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(AcceptFriendRequest)} - WCF Communication Error");
-                return true;
-            }
-            catch (TimeoutException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(AcceptFriendRequest)} - Timeout Error");
-                return false;
-            }
             catch (Exception ex)
             {
-                LogManager.LogError(ex, nameof(AcceptFriendRequest));
+                ServerException.HandleException(ex, nameof(AcceptFriendRequest));
                 return false;
             }
         }
@@ -155,24 +116,9 @@ namespace TrucoServer.Services
                     return friendshipRepository.DeleteFriendships(context, u1.userID, u2.userID);
                 }
             }
-            catch (DbUpdateException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(RemoveFriendOrRequest)} - Database Deletion Error");
-                return false;
-            }
-            catch (SqlException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(RemoveFriendOrRequest)} - SQL Server Error");
-                return false;
-            }
-            catch (TimeoutException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(RemoveFriendOrRequest)} - Timeout Error");
-                return false;
-            }
             catch (Exception ex)
             {
-                LogManager.LogError(ex, nameof(RemoveFriendOrRequest));
+                ServerException.HandleException(ex, nameof(RemoveFriendOrRequest));
                 return false;
             }
         }
@@ -189,6 +135,7 @@ namespace TrucoServer.Services
                 using (var context = new baseDatosTrucoEntities())
                 {
                     var user = context.User.SingleOrDefault(u => u.username == username);
+                   
                     if (user == null)
                     {
                         return new List<FriendData>();
@@ -197,19 +144,9 @@ namespace TrucoServer.Services
                     return friendshipRepository.QueryFriendsList(context, user.userID, STATUS_ACCEPTED);
                 }
             }
-            catch (SqlException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(GetFriends)} - SQL Server Error");
-                return new List<FriendData>();
-            }
-            catch (InvalidOperationException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(GetFriends)} - Invalid Operation (DB Context)");
-                return new List<FriendData>();
-            }
             catch (Exception ex)
             {
-                LogManager.LogError(ex, nameof(GetFriends));
+                ServerException.HandleException(ex, nameof(GetFriends));
                 return new List<FriendData>();
             }
         }
@@ -235,19 +172,9 @@ namespace TrucoServer.Services
                     return friendshipRepository.QueryPendingRequests(context, user.userID, STATUS_PENDING);
                 }
             }
-            catch (SqlException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(GetPendingFriendRequests)} - SQL Server Error");
-                return new List<FriendData>();
-            }
-            catch (InvalidOperationException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(GetPendingFriendRequests)} - Invalid Operation (DB Context)");
-                return new List<FriendData>();
-            }
             catch (Exception ex)
             {
-                LogManager.LogError(ex, nameof(GetPendingFriendRequests));
+                ServerException.HandleException(ex, nameof(GetPendingFriendRequests));
                 return new List<FriendData>();
             }
         }

@@ -87,28 +87,14 @@ namespace TrucoServer.Services
 
                 return true;
             }
-            catch (FaultException)
-            {
-                throw;
-            }
             catch (InvalidOperationException ex) when (ex.Source.Contains("System.ServiceModel"))
             {
-                LogManager.LogError(ex, $"{nameof(Login)} - WCF Context Error");
+                ServerException.HandleException(ex, nameof(Login));
                 return false;
-            }
-            catch (SqlException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(Login)} - SQL Server Error");
-                return false;
-            }
-            catch (SmtpException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(Login)} - Email Error");
-                return true;
             }
             catch (Exception ex)
             {
-                LogManager.LogError(ex, nameof(Login));
+                ServerException.HandleException(ex, nameof(Login));
                 return false;
             }
         }
@@ -148,29 +134,9 @@ namespace TrucoServer.Services
                     return true;
                 }
             }
-            catch (DbEntityValidationException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(Register)} - Entity Validation Error");
-                return false;
-            }
-            catch (DbUpdateException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(Register)} - Database Update Error");
-                return false;
-            }
-            catch (SqlException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(Register)} - SQL Server Error");
-                return false;
-            }
-            catch (ArgumentException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(Register)} - Argument Error");
-                return false;
-            }
             catch (Exception ex)
             {
-                LogManager.LogError(ex, nameof(Register));
+                ServerException.HandleException(ex, nameof(Register));
                 return false;
             }
         }
@@ -208,19 +174,9 @@ namespace TrucoServer.Services
                 LogManager.LogError(ex, $"{nameof(SaveUserProfile)} - JSON Serialization Error");
                 return false;
             }
-            catch (DbUpdateException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(SaveUserProfile)} - DataBase Saving Error");
-                return false;
-            }
-            catch (SqlException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(SaveUserProfile)} - SQL Server Error");
-                return false;
-            }
             catch (Exception ex)
             {
-                LogManager.LogError(ex, nameof(SaveUserProfile));
+                ServerException.HandleException(ex, nameof(SaveUserProfile));
                 return false;
             }
         }
@@ -240,18 +196,11 @@ namespace TrucoServer.Services
                     return Task.FromResult(result);
                 }
             }
-            catch (DbUpdateException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(UpdateUserAvatarAsync)} - DataBase Saving Error");
-            }
-            catch (SqlException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(UpdateUserAvatarAsync)} - SQL Server Error");
-            }
             catch (Exception ex)
             {
-                LogManager.LogError(ex, nameof(UpdateUserAvatarAsync));
+                ServerException.HandleException(ex, nameof(UpdateUserAvatarAsync));
             }
+
             return Task.FromResult(false);
         }
 
@@ -291,22 +240,11 @@ namespace TrucoServer.Services
             {
                 return verificationService.RequestEmailVerification(email, languageCode);
             }
-            catch (ArgumentNullException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(RequestEmailVerification)} - Argument Null");
-            }
-            catch (SmtpException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(RequestEmailVerification)} - SMTP Error");
-            }
-            catch (InvalidOperationException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(RequestEmailVerification)} - Invalid Operation");
-            }
             catch (Exception ex)
             {
-                LogManager.LogError(ex, nameof(RequestEmailVerification));
+                ServerException.HandleException(ex, nameof(RequestEmailVerification));
             }
+
             return false;
         }
 
@@ -329,19 +267,9 @@ namespace TrucoServer.Services
                     return context.User.Any(u => u.username == username);
                 }
             }
-            catch (SqlException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(UsernameExists)} - SQL Server Error");
-                return false;
-            }
-            catch (InvalidOperationException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(UsernameExists)} - Invalid Operation (DataBase Context)");
-                return false;
-            }
             catch (Exception ex)
             {
-                LogManager.LogError(ex, nameof(UsernameExists));
+                ServerException.HandleException(ex, nameof(UsernameExists));
                 return false;
             }
         }
@@ -360,19 +288,9 @@ namespace TrucoServer.Services
                     return context.User.Any(u => u.email == email);
                 }
             }
-            catch (SqlException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(EmailExists)} - SQL Server Error");
-                return false;
-            }
-            catch (InvalidOperationException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(EmailExists)} - Invalid Operation (DataBase Context)");
-                return false;
-            }
             catch (Exception ex)
             {
-                LogManager.LogError(ex, nameof(EmailExists));
+                ServerException.HandleException(ex, nameof(EmailExists));
                 return false;
             }
         }
@@ -398,24 +316,9 @@ namespace TrucoServer.Services
                     return userMapper.MapUserToProfileData(user);
                 }
             }
-            catch (JsonException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(GetUserProfile)} - JSON Deserialization Error");
-                return null;
-            }
-            catch (SqlException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(GetUserProfile)} - SQL Server Error");
-                return null;
-            }
-            catch (InvalidOperationException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(GetUserProfile)} - Invalid Operation (DataBase Context)");
-                return null;
-            }
             catch (Exception ex)
             {
-                LogManager.LogError(ex, nameof(GetUserProfile));
+                ServerException.HandleException(ex, nameof(GetUserProfile));
                 return null;
             }
         }
@@ -441,16 +344,6 @@ namespace TrucoServer.Services
                     return userMapper.MapUserToProfileData(user);
                 }
             }
-            catch (JsonException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(GetUserProfileByEmailAsync)} - JSON Deserialization Error");
-                return null;
-            }
-            catch (System.Data.Common.DbException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(GetUserProfileByEmailAsync)} - Database Query Error");
-                return null;
-            }
             catch (Exception ex)
             {
                 LogManager.LogError(ex, nameof(GetUserProfileByEmailAsync));
@@ -464,24 +357,9 @@ namespace TrucoServer.Services
             {
                 return rankingService.GetGlobalRanking();
             }
-            catch (NotSupportedException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(GetGlobalRanking)} - LINQ Not Supported");
-                return new List<PlayerStats>();
-            }
-            catch (SqlException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(GetGlobalRanking)} - SQL Error");
-                return new List<PlayerStats>();
-            }
-            catch (InvalidOperationException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(GetGlobalRanking)} - Invalid Operation (DataBase Context)");
-                return new List<PlayerStats>();
-            }
             catch (Exception ex)
             {
-                LogManager.LogError(ex, nameof(GetGlobalRanking));
+                ServerException.HandleException(ex, nameof(GetGlobalRanking));
                 return new List<PlayerStats>();
             }
         }
@@ -497,24 +375,9 @@ namespace TrucoServer.Services
             {
                 return matchHistoryService.GetLastMatches(username);
             }
-            catch (NotSupportedException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(GetLastMatches)} - LINQ Not Supported");
-                return new List<MatchScore>();
-            }
-            catch (SqlException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(GetLastMatches)} - SQL Error");
-                return new List<MatchScore>();
-            }
-            catch (InvalidOperationException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(GetLastMatches)} - Invalid Operation (DataBase Context)");
-                return new List<MatchScore>();
-            }
             catch (Exception ex)
             {
-                LogManager.LogError(ex, nameof(GetLastMatches));
+                ServerException.HandleException(ex, nameof(GetLastMatches));
                 return new List<MatchScore>();
             }
         }
@@ -530,17 +393,9 @@ namespace TrucoServer.Services
             {
                 return sessionManagerStatic.GetUserCallback(username);
             }
-            catch (CommunicationException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(GetUserCallback)} - Communication interrupted for {username}");
-            }
-            catch (InvalidCastException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(GetUserCallback)} - Callback object conversion failed for {username}");
-            }
             catch (Exception ex)
             {
-                LogManager.LogError(ex, $"{nameof(GetUserCallback)} - Error getting callback from {username}");
+                ServerException.HandleException(ex, nameof(GetUserCallback));
             }
 
             return null;

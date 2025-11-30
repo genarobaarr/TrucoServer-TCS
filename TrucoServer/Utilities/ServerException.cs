@@ -2,6 +2,8 @@
 using System;
 using System.Collections.Generic;
 using System.Configuration;
+using System.Data.Common;
+using System.Data.Entity.Core;
 using System.Data.Entity.Infrastructure;
 using System.Data.Entity.Validation;
 using System.Data.SqlClient;
@@ -33,6 +35,9 @@ namespace TrucoServer.Utilities
                 typeof(DbEntityValidationException), HandleDbEntityValidationException
             },
             {
+                typeof(DbException), HandleDbException
+            },
+            {
                 typeof(FaultException), HandleFaultException
             },
             {
@@ -52,9 +57,6 @@ namespace TrucoServer.Utilities
             },
             {
                 typeof(FileNotFoundException), HandleFileNotFoundException
-            },
-            {
-                typeof(IOException), HandleIOException
             },
             {
                 typeof(IndexOutOfRangeException), HandleIndexOutOfRangeException
@@ -82,10 +84,17 @@ namespace TrucoServer.Utilities
             },
             {
                 typeof(ConfigurationErrorsException), HandleConfigurationErrorsException
+            },
+            {
+                  typeof(EntityException), HandleEntityException
+            },
+            {
+                typeof(EntityCommandExecutionException), HandleEntityCommandExecutionException
+            },
+            {
+                typeof(NotSupportedException), HandleNotSupportedException
             }
         };
-
-        
 
         public static void HandleException(Exception ex, string methodName)
         {
@@ -117,6 +126,11 @@ namespace TrucoServer.Utilities
             LogManager.LogError(ex, $"{methodName} - Entity validation failed");
         }
 
+        private static void HandleDbException(Exception ex, string methodName)
+        {
+            LogManager.LogError(ex, $"{methodName} - Database query error");
+        }
+
         private static void HandleArgumentException(Exception ex, string methodName)
         {
             LogManager.LogWarn(ex.Message, $"{methodName} - Invalid argument");
@@ -129,7 +143,7 @@ namespace TrucoServer.Utilities
 
         private static void HandleCommunicationException(Exception ex, string methodName)
         {
-            LogManager.LogWarn($"Communication lost in {methodName}: {ex.Message}", methodName);
+            LogManager.LogError(ex, $"Communication lost in {methodName}");
         }
 
         private static void HandleTimeoutException(Exception ex, string methodName)
@@ -155,11 +169,6 @@ namespace TrucoServer.Utilities
         private static void HandleInvalidOperationException(Exception ex, string methodName)
         {
             LogManager.LogError(ex, $"{methodName} - Invalid operation");
-        }
-
-        private static void HandleIOException(Exception exception, string arg2)
-        {
-            throw new NotImplementedException();
         }
 
         private static void HandleFileNotFoundException(Exception ex, string methodName)
@@ -205,6 +214,21 @@ namespace TrucoServer.Utilities
         private static void HandleConfigurationErrorsException(Exception ex, string methodName)
         {
             LogManager.LogError(ex, $"{methodName} - Configuration error");
+        }
+
+        private static void HandleEntityException(Exception ex, string methodName)
+        {
+            LogManager.LogError(ex, $"{methodName} - Entity framework error");
+        }
+
+        private static void HandleEntityCommandExecutionException(Exception ex, string methodName)
+        {
+            LogManager.LogError(ex, $"{methodName} - Entity framework error");
+        }
+
+        private static void HandleNotSupportedException(Exception ex, string methodName)
+        {
+            LogManager.LogError(ex, $"{methodName} - LINQ not supported");
         }
 
         private static void HandleGenericException(Exception ex, string methodName)
