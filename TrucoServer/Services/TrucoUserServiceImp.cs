@@ -85,7 +85,6 @@ namespace TrucoServer.Services
                 emailSender.SendLoginEmailAsync(user);
                 BruteForceProtector.RegisterSuccess(username);
 
-                Console.WriteLine($"[LOGIN] User {user.username} logged in successfully.");
                 return true;
             }
             catch (FaultException)
@@ -146,7 +145,6 @@ namespace TrucoServer.Services
 
                     profileUpdater.CreateAndSaveDefaultProfile(context, newUser.userID);
 
-                    Console.WriteLine($"[REGISTER] New user registered: {username}");
                     return true;
                 }
             }

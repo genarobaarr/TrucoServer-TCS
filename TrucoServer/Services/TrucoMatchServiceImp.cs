@@ -103,8 +103,6 @@ namespace TrucoServer.Services
                         context.SaveChanges();
                     }
 
-                    Console.WriteLine($"[SERVER] Lobby created by {hostUsername}, code={matchCode}, privacy={privacy}, maxPlayers={maxPlayers}, lobbyID={lobby.lobbyID}.");
-
                     return matchCode;
                 }
             }
@@ -147,7 +145,6 @@ namespace TrucoServer.Services
 
                     if (lobby == null || lobby.status.Equals(STATUS_CLOSED, StringComparison.OrdinalIgnoreCase))
                     {
-                        Console.WriteLine($"[JOIN] Denied: Lobby closed/not found for code {matchCode}.");
                         return false;
                     }
                     lobbyId = lobby.lobbyID;
@@ -204,7 +201,6 @@ namespace TrucoServer.Services
                     {
                         context.LobbyMember.Remove(member);
                         context.SaveChanges();
-                        Console.WriteLine($"[LEAVE] Player '{player}' removed from lobby {lobby.lobbyID}.");
                     }
 
                     lobbyCoordinator.NotifyPlayerLeft(matchCode, player);
@@ -215,7 +211,6 @@ namespace TrucoServer.Services
                         lobbyRepository.ExpireInvitationByMatchCode(matchCode);
                         lobbyRepository.RemoveLobbyMembersById(lobby.lobbyID);
                         starter.HandleMatchStartupCleanup(matchCode);
-                        Console.WriteLine($"[CLEANUP] Lobby {lobby.lobbyID} closed.");
                     }
                 }
             }
@@ -272,11 +267,8 @@ namespace TrucoServer.Services
 
             try
             {
-                Console.WriteLine($"[GET LOBBY PLAYERS] Called for match {matchCode}");
-
                 if (gameRegistry.TryGetGame(matchCode, out var match))
                 {
-                    Console.WriteLine($"[GET LOBBY PLAYERS] Match {matchCode} is running, returning game order");
 
                     var gamePlayers = match.Players.Select(p => new PlayerInfo
                     {
@@ -286,7 +278,6 @@ namespace TrucoServer.Services
                         OwnerUsername = starter.GetOwnerUsername(matchCode)
                     }).ToList();
 
-                    Console.WriteLine($"[GET LOBBY PLAYERS] Returning {gamePlayers.Count} players in game order:");
                     for (int i = 0; i < gamePlayers.Count; i++)
                     {
                         Console.WriteLine($"  [{i}] {gamePlayers[i].Username} - {gamePlayers[i].Team}");
@@ -294,8 +285,6 @@ namespace TrucoServer.Services
 
                     return gamePlayers;
                 }
-
-                Console.WriteLine($"[GET LOBBY PLAYERS] Match {matchCode} not running yet, using lobby order");
 
                 using (var context = new baseDatosTrucoEntities())
                 {
@@ -318,10 +307,8 @@ namespace TrucoServer.Services
                     string ownerUsername = lobbyRepository.GetLobbyOwnerName(context, lobby.ownerID);
                     var dbPlayers = lobbyRepository.GetDatabasePlayers(context, lobby, ownerUsername);
                     var guestPlayers = lobbyCoordinator.GetGuestPlayersFromMemory(matchCode, ownerUsername);
-
                     dbPlayers.AddRange(guestPlayers.Where(g => !dbPlayers.Any(p => p.Username == g.Username)));
 
-                    Console.WriteLine($"[GET LOBBY PLAYERS] Returning {dbPlayers.Count} players from lobby");
                     return dbPlayers;
                 }
             }
@@ -360,7 +347,6 @@ namespace TrucoServer.Services
 
                     if (lobby == null)
                     {
-                        Console.WriteLine($"[START MATCH] Lobby not found for code {matchCode}");
                         return;
                     }
 
@@ -374,11 +360,8 @@ namespace TrucoServer.Services
 
                     int totalPlayers = dbCount + guestCount;
 
-                    Console.WriteLine($"[START MATCH] Code: {matchCode}, DB Players: {dbCount}, Guests: {guestCount}, Total: {totalPlayers}, Expected: {expectedPlayers}");
-
                     if (totalPlayers != expectedPlayers)
                     {
-                        Console.WriteLine($"[START MATCH] Not enough players. Expected: {expectedPlayers}, Got: {totalPlayers}");
                         return;
                     }
                 }
@@ -387,13 +370,11 @@ namespace TrucoServer.Services
 
                 if (playersList.Count != expectedPlayers)
                 {
-                    Console.WriteLine($"[START MATCH] Player list count mismatch. Expected: {expectedPlayers}, Got: {playersList.Count}");
                     return;
                 }
 
                 if (!starter.BuildGamePlayersAndCallbacks(playersList, out var gamePlayers, out var gameCallbacks))
                 {
-                    Console.WriteLine($"[START MATCH] Failed to build players and callbacks for match {matchCode}");
                     return;
                 }
 
@@ -408,8 +389,6 @@ namespace TrucoServer.Services
                         match.StartNewHand();
                     }
                 });
-
-                Console.WriteLine($"[START MATCH] Match {matchCode} started successfully with {playersList.Count} players ({gamePlayers.Count(p => p.PlayerID < 0)} guests)");
             }
             catch (Exception ex)
             {
@@ -433,7 +412,6 @@ namespace TrucoServer.Services
 
                 if (isNew)
                 {
-                    Console.WriteLine($"[CHAT JOIN] {player} joined lobby {matchCode} chat.");
 
                     Task.Delay(100).ContinueWith(_ =>
                     {
@@ -466,8 +444,6 @@ namespace TrucoServer.Services
                 lobbyCoordinator.RemoveMatchCallbackMapping(callback);
 
                 lobbyCoordinator.NotifyPlayerLeft(matchCode, player);
-                Console.WriteLine($"[CHAT] {player} left lobby {matchCode}.");
-
                 gameRegistry.AbortAndRemoveGame(matchCode, player);
             }
             catch (Exception ex)
@@ -487,7 +463,6 @@ namespace TrucoServer.Services
             {
                 if (profanityService.ContainsProfanity(message))
                 {
-                    Console.WriteLine($"[PROFANITY BLOCKED] {player} in {matchCode}: {message}");
                     return;
                 }
 
@@ -508,7 +483,6 @@ namespace TrucoServer.Services
                         }
                     }
                 });
-                Console.WriteLine($"[{matchCode}] {player}: {message}");
             }
             catch (Exception ex) 
             { 

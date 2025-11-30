@@ -100,7 +100,6 @@ namespace TrucoServer.GameLogic
                     }
 
                     context.SaveChanges();
-                    Console.WriteLine($"[GAME] Match {matchId} completed successfully. Winner: {winnerTeam}.");
                 }
             }
             catch (DbUpdateException ex)
@@ -170,13 +169,10 @@ namespace TrucoServer.GameLogic
 
         private void AddPlayersToMatch(baseDatosTrucoEntities context, int matchId, List<PlayerInformation> players)
         {
-            Console.WriteLine($"[DB SAVE] Adding {players.Count} players to match {matchId}:");
-
             foreach (var p in players)
             {
                 if (p.PlayerID <= 0)
                 {
-                    Console.WriteLine($"  - {p.Username} (Guest, {p.Team}) - Skipping DB entry");
                     continue;
                 }
 
@@ -184,7 +180,6 @@ namespace TrucoServer.GameLogic
 
                 if (user == null)
                 {
-                    Console.WriteLine($"  - {p.Username} (ID: {p.PlayerID}) - User not found in DB");
                     continue;
                 }
 
@@ -196,8 +191,6 @@ namespace TrucoServer.GameLogic
                     score = INITIAL_SCORE,
                     isWinner = false
                 });
-
-                Console.WriteLine($"  - {p.Username} (ID: {p.PlayerID}, {p.Team}) - Added to DB");
             }
 
             context.SaveChanges();

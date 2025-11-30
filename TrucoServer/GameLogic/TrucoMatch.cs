@@ -394,8 +394,6 @@ namespace TrucoServer.GameLogic
 
                 NotifyTrucoCall(playerID, betType, opponent.PlayerID);
 
-                Console.WriteLine($"[CALL TRUCO] {caller.Username} called {betType}, waiting for {opponent.Username} response");
-
                 return true;
             }
             catch (ArgumentException ex)
@@ -1257,7 +1255,6 @@ namespace TrucoServer.GameLogic
             {
                 if (matchEnded)
                 {
-                    Console.WriteLine($"[ABORT] Match already ended, ignoring abort request from {playerUsername}");
                     return;
                 }
                 matchEnded = true;
@@ -1265,8 +1262,6 @@ namespace TrucoServer.GameLogic
 
             try
             {
-                Console.WriteLine($"[ABORT] Match {MatchCode} - Player {playerUsername} is leaving");
-                Console.WriteLine($"[ABORT] Current players in match:");
 
                 foreach (var p in Players)
                 {
@@ -1277,8 +1272,6 @@ namespace TrucoServer.GameLogic
 
                 if (leaver == null)
                 {
-                    Console.WriteLine($"[ABORT ERROR] Player {playerUsername} not found in match players list");
-
                     if (playerUsername.StartsWith("Guest_"))
                     {
                         int guestId = -Math.Abs(playerUsername.GetHashCode());
@@ -1292,7 +1285,6 @@ namespace TrucoServer.GameLogic
 
                     if (leaver == null)
                     {
-                        Console.WriteLine($"[ABORT] Cannot determine winner - player not found");
                         return;
                     }
                 }
@@ -1305,9 +1297,6 @@ namespace TrucoServer.GameLogic
 
                 var winnerPlayer = Players.FirstOrDefault(p => p.Team == winnerTeam);
                 string matchWinnerName = winnerPlayer != null ? winnerPlayer.Username : "Oponente";
-
-                Console.WriteLine($"[ABORT] Match {MatchCode} aborted by {playerUsername} ({loserTeam})");
-                Console.WriteLine($"[ABORT] Winner: {matchWinnerName} ({winnerTeam}), Score: {winnerScore} vs {loserScore}");
 
                 gameManager.SaveMatchResult(this.DbMatchId, winnerTeam, winnerScore, loserScore);
 
@@ -1366,7 +1355,6 @@ namespace TrucoServer.GameLogic
 
                 if (callerIndex == -1)
                 {
-                    Console.WriteLine($"[GET OPPONENT] Caller {caller.Username} not found in players list");
                     return null;
                 }
 
@@ -1374,7 +1362,6 @@ namespace TrucoServer.GameLogic
                 {
                     int opponentIndex = (callerIndex + 1) % 2;
                     var opponent = Players[opponentIndex];
-                    Console.WriteLine($"[GET OPPONENT] 1v1 - Caller: {caller.Username} (idx {callerIndex}), Opponent: {opponent.Username} (idx {opponentIndex})");
                     return opponent;
                 }
 
@@ -1385,7 +1372,6 @@ namespace TrucoServer.GameLogic
 
                     if (candidate.Team != caller.Team)
                     {
-                        Console.WriteLine($"[GET OPPONENT] 2v2 - Caller: {caller.Username} (idx {callerIndex}, {caller.Team}), Responder: {candidate.Username} (idx {nextIndex}, {candidate.Team})");
                         return candidate;
                     }
                     else
@@ -1394,7 +1380,6 @@ namespace TrucoServer.GameLogic
                     }
                 }
 
-                Console.WriteLine($"[GET OPPONENT ERROR] No opponent found for {caller.Username}");
                 return null;
             }
             catch (ArgumentOutOfRangeException ex)
@@ -1552,11 +1537,8 @@ namespace TrucoServer.GameLogic
                 var caller = Players.First(p => p.PlayerID == callerId);
                 var responder = Players.First(p => p.PlayerID == responderId);
 
-                Console.WriteLine($"[NOTIFY TRUCO] Caller: {caller.Username} (ID: {callerId}), Responder: {responder.Username} (ID: {responderId}), Bet: {betName}");
-
                 NotifyPlayer(responderId, callback =>
                 {
-                    Console.WriteLine($"[NOTIFY TRUCO] Sending to responder {responder.Username}: needsResponse=TRUE");
                     callback.NotifyTrucoCall(caller.Username, betName, true);
                 });
 
@@ -1564,7 +1546,6 @@ namespace TrucoServer.GameLogic
                 {
                     NotifyPlayer(player.PlayerID, callback =>
                     {
-                        Console.WriteLine($"[NOTIFY TRUCO] Sending to observer {player.Username}: needsResponse=FALSE");
                         callback.NotifyTrucoCall(caller.Username, betName, false);
                     });
                 }
@@ -1590,11 +1571,8 @@ namespace TrucoServer.GameLogic
                 var caller = Players.First(p => p.PlayerID == callerId);
                 var responder = Players.First(p => p.PlayerID == responderId);
 
-                Console.WriteLine($"[NOTIFY FLOR] Caller: {caller.Username}, Responder: {responder.Username}, Bet: {betName}");
-
                 NotifyPlayer(responderId, callback =>
                 {
-                    Console.WriteLine($"[NOTIFY FLOR] Sending to responder {responder.Username}: needsResponse=TRUE");
                     callback.NotifyFlorCall(caller.Username, betName, true);
                 });
 
@@ -1602,7 +1580,6 @@ namespace TrucoServer.GameLogic
                 {
                     NotifyPlayer(player.PlayerID, callback =>
                     {
-                        Console.WriteLine($"[NOTIFY FLOR] Sending to observer {player.Username}: needsResponse=FALSE");
                         callback.NotifyFlorCall(caller.Username, betName, false);
                     });
                 }
