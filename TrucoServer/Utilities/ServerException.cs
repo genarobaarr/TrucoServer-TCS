@@ -8,6 +8,7 @@ using System.IO;
 using System.Linq;
 using System.Net.Mail;
 using System.Reflection;
+using System.Security.Cryptography;
 using System.ServiceModel;
 using System.Text;
 using System.Threading.Tasks;
@@ -61,16 +62,19 @@ namespace TrucoServer.Utilities
                 typeof(InvalidCastException), HandleInvalidCastException
             },
             {
-                  typeof(FormatException), HandleFormatException
+                typeof(FormatException), HandleFormatException
             },
             {
-            typeof(OutOfMemoryException), HandleOutOfMemoryException
+                typeof(OutOfMemoryException), HandleOutOfMemoryException
             },
             {
                 typeof(ArgumentOutOfRangeException), HandleArgumentOutOfRangeException
             },
             {
                 typeof(KeyNotFoundException), HandleKeyNotFoundException
+            },
+            {
+                typeof(CryptographicException), HandleCryptographicException
             }
         };
 
@@ -179,6 +183,11 @@ namespace TrucoServer.Utilities
         private static void HandleKeyNotFoundException(Exception ex, string methodName)
         {
             LogManager.LogWarn(ex.Message, $"{methodName} - Key not found");
+        }
+
+        private static void HandleCryptographicException(Exception ex, string methodName)
+        {
+            LogManager.LogError(ex, $"{methodName} - Cryptographic provider error");
         }
 
         private static void HandleGenericException(Exception ex, string methodName)

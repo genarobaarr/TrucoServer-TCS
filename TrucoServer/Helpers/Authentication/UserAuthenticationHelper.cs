@@ -41,9 +41,9 @@ namespace TrucoServer.Helpers.Authentication
                     return user;
                 }
             }
-            catch (System.Data.SqlClient.SqlException ex)
+            catch (Exception ex)
             {
-                LogManager.LogError(ex, "Login - Database Error");
+                ServerException.HandleException(ex, nameof(AuthenticateUser));
                 return null;
             }
         }
@@ -64,14 +64,9 @@ namespace TrucoServer.Helpers.Authentication
                     return secureCode;
                 }
             }
-            catch (CryptographicException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(GenerateSecureNumericCode)} - Cryptographic Provider Error");
-                return "000000";
-            }
             catch (Exception ex)
             {
-                LogManager.LogError(ex, nameof(GenerateSecureNumericCode));
+                ServerException.HandleException(ex, nameof(GenerateSecureNumericCode));
                 return "000000";
             }
         }
