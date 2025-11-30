@@ -26,23 +26,9 @@ namespace TrucoServer.Helpers.Ranking
                         .ToList();
                 }
             }
-            catch (NotSupportedException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(GetGlobalRanking)} - LINQ Not Supported");
-                return new List<PlayerStats>();
-            }
-            catch (SqlException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(GetGlobalRanking)} - SQL Error");
-                return new List<PlayerStats>();
-            }
-            catch (InvalidOperationException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(GetGlobalRanking)} - Invalid Operation (DataBase Context)");
-                return new List<PlayerStats>();
-            }
             catch (Exception ex)
             {
+                ServerException.HandleException(ex, nameof(GetGlobalRanking));
                 LogManager.LogError(ex, nameof(GetGlobalRanking));
                 return new List<PlayerStats>();
             }

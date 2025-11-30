@@ -39,21 +39,9 @@ namespace TrucoServer.Helpers.Verification
 
                 return true;
             }
-            catch (ArgumentNullException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(RequestEmailVerification)} - Argument Null");
-            }
-            catch (SmtpException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(RequestEmailVerification)} - SMTP Error");
-            }
-            catch (InvalidOperationException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(RequestEmailVerification)} - Invalid Operation");
-            }
             catch (Exception ex)
             {
-                LogManager.LogError(ex, nameof(RequestEmailVerification));
+                ServerException.HandleException(ex, nameof(RequestEmailVerification));
             }
             return false;
         }

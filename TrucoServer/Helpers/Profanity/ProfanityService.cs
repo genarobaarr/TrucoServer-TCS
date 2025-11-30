@@ -36,7 +36,7 @@ namespace TrucoServer.Helpers.Profanity
             }
             catch (Exception ex)
             {
-                LogManager.LogError(ex, nameof(LoadBannedWords));
+                ServerException.HandleException(ex, nameof(LoadBannedWords));
             }
         }
 

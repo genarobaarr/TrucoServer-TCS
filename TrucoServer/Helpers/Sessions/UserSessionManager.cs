@@ -24,6 +24,7 @@ namespace TrucoServer.Helpers.Sessions
                 if (onlineUsers.TryGetValue(username, out ITrucoCallback callback))
                 {
                     var communicationObject = (ICommunicationObject)callback;
+                    
                     if (communicationObject.State == CommunicationState.Opened)
                     {
                         return callback;
@@ -41,20 +42,13 @@ namespace TrucoServer.Helpers.Sessions
                          * interrupting the flow.
                          */
                     }
+
                     onlineUsers.TryRemove(username, out _);
                 }
             }
-            catch (CommunicationException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(GetUserCallback)} - Communication interrupted for {username}");
-            }
-            catch (InvalidCastException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(GetUserCallback)} - Callback object conversion failed for {username}");
-            }
             catch (Exception ex)
             {
-                LogManager.LogError(ex, $"{nameof(GetUserCallback)} - Error getting callback from {username}");
+                ServerException.HandleException(ex, nameof(GetUserCallback));
             }
 
             return null;
@@ -93,6 +87,7 @@ namespace TrucoServer.Helpers.Sessions
                 try
                 {
                     callback.Ping();
+                   
                     return true;
                 }
                 catch
@@ -100,6 +95,7 @@ namespace TrucoServer.Helpers.Sessions
                     return false;
                 }
             }
+
             return false;
         }
     }

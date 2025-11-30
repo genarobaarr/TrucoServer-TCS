@@ -44,24 +44,9 @@ namespace TrucoServer.Helpers.Ranking
                         .ToList();
                 }
             }
-            catch (NotSupportedException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(GetLastMatches)} - LINQ Not Supported");
-                return new List<MatchScore>();
-            }
-            catch (SqlException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(GetLastMatches)} - SQL Error");
-                return new List<MatchScore>();
-            }
-            catch (InvalidOperationException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(GetLastMatches)} - Invalid Operation (DataBase Context)");
-                return new List<MatchScore>();
-            }
             catch (Exception ex)
             {
-                LogManager.LogError(ex, nameof(GetLastMatches));
+                ServerException.HandleException(ex, nameof(GetLastMatches));
                 return new List<MatchScore>();
             }
         }

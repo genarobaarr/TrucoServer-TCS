@@ -21,24 +21,9 @@ namespace TrucoServer.Helpers.Profanity
                                   .ToList();
                 }
             }
-            catch (EntityCommandExecutionException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(GetAllWords)} - Entity Framework Error");
-                return new List<string>();
-            }
-            catch (EntityException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(GetAllWords)} - Entity Framework Error");
-                return new List<string>();
-            }
-            catch (SqlException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(GetAllWords)} - DataBase Error");
-                return new List<string>();
-            }
             catch (Exception ex)
             {
-                LogManager.LogError(ex, nameof(GetAllWords));
+                ServerException.HandleException(ex, nameof(GetAllWords));
                 return new List<string>();
             }
         }

@@ -30,6 +30,7 @@ namespace TrucoServer.Helpers.Profiles
                 avatarID = "avatar_aaa_default",
                 socialLinksJson = Encoding.UTF8.GetBytes("{}")
             };
+
             context.UserProfile.Add(profile);
             context.SaveChanges();
         }
@@ -53,6 +54,7 @@ namespace TrucoServer.Helpers.Profiles
 
             user.username = newUsername;
             user.nameChangeCount++;
+            
             return true;
         }
 
@@ -95,6 +97,7 @@ namespace TrucoServer.Helpers.Profiles
                     avatarID = defaultAvatar,
                     socialLinksJson = Encoding.UTF8.GetBytes("{}")
                 };
+
                 context.UserProfile.Add(user.UserProfile);
             }
         }
@@ -118,6 +121,7 @@ namespace TrucoServer.Helpers.Profiles
 
             profile.avatarID = newAvatarId;
             context.SaveChanges();
+           
             return true;
         }
     }
