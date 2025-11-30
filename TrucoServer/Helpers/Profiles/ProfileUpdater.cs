@@ -28,7 +28,9 @@ namespace TrucoServer.Helpers.Profiles
             {
                 userID = userId,
                 avatarID = "avatar_aaa_default",
-                socialLinksJson = Encoding.UTF8.GetBytes("{}")
+                socialLinksJson = Encoding.UTF8.GetBytes("{}"),
+                languageCode = "es-MX",
+                isMusicMuted = false,
             };
 
             context.UserProfile.Add(profile);
