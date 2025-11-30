@@ -28,7 +28,6 @@ namespace TrucoServer.Helpers.Match
 
                 if (freshLobby == null || freshLobby.status.Equals(STATUS_CLOSED, StringComparison.OrdinalIgnoreCase))
                 {
-                    Console.WriteLine($"[JOIN] Denied: Lobby closed while waiting for lock.");
                     return false;
                 }
 
@@ -41,7 +40,6 @@ namespace TrucoServer.Helpers.Match
         {
             if (!lobby.status.Equals(STATUS_PUBLIC, StringComparison.OrdinalIgnoreCase))
             {
-                Console.WriteLine($"[JOIN GUEST] Denied: Lobby {lobby.lobbyID} is not public");
                 return false;
             }
 
@@ -51,11 +49,9 @@ namespace TrucoServer.Helpers.Match
 
             if (totalPlayers >= lobby.maxPlayers)
             {
-                Console.WriteLine($"[JOIN GUEST] Denied: Public lobby {lobby.lobbyID} is full ({totalPlayers}/{lobby.maxPlayers})");
                 return false;
             }
 
-            Console.WriteLine($"[JOIN GUEST] Approved: Guest {player} joining lobby {lobby.lobbyID} ({totalPlayers + 1}/{lobby.maxPlayers})");
             return true;
         }
 
@@ -88,7 +84,6 @@ namespace TrucoServer.Helpers.Match
                 int count = context.LobbyMember.Count(lm => lm.lobbyID == lobby.lobbyID);
                 if (count >= lobby.maxPlayers)
                 {
-                    Console.WriteLine($"[JOIN] Lobby {lobby.lobbyID} is full.");
                     return false;
                 }
 

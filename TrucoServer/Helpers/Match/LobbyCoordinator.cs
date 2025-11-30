@@ -62,7 +62,6 @@ namespace TrucoServer.Helpers.Match
                 {
                     if (matchCallbackToPlayer.TryGetValue(callback, out var existingInfo))
                     {
-                        Console.WriteLine($"[CHAT] Callback already registered for {player} with team {existingInfo.Team}");
                         return false;
                     }
                 }
@@ -75,8 +74,6 @@ namespace TrucoServer.Helpers.Match
                 }
 
                 matchCallbackToPlayer[callback] = playerInfo;
-
-                Console.WriteLine($"[CHAT] {player} registered in {matchCode} - Team: {playerInfo.Team}");
 
                 return true;
             }
@@ -152,7 +149,6 @@ namespace TrucoServer.Helpers.Match
         public void RemoveMatchCallbackMapping(Contracts.ITrucoCallback callback)
         {
             matchCallbackToPlayer.TryRemove(callback, out _);
-            Console.WriteLine($"[CALLBACK MAPPING] Removed callback mapping");
         }
 
         public int GetGuestCountInMemory(string matchCode)
@@ -366,8 +362,6 @@ namespace TrucoServer.Helpers.Match
 
                 if (!TryGetLobbyIdFromCode(matchCode, out lobbyId))
                 {
-                    Console.WriteLine($"[CHAT REGISTRATION ERROR] Mapping not found for match {matchCode}");
-
                     using (var context = new baseDatosTrucoEntities())
                     {
                         var lobby = new LobbyRepository().FindLobbyByMatchCode(context, matchCode, true);
@@ -375,11 +369,9 @@ namespace TrucoServer.Helpers.Match
                         if (lobby != null)
                         {
                             lobbyId = lobby.lobbyID;
-                            Console.WriteLine($"[CHAT REGISTRATION] Found lobby {lobbyId} via DB fallback for match {matchCode}");
                         }
                         else
                         {
-                            Console.WriteLine($"[CHAT REGISTRATION ERROR] Lobby not found for match {matchCode}");
                             return new PlayerInfo { Username = player };
                         }
                     }
@@ -391,7 +383,6 @@ namespace TrucoServer.Helpers.Match
 
                     if (lobby == null)
                     {
-                        Console.WriteLine($"[CHAT REGISTRATION ERROR] Lobby not found for match {matchCode}");
                         return new PlayerInfo { Username = player };
                     }
 
@@ -409,7 +400,6 @@ namespace TrucoServer.Helpers.Match
 
                         if (member != null)
                         {
-                            Console.WriteLine($"[CHAT REGISTRATION] User {player} found in DB with team {member.team}");
                             return new PlayerInfo
                             {
                                 Username = player,
@@ -418,7 +408,6 @@ namespace TrucoServer.Helpers.Match
                         }
                         else
                         {
-                            Console.WriteLine($"[CHAT REGISTRATION WARNING] User {player} not yet in LobbyMember table");
                             return new PlayerInfo
                             {
                                 Username = player,
@@ -476,8 +465,6 @@ namespace TrucoServer.Helpers.Match
                 {
                     assignedTeam = (t1Total <= t2Total) ? TEAM_1 : TEAM_2;
                 }
-
-                Console.WriteLine($"[GUEST TEAM ASSIGNMENT] Guest {player} -> {assignedTeam} | Lobby {lobby.lobbyID} ({lobby.maxPlayers}P) | Team1: DB={t1CountDb} Mem={t1CountMem} Total={t1Total} | Team2: DB={t2CountDb} Mem={t2CountMem} Total={t2Total}");
             }
             catch (Exception ex)
             {

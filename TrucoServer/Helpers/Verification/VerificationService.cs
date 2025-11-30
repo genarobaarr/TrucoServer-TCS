@@ -37,7 +37,6 @@ namespace TrucoServer.Helpers.Verification
                 Task.Run(() => emailSender.SendEmail(email, Langs.Lang.EmailVerificationSubject,
                     string.Format(Langs.Lang.EmailVerificationBody, code).Replace("\\n", Environment.NewLine)));
 
-                Console.WriteLine($"[EMAIL] Code Sended To {email}: {code}");
                 return true;
             }
             catch (ArgumentNullException ex)

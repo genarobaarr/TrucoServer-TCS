@@ -33,7 +33,6 @@ namespace TrucoServer.Helpers.Friends
 
             context.Friendship.Add(newRequest);
             context.SaveChanges();
-            Console.WriteLine($"[FRIEND] Request sent from ID {requesterId} to ID {targetId}");
         }
 
         public Friendship FindPendingFriendship(baseDatosTrucoEntities context, int requesterId, int acceptorId, string statusPending)
@@ -57,7 +56,6 @@ namespace TrucoServer.Helpers.Friends
 
             context.Friendship.Add(reciprocalFriendship);
             context.SaveChanges();
-            Console.WriteLine($"[FRIEND] Friendship accepted between ID {requesterId} and ID {acceptorId}");
         }
 
         public bool DeleteFriendships(baseDatosTrucoEntities context, int userId1, int userId2)
@@ -73,7 +71,6 @@ namespace TrucoServer.Helpers.Friends
 
             context.Friendship.RemoveRange(toRemove);
             context.SaveChanges();
-            Console.WriteLine($"[FRIEND] Relationship removed between ID {userId1} and ID {userId2}");
             return true;
         }
 

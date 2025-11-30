@@ -42,8 +42,6 @@ namespace TrucoServer.Helpers.Match
 
             try
             {
-                Console.WriteLine($"[BUILD PLAYERS] Processing {playersList.Count} players:");
-
                 foreach (var pInfo in playersList)
                 {
                     Console.WriteLine($"  - {pInfo.Username} (Team: {pInfo.Team})");
@@ -57,7 +55,6 @@ namespace TrucoServer.Helpers.Match
                         {
                             if (!ProcessGuestPlayer(pInfo, gamePlayers, gameCallbacks))
                             {
-                                Console.WriteLine($"[WARNING] Failed to process guest {pInfo.Username}");
                                 return false;
                             }
                         }
@@ -65,7 +62,6 @@ namespace TrucoServer.Helpers.Match
                         {
                             if (!ProcessRegisteredPlayer(context, pInfo, gamePlayers, gameCallbacks))
                             {
-                                Console.WriteLine($"[WARNING] Failed to process registered player {pInfo.Username}");
                                 return false;
                             }
                         }
@@ -78,9 +74,6 @@ namespace TrucoServer.Helpers.Match
                     return false;
                 }
 
-                Console.WriteLine($"[BUILD PLAYERS] Successfully built {gamePlayers.Count} players ({gamePlayers.Count(p => p.PlayerID < 0)} guests)");
-
-                Console.WriteLine("[BUILD PLAYERS] Final player list:");
                 for (int i = 0; i < gamePlayers.Count; i++)
                 {
                     Console.WriteLine($"  [{i}] {gamePlayers[i].Username}: PlayerID={gamePlayers[i].PlayerID}, Team={gamePlayers[i].Team}");
@@ -109,12 +102,10 @@ namespace TrucoServer.Helpers.Match
                     gamePlayers.Add(new PlayerInformation(guestTempId, pInfo.Username, pInfo.Team));
                     gameCallbacks[guestTempId] = guestCb;
 
-                    Console.WriteLine($"[GUEST PROCESSING] Guest {pInfo.Username} added with ID {guestTempId}, Team: {pInfo.Team}");
                     return true;
                 }
                 else
                 {
-                    Console.WriteLine($"[WARNING] Guest {pInfo.Username} not found or disconnected during start.");
                     return false;
                 }
             }
@@ -138,16 +129,13 @@ namespace TrucoServer.Helpers.Match
                         gamePlayers.Add(new PlayerInformation(user.userID, user.username, pInfo.Team));
                         gameCallbacks[user.userID] = activeCallback;
 
-                        Console.WriteLine($"[USER PROCESSING] User {pInfo.Username} added with ID {user.userID}, Team: {pInfo.Team}");
                         return true;
                     }
                     else
                     {
-                        Console.WriteLine($"[WARNING] User {pInfo.Username} is in lobby but has no active connection.");
                         return false;
                     }
                 }
-                Console.WriteLine($"[ERROR] User {pInfo.Username} not found in database");
                 return false;
             }
             catch (Exception ex)
@@ -161,9 +149,6 @@ namespace TrucoServer.Helpers.Match
         {
             try
             {
-                Console.WriteLine($"[MATCH INIT] Starting game initialization for {matchCode}");
-                Console.WriteLine($"[MATCH INIT] Received {gamePlayers.Count} players:");
-
                 foreach (var p in gamePlayers)
                 {
                     Console.WriteLine($"  - {p.Username} (ID: {p.PlayerID}, Team: {p.Team})");
@@ -186,23 +171,17 @@ namespace TrucoServer.Helpers.Match
 
                     if (string.IsNullOrEmpty(ownerUsername))
                     {
-                        Console.WriteLine($"[MATCH INIT ERROR] Could not determine owner for lobby {lobbyId}");
                         ownerUsername = gamePlayers.FirstOrDefault()?.Username;
                     }
-
-                    Console.WriteLine($"[MATCH INIT] Lobby owner: {ownerUsername}");
                 }
 
                 var orderedPlayers = OrderPlayersForMatch(gamePlayers, ownerUsername);
 
                 if (orderedPlayers.Count != gamePlayers.Count)
                 {
-                    Console.WriteLine($"[MATCH INIT ERROR] Player count mismatch! Original: {gamePlayers.Count}, Ordered: {orderedPlayers.Count}");
-                    Console.WriteLine("[MATCH INIT] Using original order as fallback");
                     orderedPlayers = gamePlayers;
                 }
 
-                Console.WriteLine($"[MATCH INIT] Final ordered players for match {matchCode}:");
                 for (int i = 0; i < orderedPlayers.Count; i++)
                 {
                     Console.WriteLine($"  Position {i}: {orderedPlayers[i].Username} (ID: {orderedPlayers[i].PlayerID}, Team: {orderedPlayers[i].Team})");
@@ -230,7 +209,6 @@ namespace TrucoServer.Helpers.Match
         {
             if (players == null || players.Count == 0)
             {
-                Console.WriteLine("[ORDER ERROR] Players list is null or empty");
                 return players;
             }
 
@@ -241,7 +219,6 @@ namespace TrucoServer.Helpers.Match
 
                 if (owner == null || opponent == null)
                 {
-                    Console.WriteLine("[ORDER ERROR] Could not find owner or opponent for 1v1");
                     return players;
                 }
 
@@ -252,9 +229,6 @@ namespace TrucoServer.Helpers.Match
 
             if (owner4 == null)
             {
-                Console.WriteLine($"[ORDER ERROR] Owner {ownerUsername} not found in players list");
-
-                Console.WriteLine($"[ORDER DEBUG] Available players:");
                 foreach (var p in players)
                 {
                     Console.WriteLine($"  - {p.Username} ({p.Team})");
@@ -267,19 +241,13 @@ namespace TrucoServer.Helpers.Match
             var teammates = players.Where(p => p.Team == ownerTeam && p.Username != ownerUsername).ToList();
             var opponents = players.Where(p => p.Team != ownerTeam).OrderBy(p => p.Username).ToList();
 
-            Console.WriteLine($"[ORDER DEBUG] Owner: {owner4.Username} ({ownerTeam})");
-            Console.WriteLine($"[ORDER DEBUG] Teammates: {string.Join(", ", teammates.Select(t => t.Username))}");
-            Console.WriteLine($"[ORDER DEBUG] Opponents: {string.Join(", ", opponents.Select(o => o.Username))}");
-
             if (teammates.Count == 0)
             {
-                Console.WriteLine("[ORDER ERROR] No teammates found!");
                 return players;
             }
 
             if (opponents.Count < 2)
             {
-                Console.WriteLine($"[ORDER ERROR] Not enough opponents found! Count: {opponents.Count}");
                 return players;
             }
 
@@ -309,8 +277,6 @@ namespace TrucoServer.Helpers.Match
                         LogManager.LogError(ex, nameof(NotifyMatchStart));
                     }
                 });
-
-                Console.WriteLine($"[SERVER] Match {matchCode} started.");
             }
             catch (Exception ex)
             {
