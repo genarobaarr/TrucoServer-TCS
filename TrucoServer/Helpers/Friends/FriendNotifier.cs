@@ -19,7 +19,7 @@ namespace TrucoServer.Helpers.Friends
             }
             catch (Exception ex)
             {
-                LogManager.LogError(ex, $"{nameof(NotifyRequestReceived)} - Failed to notify {targetUsername}");
+                ServerException.HandleException(ex, nameof(NotifyRequestReceived));
             }
         }
 
@@ -36,7 +36,7 @@ namespace TrucoServer.Helpers.Friends
             }
             catch (Exception ex)
             {
-                LogManager.LogError(ex, $"{nameof(NotifyRequestAccepted)} - Failed to notify {targetUsername}");
+                ServerException.HandleException(ex, nameof(NotifyRequestAccepted));
             }
         }
     }

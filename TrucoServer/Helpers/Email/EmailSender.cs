@@ -35,25 +35,9 @@ namespace TrucoServer.Helpers.Email
                     smtp.Send(message);
                 }
             }
-            catch (SmtpFailedRecipientException ex)
-            {
-                LogManager.LogError(ex, nameof(SendEmail));
-            }
-            catch (SmtpException ex)
-            {
-                LogManager.LogError(ex, nameof(SendEmail));
-            }
-            catch (FormatException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(SendEmail)} - Invalid Email Format");
-            }
-            catch (ConfigurationErrorsException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(SendEmail)} - Configuration Error");
-            }
             catch (Exception ex)
             {
-                LogManager.LogError(ex, nameof(SendEmail));
+                ServerException.HandleException(ex, nameof(SendEmail));
             }
         }
 
@@ -67,9 +51,9 @@ namespace TrucoServer.Helpers.Email
                         string.Format(Langs.Lang.EmailLoginNotificactionBody, user.username, DateTime.Now)
                         .Replace("\\n", Environment.NewLine));
                 }
-                catch (SmtpException ex)
+                catch (Exception ex)
                 {
-                    LogManager.LogError(ex, "Login_EmailTask");
+                    ServerException.HandleException(ex, nameof(SendLoginEmailAsync));
                 }
             });
         }

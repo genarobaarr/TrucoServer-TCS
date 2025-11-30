@@ -1,6 +1,7 @@
 ﻿using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.Configuration;
 using System.Data.Entity.Infrastructure;
 using System.Data.Entity.Validation;
 using System.Data.SqlClient;
@@ -75,6 +76,12 @@ namespace TrucoServer.Utilities
             },
             {
                 typeof(CryptographicException), HandleCryptographicException
+            },
+            {
+                typeof(SmtpFailedRecipientException), HandleSmtpFailedRecipientException
+            },
+            {
+                typeof(ConfigurationErrorsException), HandleConfigurationErrorsException
             }
         };
 
@@ -188,6 +195,16 @@ namespace TrucoServer.Utilities
         private static void HandleCryptographicException(Exception ex, string methodName)
         {
             LogManager.LogError(ex, $"{methodName} - Cryptographic provider error");
+        }
+
+        private static void HandleSmtpFailedRecipientException(Exception ex, string methodName)
+        {
+            LogManager.LogError(ex, $"{methodName} - Smtp recipient error");
+        }
+
+        private static void HandleConfigurationErrorsException(Exception ex, string methodName)
+        {
+            LogManager.LogError(ex, $"{methodName} - Configuration error");
         }
 
         private static void HandleGenericException(Exception ex, string methodName)
