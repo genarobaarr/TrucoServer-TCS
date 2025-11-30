@@ -87,6 +87,10 @@ namespace TrucoServer.Services
 
                 return true;
             }
+            catch (FaultException)
+            {
+                throw;
+            }
             catch (InvalidOperationException ex) when (ex.Source.Contains("System.ServiceModel"))
             {
                 ServerException.HandleException(ex, nameof(Login));
