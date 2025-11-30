@@ -48,29 +48,9 @@ namespace TrucoServer.GameLogic
                     return match.matchID;
                 }
             }
-            catch (DbUpdateException ex)
-            {
-                LogManager.LogError(ex, nameof(SaveMatchToDatabase));
-                return -1;
-            }
-            catch (SqlException ex)
-            {
-                LogManager.LogError(ex, nameof(SaveMatchToDatabase));
-                return -1;
-            }
-            catch (DbEntityValidationException ex)
-            {
-                LogManager.LogError(ex, nameof(SaveMatchToDatabase));
-                return -1;
-            }
-            catch (InvalidOperationException ex)
-            {
-                LogManager.LogError(ex, nameof(SaveMatchToDatabase));
-                return -1;
-            }
             catch (Exception ex)
             {
-                LogManager.LogError(ex, nameof(SaveMatchToDatabase));
+                ServerException.HandleException(ex, nameof(SaveMatchToDatabase));
                 return -1;
             }
         }
@@ -102,25 +82,9 @@ namespace TrucoServer.GameLogic
                     context.SaveChanges();
                 }
             }
-            catch (DbUpdateException ex)
-            {
-                LogManager.LogError(ex, nameof(SaveMatchResult));
-            }
-            catch (SqlException ex)
-            {
-                LogManager.LogError(ex, nameof(SaveMatchResult));
-            }
-            catch (DbEntityValidationException ex)
-            {
-                LogManager.LogError(ex, nameof(SaveMatchResult));
-            }
-            catch (InvalidOperationException ex)
-            {
-                LogManager.LogError(ex, nameof(SaveMatchResult));
-            }
             catch (Exception ex)
             {
-                LogManager.LogError(ex, nameof(SaveMatchResult));
+                ServerException.HandleException(ex, nameof(SaveMatchResult));
             }
         }
 

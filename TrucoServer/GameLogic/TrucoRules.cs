@@ -167,19 +167,9 @@ namespace TrucoServer.GameLogic
                 
                 return 0;
             }
-            catch (InvalidOperationException ex)
-            {
-                LogManager.LogWarn(ex.Message, nameof(GetTrucoValue));
-                return 0;
-            }
-            catch (KeyNotFoundException ex)
-            {
-                LogManager.LogWarn(ex.Message, nameof(GetTrucoValue));
-                return 0;
-            }
             catch (Exception ex)
             {
-                LogManager.LogError(ex, nameof(GetTrucoValue));
+                ServerException.HandleException(ex, nameof(GetTrucoValue));
                 return 0;
             }
         }
@@ -203,14 +193,9 @@ namespace TrucoServer.GameLogic
                 
                 return 0;
             }
-            catch (InvalidOperationException ex)
-            {
-                LogManager.LogWarn(ex.Message, nameof(CompareCards));
-                return 0;
-            }
             catch (Exception ex)
             {
-                LogManager.LogError(ex, nameof(CompareCards));
+                ServerException.HandleException(ex, nameof(CompareCards));
                 return 0;
             }
         }
@@ -237,19 +222,9 @@ namespace TrucoServer.GameLogic
                     return GetEnvidoValue(twoHighest[0]) + GetEnvidoValue(twoHighest[1]) + 20;
                 }
             }
-            catch (ArgumentNullException ex)
-            {
-                LogManager.LogWarn(ex.Message, nameof(CalculateEnvidoScore));
-                return 0;
-            }
-            catch (InvalidOperationException ex)
-            {
-                LogManager.LogWarn(ex.Message, nameof(CalculateEnvidoScore));
-                return 0;
-            }
             catch (Exception ex)
             {
-                LogManager.LogError(ex, nameof(CalculateEnvidoScore));
+                ServerException.HandleException(ex, nameof(CalculateEnvidoScore));
                 return 0;
             }
         }
@@ -265,14 +240,9 @@ namespace TrucoServer.GameLogic
 
                 return hand.GroupBy(card => card.CardSuit).Any(g => g.Count() >= 3);
             }
-            catch (ArgumentNullException ex)
-            {
-                LogManager.LogWarn(ex.Message, nameof(HasFlor));
-                return false;
-            }
             catch (Exception ex)
             {
-                LogManager.LogError(ex, nameof(HasFlor));
+                ServerException.HandleException(ex, nameof(HasFlor));
                 return false;
             }
         }
@@ -290,19 +260,9 @@ namespace TrucoServer.GameLogic
                 
                 return sumValues + FLOR_POINTS;
             }
-            catch (ArgumentNullException ex)
-            {
-                LogManager.LogWarn(ex.Message, nameof(CalculateFlorScore));
-                return 0;
-            }
-            catch (InvalidOperationException ex)
-            {
-                LogManager.LogWarn(ex.Message, nameof(CalculateFlorScore));
-                return 0;
-            }
             catch (Exception ex)
             {
-                LogManager.LogError(ex, nameof(CalculateFlorScore));
+                ServerException.HandleException(ex, nameof(CalculateFlorScore));
                 return 0;
             }
         }
@@ -318,19 +278,9 @@ namespace TrucoServer.GameLogic
 
                 return (int)card.CardRank;
             }
-            catch (InvalidOperationException ex)
-            {
-                LogManager.LogWarn(ex.Message, nameof(GetEnvidoValue));
-                return 0;
-            }
-            catch (KeyNotFoundException ex)
-            {
-                LogManager.LogWarn(ex.Message, nameof(GetEnvidoValue));
-                return 0;
-            }
             catch (Exception ex)
             {
-                LogManager.LogError(ex, nameof(GetEnvidoValue));
+                ServerException.HandleException(ex, nameof(GetEnvidoValue));
                 return 0;
             }
         }

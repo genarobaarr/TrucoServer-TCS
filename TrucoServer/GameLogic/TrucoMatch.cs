@@ -132,14 +132,9 @@ namespace TrucoServer.GameLogic
 
                 gameManager.SaveMatchToDatabase(MatchCode, LobbyID, players);
             }
-            catch (ArgumentNullException ex)
-            {
-                LogManager.LogWarn(ex.Message, nameof(TrucoMatch));
-                throw;
-            }
             catch (Exception ex)
             {
-                LogManager.LogError(ex, nameof(TrucoMatch));
+                ServerException.HandleException(ex, nameof(TrucoMatch));
                 throw;
             }
         }
@@ -206,18 +201,9 @@ namespace TrucoServer.GameLogic
                 CurrentState = GameState.Envido;
                 NotifyTurnChange();
             }
-            catch (InvalidOperationException ex)
-            {
-                LogManager.LogWarn(ex.Message, nameof(StartNewHand));
-            }
-
-            catch (ArgumentOutOfRangeException ex)
-            {
-                LogManager.LogError(ex, nameof(StartNewHand));
-            }
             catch (Exception ex)
             {
-                LogManager.LogError(ex, nameof(StartNewHand));
+                ServerException.HandleException(ex, nameof(StartNewHand));
             }
         }
 
@@ -271,24 +257,9 @@ namespace TrucoServer.GameLogic
 
                 return true;
             }
-            catch (KeyNotFoundException ex)
-            {
-                LogManager.LogWarn(ex.Message, nameof(PlayCard));
-                return false;
-            }
-            catch (InvalidOperationException ex)
-            {
-                LogManager.LogError(ex, nameof(PlayCard));
-                return false;
-            }
-            catch (ArgumentOutOfRangeException ex)
-            {
-                LogManager.LogError(ex, nameof(PlayCard));
-                return false;
-            }
             catch (Exception ex)
             {
-                LogManager.LogError(ex, nameof(PlayCard));
+                ServerException.HandleException(ex, nameof(PlayCard));
                 return false;
             }
         }
@@ -322,7 +293,7 @@ namespace TrucoServer.GameLogic
             }
             catch (Exception ex)
             {
-                LogManager.LogError(ex, nameof(AdvanceTurn));
+                ServerException.HandleException(ex, nameof(AdvanceTurn));
             }
         }
 
@@ -343,17 +314,9 @@ namespace TrucoServer.GameLogic
                     NotifyTurnChange();
                 }
             }
-            catch (InvalidOperationException ex)
-            {
-                LogManager.LogWarn(ex.Message, nameof(ResolveCurrentRound));
-            }
-            catch (ArgumentOutOfRangeException ex)
-            {
-                LogManager.LogWarn(ex.Message, nameof(ResolveCurrentRound));
-            }
             catch (Exception ex)
             {
-                LogManager.LogError(ex, nameof(ResolveCurrentRound));
+                ServerException.HandleException(ex, nameof(ResolveCurrentRound));
             }
         }
 
@@ -396,24 +359,9 @@ namespace TrucoServer.GameLogic
 
                 return true;
             }
-            catch (ArgumentException ex)
-            {
-                LogManager.LogWarn(ex.Message, nameof(CallTruco));
-                return false;
-            }
-            catch (InvalidOperationException ex)
-            {
-                LogManager.LogError(ex, nameof(CallTruco));
-                return false;
-            }
-            catch (KeyNotFoundException ex)
-            {
-                LogManager.LogError(ex, nameof(CallTruco));
-                return false;
-            }
             catch (Exception ex)
             {
-                LogManager.LogError(ex, nameof(CallTruco));
+                ServerException.HandleException(ex, nameof(CallTruco));
                 return false;
             }
         }
@@ -449,17 +397,9 @@ namespace TrucoServer.GameLogic
                     CallTruco(playerID, response);
                 }
             }
-            catch (InvalidOperationException ex)
-            {
-                LogManager.LogWarn(ex.Message, nameof(RespondToCall));
-            }
-            catch (KeyNotFoundException ex)
-            {
-                LogManager.LogError(ex, nameof(RespondToCall));
-            }
             catch (Exception ex)
             {
-                LogManager.LogError(ex, nameof(RespondToCall));
+                ServerException.HandleException(ex, nameof(RespondToCall));
             }
         }
 
@@ -521,24 +461,9 @@ namespace TrucoServer.GameLogic
 
                 return true;
             }
-            catch (ArgumentException ex)
-            {
-                LogManager.LogWarn(ex.Message, nameof(CallEnvido));
-                return false;
-            }
-            catch (InvalidOperationException ex)
-            {
-                LogManager.LogError(ex, nameof(CallEnvido));
-                return false;
-            }
-            catch (KeyNotFoundException ex)
-            {
-                LogManager.LogError(ex, nameof(CallEnvido));
-                return false;
-            }
             catch (Exception ex)
             {
-                LogManager.LogError(ex, nameof(CallEnvido));
+                ServerException.HandleException(ex, nameof(CallEnvido));
                 return false;
             }
         }
@@ -568,17 +493,9 @@ namespace TrucoServer.GameLogic
                     HandleEnvidoRaise(playerID, response);
                 }
             }
-            catch (InvalidOperationException ex)
-            {
-                LogManager.LogWarn(ex.Message, nameof(RespondToEnvido));
-            }
-            catch (KeyNotFoundException ex)
-            {
-                LogManager.LogError(ex, nameof(RespondToEnvido));
-            }
             catch (Exception ex)
             {
-                LogManager.LogError(ex, nameof(RespondToEnvido));
+                ServerException.HandleException(ex, nameof(RespondToEnvido));
             }
         }
 
@@ -610,17 +527,9 @@ namespace TrucoServer.GameLogic
 
                 ResetEnvidoState();
             }
-            catch (InvalidOperationException ex)
-            {
-                LogManager.LogWarn(ex.Message, nameof(ResolveEnvido));
-            }
-            catch (ArgumentOutOfRangeException ex)
-            {
-                LogManager.LogWarn(ex.Message, nameof(ResolveEnvido));
-            }
             catch (Exception ex)
             {
-                LogManager.LogError(ex, nameof(ResolveEnvido));
+                ServerException.HandleException(ex, nameof(ResolveEnvido));
             }
         }
 
@@ -693,24 +602,9 @@ namespace TrucoServer.GameLogic
                     return true;
                 }
             }
-            catch (ArgumentException ex)
-            {
-                LogManager.LogWarn(ex.Message, nameof(CallFlor));
-                return false;
-            }
-            catch (InvalidOperationException ex)
-            {
-                LogManager.LogError(ex, nameof(CallFlor));
-                return false;
-            }
-            catch (KeyNotFoundException ex)
-            {
-                LogManager.LogError(ex, nameof(CallFlor));
-                return false;
-            }
             catch (Exception ex)
             {
-                LogManager.LogError(ex, nameof(CallFlor));
+                ServerException.HandleException(ex, nameof(CallFlor));
                 return false;
             }
         }
@@ -743,17 +637,9 @@ namespace TrucoServer.GameLogic
                     NotifyTurnChange();
                 }
             }
-            catch (InvalidOperationException ex)
-            {
-                LogManager.LogWarn(ex.Message, nameof(RespondToFlor));
-            }
-            catch (KeyNotFoundException ex)
-            {
-                LogManager.LogError(ex, nameof(RespondToFlor));
-            }
             catch (Exception ex)
             {
-                LogManager.LogError(ex, nameof(RespondToFlor));
+                ServerException.HandleException(ex, nameof(RespondToFlor));
             }
         }
 
@@ -785,17 +671,9 @@ namespace TrucoServer.GameLogic
 
                 ResetFlorState();
             }
-            catch (InvalidOperationException ex)
-            {
-                LogManager.LogWarn(ex.Message, nameof(ResolveFlor));
-            }
-            catch (ArgumentOutOfRangeException ex)
-            {
-                LogManager.LogWarn(ex.Message, nameof(ResolveFlor));
-            }
             catch (Exception ex)
             {
-                LogManager.LogError(ex, nameof(ResolveFlor));
+                ServerException.HandleException(ex, nameof(ResolveFlor));
             }
         }
 
@@ -821,17 +699,9 @@ namespace TrucoServer.GameLogic
                 CurrentState = GameState.Truco;
                 NotifyTurnChange();
             }
-            catch (InvalidOperationException ex)
-            {
-                LogManager.LogWarn(ex.Message, nameof(ResolveContraFlor));
-            }
-            catch (ArgumentOutOfRangeException ex)
-            {
-                LogManager.LogWarn(ex.Message, nameof(ResolveContraFlor));
-            }
             catch (Exception ex)
             {
-                LogManager.LogError(ex, nameof(ResolveContraFlor));
+                ServerException.HandleException(ex, nameof(ResolveContraFlor));
             }
         }
 
@@ -916,13 +786,9 @@ namespace TrucoServer.GameLogic
                     NotifyAll(callback => callback.OnMatchEnded(MatchCode, matchWinnerName));
                 }
             }
-            catch (InvalidOperationException ex)
-            {
-                LogManager.LogWarn(ex.Message, nameof(AwardEnvidoPoints));
-            }
             catch (Exception ex)
             {
-                LogManager.LogError(ex, nameof(AwardEnvidoPoints));
+                ServerException.HandleException(ex, nameof(AwardEnvidoPoints));
             }
         }
 
@@ -971,13 +837,9 @@ namespace TrucoServer.GameLogic
                     NotifyAll(callback => callback.OnMatchEnded(MatchCode, matchWinnerName));
                 }
             }
-            catch (InvalidOperationException ex)
-            {
-                LogManager.LogWarn(ex.Message, nameof(AwardFlorPoints));
-            }
             catch (Exception ex)
             {
-                LogManager.LogError(ex, nameof(AwardFlorPoints));
+                ServerException.HandleException(ex, nameof(AwardFlorPoints));
             }
         }
 
@@ -1012,13 +874,9 @@ namespace TrucoServer.GameLogic
                     StartNewHand();
                 }
             }
-            catch (InvalidOperationException ex)
-            {
-                LogManager.LogWarn(ex.Message, nameof(EndHandWithPoints));
-            }
             catch (Exception ex)
             {
-                LogManager.LogError(ex, nameof(EndHandWithPoints));
+                ServerException.HandleException(ex, nameof(EndHandWithPoints));
             }
         }
         private PlayerInformation DetermineRoundWinner()
@@ -1239,13 +1097,9 @@ namespace TrucoServer.GameLogic
                 NotifyResponse(AL_MAZO, player.Username, TrucoBetValue.ToString());
                 EndHandWithPoints(opponent.Team, pointsToAward);
             }
-            catch (InvalidOperationException ex)
-            {
-                LogManager.LogWarn(ex.Message, nameof(PlayerGoesToDeck));
-            }
             catch (Exception ex)
             {
-                LogManager.LogError(ex, nameof(PlayerGoesToDeck));
+                ServerException.HandleException(ex, nameof(PlayerGoesToDeck));
             }
         }
 
@@ -1302,13 +1156,9 @@ namespace TrucoServer.GameLogic
 
                 NotifyAll(callback => callback.OnMatchEnded(MatchCode, matchWinnerName));
             }
-            catch (CommunicationException ex)
-            {
-                LogManager.LogError(ex, nameof(AbortMatch));
-            }
             catch (Exception ex)
             {
-                LogManager.LogError(ex, nameof(AbortMatch));
+                ServerException.HandleException(ex, nameof(AbortMatch));
             }
         }
 
@@ -1382,14 +1232,9 @@ namespace TrucoServer.GameLogic
 
                 return null;
             }
-            catch (ArgumentOutOfRangeException ex)
-            {
-                LogManager.LogWarn(ex.Message, nameof(GetOpponentToRespond));
-                return null;
-            }
             catch (Exception ex)
             {
-                LogManager.LogError(ex, nameof(GetOpponentToRespond));
+                ServerException.HandleException(ex, nameof(GetOpponentToRespond));
                 return null;
             }
         }
@@ -1402,17 +1247,9 @@ namespace TrucoServer.GameLogic
                 {
                     action(callback);
                 }
-                catch (CommunicationException ex)
-                {
-                    LogManager.LogWarn(ex.Message, nameof(NotifyAll));
-                }
-                catch (TimeoutException ex)
-                {
-                    LogManager.LogWarn(ex.Message, nameof(NotifyAll));
-                }
                 catch (Exception ex)
                 {
-                    LogManager.LogError(ex, nameof(NotifyAll));
+                    ServerException.HandleException(ex, nameof(NotifyAll));
                 }
             }
         }
@@ -1425,17 +1262,9 @@ namespace TrucoServer.GameLogic
                 {
                     action(callback);
                 }
-                catch (CommunicationException ex)
-                {
-                    LogManager.LogWarn(ex.Message, nameof(NotifyPlayer));
-                }
-                catch (TimeoutException ex)
-                {
-                    LogManager.LogWarn(ex.Message, nameof(NotifyPlayer));
-                }
                 catch (Exception ex)
                 {
-                    LogManager.LogError(ex, nameof(NotifyPlayer));
+                    ServerException.HandleException(ex, nameof(NotifyPlayer));
                 }
             }
         }
@@ -1460,7 +1289,7 @@ namespace TrucoServer.GameLogic
             }
             catch (Exception ex)
             {
-                LogManager.LogError(ex, nameof(GetCurrentTurnPlayer));
+                ServerException.HandleException(ex, nameof(GetCurrentTurnPlayer));
                 return null;
             }
         }
@@ -1476,17 +1305,9 @@ namespace TrucoServer.GameLogic
                     NotifyAll(callback => callback.NotifyTurnChange(nextPlayer.Username));
                 }
             }
-            catch (InvalidOperationException ex)
-            {
-                LogManager.LogError(ex, nameof(NotifyTurnChange));
-            }
-            catch (CommunicationException ex)
-            {
-                LogManager.LogError(ex, nameof(NotifyTurnChange));
-            }
             catch (Exception ex)
             {
-                LogManager.LogError(ex, nameof(NotifyTurnChange));
+                ServerException.HandleException(ex, nameof(NotifyTurnChange));
             }
         }
 
@@ -1496,17 +1317,9 @@ namespace TrucoServer.GameLogic
             {
                 NotifyAll(callback => callback.NotifyScoreUpdate(Team1Score, Team2Score));
             }
-            catch (InvalidOperationException ex)
-            {
-                LogManager.LogError(ex, nameof(NotifyScoreUpdate));
-            }
-            catch (CommunicationException ex)
-            {
-                LogManager.LogError(ex, nameof(NotifyScoreUpdate));
-            }
             catch (Exception ex)
             {
-                LogManager.LogError(ex, nameof(NotifyScoreUpdate));
+                ServerException.HandleException(ex, nameof(NotifyScoreUpdate));
             }
         }
 
@@ -1516,17 +1329,9 @@ namespace TrucoServer.GameLogic
             {
                 NotifyAll(callback => callback.NotifyResponse(callerName, response, newBetState));
             }
-            catch (InvalidOperationException ex)
-            {
-                LogManager.LogError(ex, nameof(NotifyResponse));
-            }
-            catch (CommunicationException ex)
-            {
-                LogManager.LogError(ex, nameof(NotifyResponse));
-            }
             catch (Exception ex)
             {
-                LogManager.LogError(ex, nameof(NotifyResponse));
+                ServerException.HandleException(ex, nameof(NotifyResponse));
             }
         }
 
@@ -1550,17 +1355,9 @@ namespace TrucoServer.GameLogic
                     });
                 }
             }
-            catch (InvalidOperationException ex)
-            {
-                LogManager.LogWarn(ex.Message, nameof(NotifyTrucoCall));
-            }
-            catch (CommunicationException ex)
-            {
-                LogManager.LogError(ex, nameof(NotifyTrucoCall));
-            }
             catch (Exception ex)
             {
-                LogManager.LogError(ex, nameof(NotifyTrucoCall));
+                ServerException.HandleException(ex, nameof(NotifyTrucoCall));
             }
         }
 
@@ -1584,17 +1381,9 @@ namespace TrucoServer.GameLogic
                     });
                 }
             }
-            catch (InvalidOperationException ex)
-            {
-                LogManager.LogWarn(ex.Message, nameof(NotifyFlorCallHelper));
-            }
-            catch (CommunicationException ex)
-            {
-                LogManager.LogError(ex, nameof(NotifyFlorCallHelper));
-            }
             catch (Exception ex)
             {
-                LogManager.LogError(ex, nameof(NotifyFlorCallHelper));
+                ServerException.HandleException(ex, nameof(NotifyFlorCallHelper));
             }
         }
 
@@ -1627,14 +1416,9 @@ namespace TrucoServer.GameLogic
 
                 return false;
             }
-            catch (IndexOutOfRangeException ex)
-            {
-                LogManager.LogWarn(ex.Message, nameof(CheckHandWinner));
-                return false;
-            }
             catch (Exception ex)
             {
-                LogManager.LogError(ex, nameof(CheckHandWinner));
+                ServerException.HandleException(ex, nameof(CheckHandWinner));
                 return false;
             }
         }
@@ -1665,14 +1449,10 @@ namespace TrucoServer.GameLogic
                         return 1;
                 }
             }
-            catch (InvalidOperationException ex)
-            {
-                LogManager.LogError(ex, nameof(GetPointsForBet));
-                return 0;
-            }
+
             catch (Exception ex)
             {
-                LogManager.LogError(ex, nameof(GetPointsForBet));
+                ServerException.HandleException(ex, nameof(GetPointsForBet));
                 return 0;
             }
         }
@@ -1693,14 +1473,9 @@ namespace TrucoServer.GameLogic
                         return 0;
                 }
             }
-            catch (InvalidOperationException ex)
-            {
-                LogManager.LogError(ex, nameof(GetPointsForEnvidoBet));
-                return 0;
-            }
             catch (Exception ex)
             {
-                LogManager.LogError(ex, nameof(GetPointsForEnvidoBet));
+                ServerException.HandleException(ex, nameof(GetPointsForEnvidoBet));
                 return 0;
             }
         }
@@ -1733,14 +1508,9 @@ namespace TrucoServer.GameLogic
                         return 0;
                 }
             }
-            catch (InvalidOperationException ex)
-            {
-                LogManager.LogError(ex, nameof(GetPointsForFlorBet));
-                return 0;
-            }
             catch (Exception ex)
             {
-                LogManager.LogError(ex, nameof(GetPointsForFlorBet));
+                ServerException.HandleException(ex, nameof(GetPointsForFlorBet));
                 return 0;
             }
         }

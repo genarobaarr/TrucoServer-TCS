@@ -43,18 +43,9 @@ namespace TrucoServer.GameLogic
                 cards.Clear();
                 cards.AddRange(InitializeDeck());
             }
-            catch (OutOfMemoryException ex)
-            {
-                LogManager.LogError(ex, nameof(Reset));
-                throw; 
-            }
-            catch (ArgumentNullException ex)
-            {
-                LogManager.LogError(ex, nameof(Reset));
-            }
             catch (Exception ex)
             {
-                LogManager.LogError(ex, nameof(Reset));
+                ServerException.HandleException(ex, nameof(Reset));
             }
         }
 
@@ -64,13 +55,9 @@ namespace TrucoServer.GameLogic
             {
                 shuffler.Shuffle(cards);
             }
-            catch (ArgumentNullException ex)
-            {
-                LogManager.LogError(ex, nameof(Shuffle));
-            }
             catch (Exception ex)
             {
-                LogManager.LogError(ex, nameof(Shuffle));
+                ServerException.HandleException(ex, nameof(Shuffle));
             }
         }
 
@@ -88,24 +75,9 @@ namespace TrucoServer.GameLogic
                 
                 return hand;
             }
-            catch (InvalidOperationException ex)
-            {
-                LogManager.LogWarn(ex.Message, nameof(DealHand));
-                throw; 
-            }
-            catch (ArgumentOutOfRangeException ex)
-            {
-                LogManager.LogError(ex, nameof(DealHand));
-                return new List<TrucoCard>();
-            }
-            catch (ArgumentNullException ex) 
-            {
-                LogManager.LogError(ex, nameof(DealHand));
-                return new List<TrucoCard>();
-            }
             catch (Exception ex)
             {
-                LogManager.LogError(ex, nameof(DealHand));
+                ServerException.HandleException(ex, nameof(DealHand));
                 return new List<TrucoCard>();
             }
         }
@@ -124,19 +96,9 @@ namespace TrucoServer.GameLogic
                 
                 return card;
             }
-            catch (InvalidOperationException ex)
-            {
-                LogManager.LogWarn(ex.Message, nameof(DrawCard));
-                throw;
-            }
-            catch (ArgumentOutOfRangeException ex) 
-            {
-                LogManager.LogError(ex, nameof(DrawCard));
-                return null;
-            }
             catch (Exception ex)
             {
-                LogManager.LogError(ex, nameof(DrawCard));
+                ServerException.HandleException(ex, nameof(DrawCard));
                 return null;
             }
         }

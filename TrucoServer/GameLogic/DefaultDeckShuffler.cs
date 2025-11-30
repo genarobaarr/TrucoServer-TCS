@@ -26,13 +26,9 @@ namespace TrucoServer.GameLogic
                     }
                 }
             }
-            catch (ArgumentNullException ex)
-            {
-                LogManager.LogError(ex, nameof(Shuffle));
-            }
             catch (Exception ex)
             {
-                LogManager.LogError(ex, nameof(Shuffle));
+                ServerException.HandleException(ex, nameof(Shuffle));
             }
         }
 
