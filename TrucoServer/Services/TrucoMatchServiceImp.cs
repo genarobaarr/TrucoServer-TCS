@@ -547,7 +547,7 @@ namespace TrucoServer.Services
             }
             catch (Exception ex)
             {
-                ServerException.HandleException(ex, nameof(ExecuteGameAction);
+                ServerException.HandleException(ex, nameof(ExecuteGameAction));
             }
         }
     }
