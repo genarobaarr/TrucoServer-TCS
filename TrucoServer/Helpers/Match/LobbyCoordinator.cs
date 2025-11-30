@@ -136,7 +136,7 @@ namespace TrucoServer.Helpers.Match
             }
             catch (Exception ex)
             {
-                LogManager.LogError(ex, nameof(GetPlayerInfoFromCallback));
+                ServerException.HandleException(ex, nameof(GetPlayerInfoFromCallback));
                 return null;
             }
         }
@@ -187,7 +187,7 @@ namespace TrucoServer.Helpers.Match
             }
             catch (Exception ex)
             {
-                LogManager.LogError(ex, nameof(BroadcastToMatchCallbacksAsync));
+                ServerException.HandleException(ex, nameof(BroadcastToMatchCallbacksAsync));
             }
         }
 
@@ -206,6 +206,7 @@ namespace TrucoServer.Helpers.Match
                         list.RemoveAll(cb =>
                         {
                             var comm = (ICommunicationObject)cb;
+                           
                             if (comm.State != CommunicationState.Opened)
                             {
                                 try
@@ -216,6 +217,7 @@ namespace TrucoServer.Helpers.Match
                                 {
                                     /* noop */
                                 }
+                                
                                 return true;
                             }
                             return false;
@@ -223,7 +225,10 @@ namespace TrucoServer.Helpers.Match
                     }
                 }
             }
-            catch (Exception ex) { LogManager.LogError(ex, nameof(RemoveInactiveCallbacks)); }
+            catch (Exception ex)
+            {
+                ServerException.HandleException(ex, nameof(RemoveInactiveCallbacks));
+            }
         }
 
         private void ProcessSingleCallbackAsync(string matchCode, Contracts.ITrucoCallback cb, Action<Contracts.ITrucoCallback> invocation)
@@ -231,6 +236,7 @@ namespace TrucoServer.Helpers.Match
             try
             {
                 var comm = (ICommunicationObject)cb;
+               
                 if (comm.State != CommunicationState.Opened)
                 {
                     lock (matchCallbacks)
@@ -248,13 +254,15 @@ namespace TrucoServer.Helpers.Match
                     {
                         /* noop */
                     }
+
                     return;
                 }
                 invocation(cb);
             }
-            catch (InvalidCastException ex)
+            catch (Exception ex)
             {
-                LogManager.LogError(ex, $"{nameof(ProcessSingleCallbackAsync)} - Invalid Callback Cast");
+                ServerException.HandleException(ex, nameof(ProcessSingleCallbackAsync));
+
                 lock (matchCallbacks)
                 {
                     if (matchCallbacks.TryGetValue(matchCode, out var listLocal))
@@ -262,10 +270,6 @@ namespace TrucoServer.Helpers.Match
                         listLocal.Remove(cb);
                     }
                 }
-            }
-            catch (Exception ex)
-            {
-                LogManager.LogError(ex, nameof(ProcessSingleCallbackAsync));
             }
         }
 
@@ -279,7 +283,7 @@ namespace TrucoServer.Helpers.Match
                 }
                 catch (Exception ex)
                 {
-                    LogManager.LogError(ex, nameof(NotifyPlayerJoined));
+                    ServerException.HandleException(ex, nameof(NotifyPlayerJoined));
                 }
             });
         }
@@ -294,7 +298,7 @@ namespace TrucoServer.Helpers.Match
                 }
                 catch (Exception ex)
                 {
-                    LogManager.LogError(ex, nameof(NotifyPlayerLeft));
+                    ServerException.HandleException(ex, nameof(NotifyPlayerLeft));
                 }
             });
         }
@@ -322,7 +326,7 @@ namespace TrucoServer.Helpers.Match
             }
             catch (Exception ex)
             {
-                LogManager.LogError(ex, nameof(TryGetCallbacksSnapshot));
+                ServerException.HandleException(ex, nameof(TryGetCallbacksSnapshot));
                 return false;
             }
         }
@@ -349,7 +353,7 @@ namespace TrucoServer.Helpers.Match
             }
             catch (Exception ex)
             {
-                LogManager.LogError(ex, nameof(TryGetActiveCallbackForPlayer));
+                ServerException.HandleException(ex, nameof(TryGetActiveCallbackForPlayer));
                 return false;
             }
         }
@@ -419,7 +423,7 @@ namespace TrucoServer.Helpers.Match
             }
             catch (Exception ex)
             {
-                LogManager.LogError(ex, nameof(CreatePlayerInfoForChat));
+                ServerException.HandleException(ex, nameof(CreatePlayerInfoForChat));
             }
 
             return new PlayerInfo { Username = player };
@@ -468,7 +472,7 @@ namespace TrucoServer.Helpers.Match
             }
             catch (Exception ex)
             {
-                LogManager.LogError(ex, $"{nameof(CreateGuestPlayerInfo)} error");
+                ServerException.HandleException(ex, nameof(CreateGuestPlayerInfo));
             }
 
             return new PlayerInfo

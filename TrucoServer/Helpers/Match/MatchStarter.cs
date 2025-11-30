@@ -83,7 +83,7 @@ namespace TrucoServer.Helpers.Match
             }
             catch (Exception ex)
             {
-                LogManager.LogError(ex, nameof(BuildGamePlayersAndCallbacks));
+                ServerException.HandleException(ex, nameof(BuildGamePlayersAndCallbacks));
                 return false;
             }
         }
@@ -111,7 +111,7 @@ namespace TrucoServer.Helpers.Match
             }
             catch (Exception ex)
             {
-                LogManager.LogError(ex, nameof(ProcessGuestPlayer));
+                ServerException.HandleException(ex, nameof(ProcessGuestPlayer));
                 return false;
             }
         }
@@ -140,7 +140,7 @@ namespace TrucoServer.Helpers.Match
             }
             catch (Exception ex)
             {
-                LogManager.LogError(ex, nameof(ProcessRegisteredPlayer));
+                ServerException.HandleException(ex, nameof(ProcessRegisteredPlayer));
                 return false;
             }
         }
@@ -163,6 +163,7 @@ namespace TrucoServer.Helpers.Match
                     if (lobby == null)
                     {
                         LogManager.LogError(new Exception($"Lobby {lobbyId} not found"), nameof(InitializeAndRegisterGame));
+                        
                         return;
                     }
 
@@ -201,7 +202,7 @@ namespace TrucoServer.Helpers.Match
             }
             catch (Exception ex)
             {
-                LogManager.LogError(ex, nameof(InitializeAndRegisterGame));
+                ServerException.HandleException(ex, nameof(InitializeAndRegisterGame));
             }
         }
 
@@ -274,13 +275,13 @@ namespace TrucoServer.Helpers.Match
                     }
                     catch (Exception ex)
                     {
-                        LogManager.LogError(ex, nameof(NotifyMatchStart));
+                        // Individual callback failure should not affect others
                     }
                 });
             }
             catch (Exception ex)
             {
-                LogManager.LogError(ex, nameof(NotifyMatchStart));
+                ServerException.HandleException(ex, nameof(NotifyMatchStart));
             }
         }
 
@@ -299,7 +300,7 @@ namespace TrucoServer.Helpers.Match
             }
             catch (Exception ex)
             {
-                LogManager.LogError(ex, nameof(HandleMatchStartupCleanup));
+                ServerException.HandleException(ex, nameof(HandleMatchStartupCleanup));
             }
         }
 
@@ -326,6 +327,7 @@ namespace TrucoServer.Helpers.Match
             if (playerInfo.Username.StartsWith(GUEST_PREFIX))
             {
                 playerID = -Math.Abs(playerInfo.Username.GetHashCode());
+                
                 return true;
             }
 
@@ -341,12 +343,13 @@ namespace TrucoServer.Helpers.Match
                     }
 
                     playerID = user.userID;
+                    
                     return true;
                 }
             }
             catch (Exception ex)
             {
-                LogManager.LogError(ex, nameof(GetMatchAndPlayerID));
+                ServerException.HandleException(ex, nameof(GetMatchAndPlayerID));
                 return false;
             }
         }
@@ -363,16 +366,18 @@ namespace TrucoServer.Helpers.Match
                 using (var context = new baseDatosTrucoEntities())
                 {
                     var user = context.User.FirstOrDefault(u => u.username == username);
+                    
                     if (user != null)
                     {
                         var profile = context.UserProfile.FirstOrDefault(up => up.userID == user.userID);
+                       
                         return profile?.avatarID ?? "avatar_aaa_default";
                     }
                 }
             }
             catch (Exception ex)
             {
-                LogManager.LogError(ex, nameof(GetAvatarIdForPlayer));
+                ServerException.HandleException(ex, nameof(GetAvatarIdForPlayer));
             }
 
             return "avatar_aaa_default";
@@ -387,9 +392,11 @@ namespace TrucoServer.Helpers.Match
                     using (var context = new baseDatosTrucoEntities())
                     {
                         var lobby = context.Lobby.Find(lobbyId);
+                        
                         if (lobby != null)
                         {
                             var owner = context.User.Find(lobby.ownerID);
+                            
                             return owner?.username;
                         }
                     }
@@ -397,7 +404,7 @@ namespace TrucoServer.Helpers.Match
             }
             catch (Exception ex)
             {
-                LogManager.LogError(ex, nameof(GetOwnerUsername));
+                ServerException.HandleException(ex, nameof(GetOwnerUsername));
             }
 
             return null;

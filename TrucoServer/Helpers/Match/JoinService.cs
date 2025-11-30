@@ -91,7 +91,7 @@ namespace TrucoServer.Helpers.Match
             }
             catch (Exception ex)
             {
-                LogManager.LogError(ex, nameof(ValidateJoinConditions));
+                ServerException.HandleException(ex, nameof(ValidateJoinConditions));
                 return false;
             }
         }
@@ -120,7 +120,7 @@ namespace TrucoServer.Helpers.Match
             }
             catch (Exception ex)
             {
-                LogManager.LogError(ex, nameof(AddPlayerToLobby));
+                ServerException.HandleException(ex, nameof(AddPlayerToLobby));
                 throw;
             }
         }
@@ -167,24 +167,28 @@ namespace TrucoServer.Helpers.Match
             using (var context = new baseDatosTrucoEntities())
             {
                 var lobby = new LobbyRepository().FindLobbyByMatchCode(context, matchCode, true);
+                
                 if (lobby == null || lobby.maxPlayers == 2)
                 {
                     return false;
                 }
 
                 var user = context.User.FirstOrDefault(u => u.username == username);
+                
                 if (user == null)
                 {
                     return false;
                 }
 
                 var member = context.LobbyMember.FirstOrDefault(lm => lm.lobbyID == lobby.lobbyID && lm.userID == user.userID);
+                
                 if (member == null)
                 {
                     return false;
                 }
 
                 string newTeam = (member.team == TEAM_1) ? TEAM_2 : TEAM_1;
+                
                 if (CanJoinTeam(matchCode, newTeam))
                 {
                     member.team = newTeam;

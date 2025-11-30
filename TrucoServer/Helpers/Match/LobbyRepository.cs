@@ -32,14 +32,9 @@ namespace TrucoServer.Helpers.Match
                     ? context.Versions.First().versionID
                     : versionId;
             }
-            catch (System.Data.SqlClient.SqlException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(ResolveVersionId)} - SQL Server Error");
-                return 0;
-            }
             catch (Exception ex)
             {
-                LogManager.LogError(ex, nameof(ResolveVersionId));
+                ServerException.HandleException(ex, nameof(ResolveVersionId));
                 return 0;
             }
         }
@@ -63,7 +58,7 @@ namespace TrucoServer.Helpers.Match
             }
             catch (Exception ex)
             {
-                LogManager.LogError(ex, nameof(CreateNewLobby));
+                ServerException.HandleException(ex, nameof(CreateNewLobby));
                 return null;
             }
         }
@@ -82,7 +77,7 @@ namespace TrucoServer.Helpers.Match
             }
             catch (Exception ex)
             {
-                LogManager.LogError(ex, nameof(AddLobbyOwner));
+                ServerException.HandleException(ex, nameof(AddLobbyOwner));
                 throw;
             }
         }
@@ -113,7 +108,7 @@ namespace TrucoServer.Helpers.Match
             }
             catch (Exception ex)
             {
-                LogManager.LogError(ex, nameof(CreatePrivateInvitation));
+                ServerException.HandleException(ex,nameof(CreatePrivateInvitation));
                 throw;
             }
         }
@@ -142,7 +137,7 @@ namespace TrucoServer.Helpers.Match
             }
             catch (Exception ex)
             {
-                LogManager.LogError(ex, $"{nameof(ResolveLobbyForJoin)} - Error");
+                ServerException.HandleException(ex, nameof(ResolveLobbyForJoin));
                 return null;
             }
         }
@@ -161,7 +156,7 @@ namespace TrucoServer.Helpers.Match
             }
             catch (Exception ex)
             {
-                LogManager.LogError(ex, nameof(ResolveLobbyForLeave));
+                ServerException.HandleException(ex,nameof(ResolveLobbyForLeave));
                 return null;
             }
         }
@@ -171,14 +166,15 @@ namespace TrucoServer.Helpers.Match
             try
             {
                 int numericCode = new MatchCodeGenerator().GenerateNumericCodeFromString(matchCode);
-
                 Lobby lobby = GetLobbyByMapping(context, matchCode, onlyOpen);
+                
                 if (lobby != null)
                 {
                     return lobby;
                 }
 
                 var invitation = context.Invitation.FirstOrDefault(i => i.code == numericCode);
+                
                 if (invitation == null)
                 {
                     return null;
@@ -188,7 +184,7 @@ namespace TrucoServer.Helpers.Match
             }
             catch (Exception ex)
             {
-                LogManager.LogError(ex, nameof(FindLobbyByMatchCode));
+                ServerException.HandleException(ex, nameof(FindLobbyByMatchCode));
                 return null;
             }
         }
@@ -199,6 +195,7 @@ namespace TrucoServer.Helpers.Match
             {
                 int numericCode = new MatchCodeGenerator().GenerateNumericCodeFromString(matchCode);
                 var invitation = context.Invitation.FirstOrDefault(i => i.code == numericCode);
+               
                 if (invitation == null)
                 {
                     return null;
@@ -208,7 +205,7 @@ namespace TrucoServer.Helpers.Match
             }
             catch (Exception ex)
             {
-                LogManager.LogError(ex, nameof(GetLobbyByMapping));
+                ServerException.HandleException(ex, nameof(GetLobbyByMapping));
                 return null;
             }
         }
@@ -228,7 +225,7 @@ namespace TrucoServer.Helpers.Match
             }
             catch (Exception ex)
             {
-                LogManager.LogError(ex, nameof(GetLobbyByOwner));
+                ServerException.HandleException(ex, nameof(GetLobbyByOwner));
                 return null;
             }
         }
@@ -252,7 +249,7 @@ namespace TrucoServer.Helpers.Match
             }
             catch (Exception ex)
             {
-                LogManager.LogError(ex, nameof(GetDatabasePlayers));
+                ServerException.HandleException(ex, nameof(GetDatabasePlayers));
                 return new List<PlayerInfo>();
             }
         }
@@ -283,7 +280,7 @@ namespace TrucoServer.Helpers.Match
             }
             catch (Exception ex)
             {
-                LogManager.LogError(ex, nameof(CloseLobbyById));
+                ServerException.HandleException(ex, nameof(CloseLobbyById));
                 return false;
             }
         }
@@ -293,25 +290,29 @@ namespace TrucoServer.Helpers.Match
             try
             {
                 int numericCode = new MatchCodeGenerator().GenerateNumericCodeFromString(matchCode);
+                
                 using (var context = new baseDatosTrucoEntities())
                 {
                     var invitations = context.Invitation.Where(i => i.code == numericCode && i.status == STATUS_PENDING).ToList();
+                   
                     if (!invitations.Any())
                     {
                         return true;
                     }
+                
                     foreach (var inv in invitations)
                     {
                         inv.status = STATUS_EXPIRED;
                         inv.expiresAt = DateTime.Now;
                     }
                     context.SaveChanges();
+                    
                     return true;
                 }
             }
             catch (Exception ex)
             {
-                LogManager.LogError(ex, nameof(ExpireInvitationByMatchCode));
+                ServerException.HandleException(ex, nameof(ExpireInvitationByMatchCode));
                 return false;
             }
         }
@@ -323,18 +324,21 @@ namespace TrucoServer.Helpers.Match
                 using (var context = new baseDatosTrucoEntities())
                 {
                     var members = context.LobbyMember.Where(lm => lm.lobbyID == lobbyId).ToList();
+                   
                     if (!members.Any())
                     {
                         return true;
                     }
+                    
                     context.LobbyMember.RemoveRange(members);
                     context.SaveChanges();
+                    
                     return true;
                 }
             }
             catch (Exception ex)
             {
-                LogManager.LogError(ex, nameof(RemoveLobbyMembersById));
+                ServerException.HandleException(ex, nameof(RemoveLobbyMembersById));
                 return false;
             }
         }

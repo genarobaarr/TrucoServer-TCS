@@ -39,24 +39,9 @@ namespace TrucoServer.Helpers.Password
                     return true;
                 }
             }
-            catch (DbUpdateException ex)
-            {
-                LogManager.LogError(ex, $"{callingMethod} - DataBase Saving Error");
-                return false;
-            }
-            catch (SqlException ex)
-            {
-                LogManager.LogError(ex, $"{callingMethod} - SQL Server Error");
-                return false;
-            }
-            catch (SmtpException ex)
-            {
-                LogManager.LogError(ex, $"{callingMethod} - Email Error");
-                return true;
-            }
             catch (Exception ex)
             {
-                LogManager.LogError(ex, callingMethod);
+                ServerException.HandleException(ex, nameof(callingMethod));
                 return false;
             }
         }

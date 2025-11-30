@@ -1,4 +1,6 @@
 ﻿using System;
+using TrucoServer.Utilities;
+using System.Runtime.Remoting;
 using System.Security.Cryptography;
 
 namespace TrucoServer.Helpers.Match
@@ -11,22 +13,25 @@ namespace TrucoServer.Helpers.Match
         public string GenerateMatchCode()
         {
             char[] result = new char[MATCH_CODE_LENGTH];
+           
             try
             {
                 using (var rng = new RNGCryptoServiceProvider())
                 {
                     byte[] randomBytes = new byte[result.Length];
                     rng.GetBytes(randomBytes);
+            
                     for (int i = 0; i < result.Length; i++)
                     {
                         result[i] = CHARS[randomBytes[i] % CHARS.Length];
                     }
                 }
+                
                 return new string(result);
             }
             catch (Exception ex)
             {
-                TrucoServer.Utilities.LogManager.LogError(ex, nameof(GenerateMatchCode));
+                Utilities.ServerException.HandleException(ex, nameof(GenerateMatchCode));
                 return string.Empty;
             }
         }
