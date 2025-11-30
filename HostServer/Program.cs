@@ -2,41 +2,9 @@
 using System.ServiceModel;
 using TrucoServer.Services;
 
-//Cada vez que se quiera testear el server se debe descomentar este codigo y comentar el que esta abajo
-/*
 namespace HostServer
 {
-    public class Program
-    {
-        public static string GetServerMessage()
-        {
-            return "Servidor iniciado en net.tcp://localhost:8091/TrucoServiceBase  http://localhost:8080/TrucoServiceBase";
-        }
-
-        public static string StartServer()
-        {
-            using (ServiceHost host = new ServiceHost(typeof(TrucoServer.Services.TrucoServer)))
-            {
-                host.Open();
-                Console.WriteLine(GetServerMessage());
-                return GetServerMessage();
-            }
-        }
-
-        static void Main(string[] args)
-        {
-            StartServer();
-            Console.ReadLine();
-        }
-    }
-}
-
-*/
-// Así se encontraba antes el server
-// Cada vez que se quiera correr el server se debe descomentar este codigo y comentar el que esta arriba
-namespace HostServer
-{
-    internal static class Program // Solamente para prueba se hace public
+    internal static class Program
     {
         static void Main(string[] args)
         {
