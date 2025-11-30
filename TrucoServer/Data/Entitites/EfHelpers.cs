@@ -83,14 +83,9 @@ namespace TrucoServer.Data.Entities
 
                 return (T)Convert.ChangeType(value, typeof(T));
             }
-            catch (InvalidCastException ex)
+            catch (Exception ex)
             {
-                LogManager.LogError(ex, $"{nameof(ConvertValue)} - Invalid Cast");
-                return default;
-            }
-            catch (FormatException ex)
-            {
-                LogManager.LogError(ex, $"{nameof(ConvertValue)} - Invalid format");
+                ServerException.HandleException(ex, nameof(EfHelpers) + "." + nameof(ConvertValue));
                 return default;
             }
         }

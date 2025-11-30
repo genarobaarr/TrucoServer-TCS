@@ -37,17 +37,9 @@ namespace TrucoServer.Utilities
                     throw new InvalidOperationException("The key 'EmailSettings' was not found or could not be deserialized");
                 }
             }
-            catch (FileNotFoundException ex)
-            {
-                LogManager.LogFatal(ex, nameof(LoadConfiguration));
-            }
-            catch (JsonException ex)
-            {
-                LogManager.LogFatal(ex, nameof(LoadConfiguration));
-            }
             catch (Exception ex)
             {
-                LogManager.LogFatal(ex, nameof(LoadConfiguration));
+                ServerException.HandleException(ex, nameof(LoadConfiguration));
             }
         }
     }
