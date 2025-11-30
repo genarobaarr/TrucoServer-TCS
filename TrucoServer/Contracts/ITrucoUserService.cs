@@ -53,5 +53,8 @@ namespace TrucoServer.Contracts
 
         [OperationContract]
         bool PasswordChange(string email, string newPassword, string languageCode);
+
+        [OperationContract(IsOneWay = true)]
+        void LogClientException(string errorMessage, string stackTrace, string clientUsername);
     }
 }

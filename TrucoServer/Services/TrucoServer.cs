@@ -97,6 +97,11 @@ namespace TrucoServer.Services
             return userService.GetOnlinePlayers();
         }
 
+        public void LogClientException(string errorMessage, string stackTrace, string clientUsername)
+        {
+            userService.LogClientException(errorMessage, stackTrace, clientUsername);
+        }
+
         // ==================== ITrucoFriendService ====================
 
         public bool SendFriendRequest(string fromUser, string toUser)

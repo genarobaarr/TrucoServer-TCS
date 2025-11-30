@@ -404,5 +404,18 @@ namespace TrucoServer.Services
 
             return null;
         }
+
+        public void LogClientException(string errorMessage, string stackTrace, string clientUsername)
+        {
+            try
+            {
+                string formattedLog = $"[CLIENT-ERROR] User: {clientUsername ?? "Anonymous"} | Msg: {errorMessage}";
+                LogManager.LogWarn($"{formattedLog} | Stack: {stackTrace}", "ClientReport");
+            }
+            catch (Exception ex)
+            {
+                ServerException.HandleException(ex, nameof(LogClientException));
+            }
+        }
     }
 }
