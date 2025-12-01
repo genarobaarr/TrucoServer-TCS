@@ -45,7 +45,7 @@ namespace TrucoServer.Tests.UtilitiesTests
         [TestMethod]
         public void TestIsEmailValidStandardFormatShouldReturnTrue()
         {
-            Assert.IsTrue(ServerValidator.IsEmailValid("user@example.com"));
+            Assert.IsTrue(ServerValidator.IsEmailValid("user@gmail.com"));
         }
 
         [TestMethod]

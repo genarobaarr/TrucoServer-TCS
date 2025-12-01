@@ -15,7 +15,7 @@ namespace TrucoServer.Tests.UtilitiesTests
         public void TestFromAddressPropertySetShouldStoreValue()
         {
             var settings = new EmailSettings();
-            string email = "test@domain.com";
+            string email = "test@gmail.com";
             settings.FromAddress = email;
             Assert.AreEqual(email, settings.FromAddress);
         }
