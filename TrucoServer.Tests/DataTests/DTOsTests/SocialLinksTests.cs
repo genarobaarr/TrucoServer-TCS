@@ -15,7 +15,11 @@ namespace TrucoServer.Tests.DataTests.DTOsTests
         [TestMethod]
         public void TestSerializeObjectFacebookHandleShouldMapToLowerCaseFacebookKey()
         {
-            var links = new SocialLinks { FacebookHandle = "my_fb_user" };
+            var links = new SocialLinks 
+            { 
+                FacebookHandle = "my_fb_user" 
+            };
+
             string json = JsonConvert.SerializeObject(links);
             Assert.IsTrue(json.Contains("\"facebook\":\"my_fb_user\""));
         }
@@ -32,7 +36,7 @@ namespace TrucoServer.Tests.DataTests.DTOsTests
         public void TestInstagramHandleSetPropertyShouldStoreValue()
         {
             var links = new SocialLinks();
-            string expectedHandle = "insta_gram";
+            string expectedHandle = "Insta";
             links.InstagramHandle = expectedHandle;
             Assert.AreEqual(expectedHandle, links.InstagramHandle);
         }
@@ -40,7 +44,11 @@ namespace TrucoServer.Tests.DataTests.DTOsTests
         [TestMethod]
         public void TestSerializeObjectNullValuesShouldNotThrowException()
         {
-            var links = new SocialLinks { FacebookHandle = null };
+            var links = new SocialLinks 
+            { 
+                FacebookHandle = null 
+            };
+
             string jsonOutput = JsonConvert.SerializeObject(links);
             Assert.IsNotNull(jsonOutput);
         }
