@@ -6,7 +6,7 @@ namespace TrucoServer.Helpers.Match
     public interface ILobbyRepository
     {
         int ResolveVersionId(baseDatosTrucoEntities context, int maxPlayers);
-        Lobby CreateNewLobby(baseDatosTrucoEntities context, User host, int versionId, int maxPlayers, string status);
+        Lobby CreateNewLobby(baseDatosTrucoEntities context, LobbyCreationOptions options);
         void AddLobbyOwner(baseDatosTrucoEntities context, Lobby lobby, User host);
         void CreatePrivateInvitation(baseDatosTrucoEntities context, User host, string matchCode);
         Lobby ResolveLobbyForJoin(baseDatosTrucoEntities context, string matchCode);

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.Remoting.Contexts;
 using System.ServiceModel;
 using TrucoServer.Contracts;
 using TrucoServer.Data.DTOs;
@@ -56,7 +57,6 @@ namespace TrucoServer.GameLogic
         private const string FLOR_BET = "Flor";
         private const string CONTRA_FLOR_BET = "ContraFlor";
 
-        private const int INITIAL_SCORE = 0;
         private const int CURRENT_ROUND = 0;
         private const int CURRENT_ENVIDO_POINT = 0;
         private const int INDEX_VALUE = 0;
@@ -107,32 +107,36 @@ namespace TrucoServer.GameLogic
         private bool florWasPlayed;
         private Dictionary<int, int> playerFlorScores;
 
-        public TrucoMatch(string matchCode, int lobbyId, List<PlayerInformation> players, Dictionary<int,
-            ITrucoCallback> callbacks, ITrucoDeck deck, IGameManager gameManager)
+        public TrucoMatch(TrucoMatchContext trucoMatchContext)
         {
             try
             {
-                this.MatchCode = matchCode;
-                this.LobbyID = lobbyId;
-                this.DbMatchId = gameManager.SaveMatchToDatabase(MatchCode, lobbyId, players);
+                if (trucoMatchContext == null)
+                {
+                    throw new ArgumentNullException(nameof(trucoMatchContext));
+                }
 
-                this.Players = players;
-                this.PlayerCallbacks = callbacks;
-                this.deck = deck;
-                this.gameManager = gameManager;
+                this.MatchCode = trucoMatchContext.MatchCode;
+                this.LobbyID = trucoMatchContext.LobbyId;
+                this.Players = trucoMatchContext.Players;
+                this.PlayerCallbacks = trucoMatchContext.Callbacks;
+                this.deck = trucoMatchContext.Deck;
+                this.gameManager = trucoMatchContext.GameManager;
 
-                this.playerHands = players.ToDictionary(p => p.PlayerID, p => new List<TrucoCard>());
-                this.playedCards = players.ToDictionary(p => p.PlayerID, p => new List<TrucoCard>());
+                this.DbMatchId = gameManager.SaveMatchToDatabase(MatchCode, LobbyID, Players);
+
+                this.playerHands = Players.ToDictionary(p => p.PlayerID, p => new List<TrucoCard>());
+                this.playedCards = Players.ToDictionary(p => p.PlayerID, p => new List<TrucoCard>());
                 this.cardsOnTable = new Dictionary<int, TrucoCard>();
-                this.roundWinners = new string[MAX_ROUNDS];
-                this.Team1Score = INITIAL_SCORE;
-                this.Team2Score = INITIAL_SCORE;
+                this.roundWinners = new string[3];
+                this.Team1Score = 0;
+                this.Team2Score = 0;
                 this.CurrentState = GameState.Deal;
                 this.TrucoBetValue = TrucoBet.None;
                 this.handStartingPlayerIndex = 0;
                 this.turnIndex = 0;
 
-                gameManager.SaveMatchToDatabase(MatchCode, LobbyID, players);
+                gameManager.SaveMatchToDatabase(MatchCode, LobbyID, Players);
             }
             catch (Exception ex)
             {
@@ -145,60 +149,11 @@ namespace TrucoServer.GameLogic
         {
             try
             {
-                CurrentState = GameState.Envido;
-                deck.Reset();
-                deck.Shuffle();
-                playerHands.Clear();
-                cardsOnTable.Clear();
+                ResetHandState();
 
-                foreach (var key in playedCards.Keys.ToList())
-                {
-                    playedCards[key].Clear();
-                }
+                DealCardsToPlayers();
 
-                roundWinners = new string[MAX_ROUNDS];
-                currentRound = CURRENT_ROUND;
-
-                TrucoBetValue = TrucoBet.None;
-                bettingPlayerId = null;
-                waitingForResponseToId = null;
-
-                handStartingPlayerIndex = (handStartingPlayerIndex + 1) % Players.Count;
-                turnIndex = handStartingPlayerIndex;
-
-                EnvidoBetValue = EnvidoBet.None;
-                proposedEnvidoBet = EnvidoBet.None;
-                currentEnvidoPoints = CURRENT_ENVIDO_POINT;
-                envidoBettorId = null;
-                waitingForEnvidoResponseId = null;
-                envidoWasPlayed = false;
-
-                FlorBetValue = FlorBet.None;
-                currentFlorPoints = CURRENT_FLOR_POINT;
-                florBettorId = null;
-                waitingForFlorResponseId = null;
-                florWasPlayed = false;
-
-                foreach (var player in Players)
-                {
-                    var hand = deck.DealHand();
-                    playerHands[player.PlayerID] = hand;
-                    player.Hand = hand;
-
-                    NotifyPlayer(player.PlayerID, callback => callback.ReceiveCards(hand.ToArray()));
-                }
-
-                playerEnvidoScores = Players.ToDictionary(
-                    p => p.PlayerID,
-                    p => TrucoRules.CalculateEnvidoScore(playerHands[p.PlayerID])
-                );
-
-                playerFlorScores = Players.ToDictionary(
-                    p => p.PlayerID,
-                    p => TrucoRules.HasFlor(playerHands[p.PlayerID])
-                        ? TrucoRules.CalculateFlorScore(playerHands[p.PlayerID])
-                        : -1
-                );
+                CalculateInitialScores();
 
                 CurrentState = GameState.Envido;
                 NotifyTurnChange();
@@ -552,31 +507,8 @@ namespace TrucoServer.GameLogic
         {
             try
             {
-                bool anyCardPlayed = playedCards.Values.Any(list => list.Count > 0);
-                if (anyCardPlayed)
+                if (!CanCallFlor(playerID, out var caller))
                 {
-                    return false;
-                }
-
-                if (florWasPlayed || waitingForFlorResponseId.HasValue)
-                {
-                    return false;
-                }
-
-                if (CurrentState == GameState.Truco)
-                {
-                    return false;
-                }
-
-                var caller = Players.FirstOrDefault(p => p.PlayerID == playerID);
-                if (caller == null)
-                {
-                    return false;
-                }
-
-                if (playerFlorScores[playerID] == -1)
-                {
-                    LogManager.LogWarn($"[GAME] Player {caller.Username} tried to call Flor without having it.", nameof(CallFlor));
                     return false;
                 }
 
@@ -588,34 +520,16 @@ namespace TrucoServer.GameLogic
 
                 bool opponentHasFlor = playerFlorScores[opponent.PlayerID] > -1;
 
-                if (!opponentHasFlor)
+                if (opponentHasFlor)
                 {
-                    AwardFlorPoints(caller.Team, POINTS_FLOR_DIRECT);
-
-                    NotifyAll(cb => cb.NotifyFlorCall(caller.Username, FLOR_BET, false));
-                    NotifyAll(cb => cb.NotifyEnvidoResult(caller.Username, POINTS_FLOR_DIRECT, POINTS_FLOR_DIRECT));
-
-                    florWasPlayed = true;
-                    CurrentState = GameState.Truco;
-                    NotifyTurnChange();
-                    return true;
+                    ProcessFlorChallenge(playerID, opponent.PlayerID);
                 }
                 else
                 {
-                    if (CurrentState == GameState.Envido)
-                    {
-                        ResetEnvidoState(false);
-                    }
-
-                    CurrentState = GameState.Flor;
-                    florBettorId = playerID;
-                    waitingForFlorResponseId = opponent.PlayerID;
-                    FlorBetValue = FlorBet.Flor;
-
-                    NotifyFlorCallHelper(playerID, FLOR_BET, opponent.PlayerID);
-
-                    return true;
+                    ProcessFlorDirectWin(caller);
                 }
+
+                return true;
             }
             catch (Exception ex)
             {
@@ -720,6 +634,67 @@ namespace TrucoServer.GameLogic
             }
         }
 
+        private bool CanCallFlor(int playerID, out PlayerInformation caller)
+        {
+            caller = Players.FirstOrDefault(p => p.PlayerID == playerID);
+
+            if (caller == null)
+            {
+                return false;
+            }
+
+            if (florWasPlayed || waitingForFlorResponseId.HasValue)
+            {
+                return false;
+            }
+
+            if (CurrentState == GameState.Truco)
+            { 
+                return false; 
+            }
+
+            bool anyCardPlayed = playedCards.Values.Any(list => list.Count > 0);
+            if (anyCardPlayed)
+            {
+                return false;
+            }
+
+            if (playerFlorScores[playerID] == -1)
+            {
+                LogManager.LogWarn($"[GAME] Player {caller.Username} tried to call Flor without having it.", nameof(CallFlor));
+                return false;
+            }
+
+            return true;
+        }
+
+        private void ProcessFlorDirectWin(PlayerInformation caller)
+        {
+            AwardFlorPoints(caller.Team, POINTS_FLOR_DIRECT);
+
+            NotifyAll(cb => cb.NotifyFlorCall(caller.Username, FLOR_BET, false));
+            NotifyAll(cb => cb.NotifyEnvidoResult(caller.Username, POINTS_FLOR_DIRECT, POINTS_FLOR_DIRECT));
+
+            florWasPlayed = true;
+            CurrentState = GameState.Truco;
+            NotifyTurnChange();
+        }
+
+        private void ProcessFlorChallenge(int playerID, int opponentID)
+        {
+            if (CurrentState == GameState.Envido)
+            {
+                ResetEnvidoState(false);
+            }
+
+            CurrentState = GameState.Flor;
+            florBettorId = playerID;
+            waitingForFlorResponseId = opponentID;
+            FlorBetValue = FlorBet.Flor;
+
+            NotifyFlorCallHelper(playerID, FLOR_BET, opponentID);
+        }
+
         private void HandleEnvidoNoQuiero(PlayerInformation caller)
         {
             int pointsToAward;
@@ -772,33 +747,7 @@ namespace TrucoServer.GameLogic
 
                 if (CheckMatchEnd())
                 {
-                    lock (matchLock)
-                    {
-                        matchEnded = true;
-                    }
-
-                    string winnerTeamString;
-                    string matchWinnerName;
-                    int winnerScore;
-                    int loserScore;
-
-                    if (Team1Score > Team2Score)
-                    {
-                        winnerTeamString = TEAM_1;
-                        winnerScore = Team1Score;
-                        loserScore = Team2Score;
-                        matchWinnerName = Players.First(p => p.Team == TEAM_1).Username;
-                    }
-                    else
-                    {
-                        winnerTeamString = TEAM_2;
-                        winnerScore = Team2Score;
-                        loserScore = Team1Score;
-                        matchWinnerName = Players.First(p => p.Team == TEAM_2).Username;
-                    }
-
-                    gameManager.SaveMatchResult(this.DbMatchId, winnerTeamString, winnerScore, loserScore);
-                    NotifyAll(callback => callback.OnMatchEnded(MatchCode, matchWinnerName));
+                    HandleMatchWin();
                 }
             }
             catch (Exception ex)
@@ -824,32 +773,7 @@ namespace TrucoServer.GameLogic
 
                 if (CheckMatchEnd())
                 {
-                    lock (matchLock)
-                    {
-                        matchEnded = true;
-                    }
-                    string winnerTeamString;
-                    string matchWinnerName;
-                    int winnerScore;
-                    int loserScore;
-
-                    if (Team1Score > Team2Score)
-                    {
-                        winnerTeamString = TEAM_1;
-                        winnerScore = Team1Score;
-                        loserScore = Team2Score;
-                        matchWinnerName = Players.First(p => p.Team == TEAM_1).Username;
-                    }
-                    else
-                    {
-                        winnerTeamString = TEAM_2;
-                        winnerScore = Team2Score;
-                        loserScore = Team1Score;
-                        matchWinnerName = Players.First(p => p.Team == TEAM_2).Username;
-                    }
-
-                    gameManager.SaveMatchResult(this.DbMatchId, winnerTeamString, winnerScore, loserScore);
-                    NotifyAll(callback => callback.OnMatchEnded(MatchCode, matchWinnerName));
+                    HandleMatchWin();
                 }
             }
             catch (Exception ex)
@@ -1055,34 +979,30 @@ namespace TrucoServer.GameLogic
             return id2;
         }
 
+        private void CalculateInitialScores()
+        {
+            playerEnvidoScores = Players.ToDictionary(
+                p => p.PlayerID,
+                p => TrucoRules.CalculateEnvidoScore(playerHands[p.PlayerID])
+            );
+
+            playerFlorScores = Players.ToDictionary(
+                p => p.PlayerID,
+                p => TrucoRules.HasFlor(playerHands[p.PlayerID])
+                    ? TrucoRules.CalculateFlorScore(playerHands[p.PlayerID])
+                    : -1
+            );
+        }
+
         private void HandleMatchWin()
         {
             lock (matchLock)
             {
                 matchEnded = true;
             }
-            string winnerTeamString;
-            string matchWinnerName;
-            int winnerScore;
-            int loserScore;
 
-            if (Team1Score > Team2Score)
-            {
-                winnerTeamString = TEAM_1;
-                winnerScore = Team1Score;
-                loserScore = Team2Score;
-                matchWinnerName = Players.First(p => p.Team == TEAM_1).Username;
-            }
-            else
-            {
-                winnerTeamString = TEAM_2;
-                winnerScore = Team2Score;
-                loserScore = Team1Score;
-                matchWinnerName = Players.First(p => p.Team == TEAM_2).Username;
-            }
-
-            gameManager.SaveMatchResult(this.DbMatchId, winnerTeamString, winnerScore, loserScore);
-            NotifyAll(callback => callback.OnMatchEnded(MatchCode, matchWinnerName));
+            string winnerTeamString = (Team1Score > Team2Score) ? TEAM_1 : TEAM_2;
+            SaveAndNotifyMatchResult(winnerTeamString);
         }
 
         public void PlayerGoesToDeck(int playerID)
@@ -1148,17 +1068,9 @@ namespace TrucoServer.GameLogic
                 }
 
                 string loserTeam = leaver.Team;
-                string winnerTeam = (loserTeam == TEAM_1) ? TEAM_2 : TEAM_1;
+                string winnerTeamString = (loserTeam == TEAM_1) ? TEAM_2 : TEAM_1;
 
-                int winnerScore = (winnerTeam == TEAM_1) ? Team1Score : Team2Score;
-                int loserScore = (loserTeam == TEAM_1) ? Team1Score : Team2Score;
-
-                var winnerPlayer = Players.FirstOrDefault(p => p.Team == winnerTeam);
-                string matchWinnerName = winnerPlayer != null ? winnerPlayer.Username : "Oponent";
-
-                gameManager.SaveMatchResult(this.DbMatchId, winnerTeam, winnerScore, loserScore);
-
-                NotifyAll(callback => callback.OnMatchEnded(MatchCode, matchWinnerName));
+                SaveAndNotifyMatchResult(winnerTeamString);
             }
             catch (Exception ex)
             {
@@ -1198,6 +1110,54 @@ namespace TrucoServer.GameLogic
             bettingPlayerId = null;
             waitingForResponseToId = null;
             proposedBetValue = TrucoBet.None;
+        }
+
+        private void ResetHandState()
+        {
+            playerHands.Clear();
+            cardsOnTable.Clear();
+            foreach (var key in playedCards.Keys.ToList())
+            {
+                playedCards[key].Clear();
+            }
+
+            roundWinners = new string[MAX_ROUNDS];
+            currentRound = CURRENT_ROUND;
+
+            handStartingPlayerIndex = (handStartingPlayerIndex + 1) % Players.Count;
+            turnIndex = handStartingPlayerIndex;
+
+            TrucoBetValue = TrucoBet.None;
+            bettingPlayerId = null;
+            waitingForResponseToId = null;
+
+            EnvidoBetValue = EnvidoBet.None;
+            proposedEnvidoBet = EnvidoBet.None;
+            currentEnvidoPoints = CURRENT_ENVIDO_POINT;
+            envidoBettorId = null;
+            waitingForEnvidoResponseId = null;
+            envidoWasPlayed = false;
+
+            FlorBetValue = FlorBet.None;
+            currentFlorPoints = CURRENT_FLOR_POINT;
+            florBettorId = null;
+            waitingForFlorResponseId = null;
+            florWasPlayed = false;
+        }
+
+        private void DealCardsToPlayers()
+        {
+            deck.Reset();
+            deck.Shuffle();
+
+            foreach (var player in Players)
+            {
+                var hand = deck.DealHand();
+                playerHands[player.PlayerID] = hand;
+                player.Hand = hand;
+
+                NotifyPlayer(player.PlayerID, callback => callback.ReceiveCards(hand.ToArray()));
+            }
         }
 
         private PlayerInformation GetOpponentToRespond(PlayerInformation caller)
@@ -1419,6 +1379,25 @@ namespace TrucoServer.GameLogic
             {
                 LogManager.LogError(ex, nameof(NotifyEnvidoCall));
             }
+        }
+
+        private void SaveAndNotifyMatchResult(string winnerTeam)
+        {
+            int winnerScore = (winnerTeam == TEAM_1) ? Team1Score : Team2Score;
+            int loserScore = (winnerTeam == TEAM_1) ? Team2Score : Team1Score;
+
+            var winnerPlayer = Players.FirstOrDefault(p => p.Team == winnerTeam);
+            string matchWinnerName = winnerPlayer != null ? winnerPlayer.Username : "Oponent";
+
+            var outcome = new MatchOutcome
+            {
+                WinnerTeam = winnerTeam,
+                WinnerScore = winnerScore,
+                LoserScore = loserScore
+            };
+
+            gameManager.SaveMatchResult(this.DbMatchId, outcome);
+            NotifyAll(callback => callback.OnMatchEnded(MatchCode, matchWinnerName));
         }
 
         private bool CheckHandWinner()

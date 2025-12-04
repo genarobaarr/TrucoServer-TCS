@@ -67,9 +67,9 @@ namespace TrucoServer.Services
             return userService.PasswordChange(email, newPassword, languageCode);
         }
 
-        public bool PasswordReset(string email, string code, string newPassword, string languageCode)
+        public bool PasswordReset(PasswordResetOptions options)
         {
-            return userService.PasswordReset(email, code, newPassword, languageCode);
+            return userService.PasswordReset(options);
         }
 
         public bool RequestEmailVerification(string email, string languageCode)

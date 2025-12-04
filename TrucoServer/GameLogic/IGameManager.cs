@@ -6,6 +6,6 @@ namespace TrucoServer.GameLogic
     public interface IGameManager
     {
         int SaveMatchToDatabase(string matchCode, int lobbyId, List<PlayerInformation> players);
-        void SaveMatchResult(int matchId, string winnerTeam, int winnerScore, int loserScore);
+        void SaveMatchResult(int matchId, MatchOutcome outcome);
     }
 }

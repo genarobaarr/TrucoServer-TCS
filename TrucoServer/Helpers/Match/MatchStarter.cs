@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.ServiceModel;
+using System.Threading.Tasks;
 using TrucoServer.Contracts;
 using TrucoServer.Data.DTOs;
 using TrucoServer.GameLogic;
@@ -135,20 +136,97 @@ namespace TrucoServer.Helpers.Match
             }
         }
 
-        public void InitializeAndRegisterGame(string matchCode, int lobbyId, List<PlayerInformation> gamePlayers, Dictionary<int, ITrucoCallback> gameCallbacks)
+        public MatchStartValidation ValidateMatchStart(string matchCode)
+        {
+            var result = new MatchStartValidation { IsValid = false };
+
+            try
+            {
+                using (var context = new baseDatosTrucoEntities())
+                {
+                    Lobby lobby = null;
+
+                    if (coordinator.TryGetLobbyIdFromCode(matchCode, out int id))
+                    {
+                        lobby = context.Lobby.Find(id);
+                    }
+
+                    if (lobby == null)
+                    {
+                        lobby = repository.FindLobbyByMatchCode(context, matchCode, true);
+                    }
+
+                    if (lobby == null)
+                    {
+                        return result;
+                    }
+
+                    int dbCount = context.LobbyMember.Count(lm => lm.lobbyID == lobby.lobbyID);
+                    int guestCount = coordinator.GetGuestCountInMemory(matchCode);
+                    int totalPlayers = dbCount + guestCount;
+
+                    if (totalPlayers == lobby.maxPlayers)
+                    {
+                        result.IsValid = true;
+                        result.LobbyId = lobby.lobbyID;
+                        result.ExpectedPlayers = lobby.maxPlayers;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError(ex, nameof(ValidateMatchStart));
+            }
+
+            return result;
+        }
+
+        public void InitiateMatchSequence(string matchCode, int lobbyId, List<PlayerInfo> playersList)
+        {
+            if (!BuildGamePlayersAndCallbacks(playersList, out var gamePlayers, out var gameCallbacks))
+            {
+                return;
+            }
+
+            var initOptions = new GameInitializationOptions
+            {
+                MatchCode = matchCode,
+                LobbyId = lobbyId,
+                GamePlayers = gamePlayers,
+                GameCallbacks = gameCallbacks
+            };
+
+            InitializeAndRegisterGame(initOptions);
+            NotifyMatchStart(matchCode, playersList);
+            HandleMatchStartupCleanup(matchCode);
+
+            Task.Delay(500).ContinueWith(_ =>
+            {
+                if (gameRegistry.TryGetGame(matchCode, out var match))
+                {
+                    match.StartNewHand();
+                }
+            });
+        }
+
+        public void InitializeAndRegisterGame(GameInitializationOptions options)
         {
             try
             {
+                if (options == null)
+                {
+                    throw new ArgumentNullException(nameof(options));
+                }
+
                 string ownerUsername = null;
 
                 using (var context = new baseDatosTrucoEntities())
                 {
-                    var lobby = context.Lobby.Find(lobbyId);
+                    var lobby = context.Lobby.Find(options.LobbyId);
 
                     if (lobby == null)
                     {
-                        LogManager.LogError(new Exception($"Lobby {lobbyId} not found"), nameof(InitializeAndRegisterGame));
-                        
+                        LogManager.LogError(new Exception($"Lobby {options.LobbyId} not found"), nameof(InitializeAndRegisterGame));
                         return;
                     }
 
@@ -157,23 +235,34 @@ namespace TrucoServer.Helpers.Match
 
                     if (string.IsNullOrEmpty(ownerUsername))
                     {
-                        ownerUsername = gamePlayers.FirstOrDefault()?.Username;
+                        ownerUsername = options.GamePlayers.FirstOrDefault()?.Username;
                     }
                 }
 
-                var orderedPlayers = OrderPlayersForMatch(gamePlayers, ownerUsername);
+                var orderedPlayers = OrderPlayersForMatch(options.GamePlayers, ownerUsername);
 
-                if (orderedPlayers.Count != gamePlayers.Count)
+                if (orderedPlayers.Count != options.GamePlayers.Count)
                 {
-                    orderedPlayers = gamePlayers;
+                    orderedPlayers = options.GamePlayers;
                 }
 
                 var newDeck = new Deck(shuffler);
-                var newGame = new TrucoMatch(matchCode, lobbyId, orderedPlayers, gameCallbacks, newDeck, gameManager);
 
-                if (!gameRegistry.TryAddGame(matchCode, newGame))
+                var matchContext = new TrucoMatchContext
                 {
-                    LogManager.LogError(new Exception($"Failed to add running game {matchCode}"), nameof(InitializeAndRegisterGame));
+                    MatchCode = options.MatchCode,
+                    LobbyId = options.LobbyId,
+                    Players = orderedPlayers,
+                    Callbacks = options.GameCallbacks,
+                    Deck = newDeck,
+                    GameManager = gameManager
+                };
+
+                var newGame = new TrucoMatch(matchContext);
+
+                if (!gameRegistry.TryAddGame(options.MatchCode, newGame))
+                {
+                    LogManager.LogError(new Exception($"Failed to add running game {options.MatchCode}"), nameof(InitializeAndRegisterGame));
                 }
             }
             catch (Exception ex)

@@ -49,7 +49,7 @@ namespace TrucoServer.Contracts
         bool SaveUserProfile(UserProfileData profile);
 
         [OperationContract]
-        bool PasswordReset(string email, string code, string newPassword, string languageCode);
+        bool PasswordReset(PasswordResetOptions options);
 
         [OperationContract]
         bool PasswordChange(string email, string newPassword, string languageCode);

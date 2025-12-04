@@ -83,7 +83,15 @@ namespace TrucoServer.Services
                     int versionId = lobbyRepository.ResolveVersionId(context, maxPlayers);
                     string normalizedStatus = privacy.Equals("public", StringComparison.OrdinalIgnoreCase) ? STATUS_PUBLIC : STATUS_PRIVATE;
 
-                    var lobby = lobbyRepository.CreateNewLobby(context, host, versionId, maxPlayers, normalizedStatus);
+                    var lobbyOptions = new LobbyCreationOptions
+                    {
+                        Host = host,
+                        VersionId = versionId,
+                        MaxPlayers = maxPlayers,
+                        Status = normalizedStatus
+                    };
+
+                    var lobby = lobbyRepository.CreateNewLobby(context, lobbyOptions);
 
                     if (lobby == null)
                     {
@@ -323,70 +331,24 @@ namespace TrucoServer.Services
             {
                 return;
             }
-                
+
             try
             {
-                int lobbyId = 0;
-                int expectedPlayers = 0;
+                var validation = starter.ValidateMatchStart(matchCode);
 
-                using (var context = new baseDatosTrucoEntities())
+                if (!validation.IsValid)
                 {
-                    Lobby lobby = null;
-
-                    if (lobbyCoordinator.TryGetLobbyIdFromCode(matchCode, out int id))
-                    {
-                        lobby = context.Lobby.FirstOrDefault(l => l.lobbyID == id);
-                    }
-
-                    if (lobby == null)
-                    {
-                        lobby = lobbyRepository.FindLobbyByMatchCode(context, matchCode, true);
-                    }
-
-                    if (lobby == null)
-                    {
-                        return;
-                    }
-
-                    lobbyId = lobby.lobbyID;
-                    expectedPlayers = lobby.maxPlayers;
-
-                    var dbMembers = context.LobbyMember.Where(lm => lm.lobbyID == lobby.lobbyID).ToList();
-                    int dbCount = dbMembers.Count;
-
-                    int guestCount = lobbyCoordinator.GetGuestCountInMemory(matchCode);
-
-                    int totalPlayers = dbCount + guestCount;
-
-                    if (totalPlayers != expectedPlayers)
-                    {
-                        return;
-                    }
+                    return;
                 }
 
                 List<PlayerInfo> playersList = GetLobbyPlayers(matchCode);
 
-                if (playersList.Count != expectedPlayers)
+                if (playersList.Count != validation.ExpectedPlayers)
                 {
                     return;
                 }
 
-                if (!starter.BuildGamePlayersAndCallbacks(playersList, out var gamePlayers, out var gameCallbacks))
-                {
-                    return;
-                }
-
-                starter.InitializeAndRegisterGame(matchCode, lobbyId, gamePlayers, gameCallbacks);
-                starter.NotifyMatchStart(matchCode, playersList);
-                starter.HandleMatchStartupCleanup(matchCode);
-
-                Task.Delay(500).ContinueWith(_ =>
-                {
-                    if (gameRegistry.TryGetGame(matchCode, out var match))
-                    {
-                        match.StartNewHand();
-                    }
-                });
+                starter.InitiateMatchSequence(matchCode, validation.LobbyId, playersList);
             }
             catch (Exception ex)
             {

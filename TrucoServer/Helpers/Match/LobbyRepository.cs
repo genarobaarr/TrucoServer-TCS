@@ -39,16 +39,26 @@ namespace TrucoServer.Helpers.Match
             }
         }
 
-        public Lobby CreateNewLobby(baseDatosTrucoEntities context, User host, int versionId, int maxPlayers, string status)
+        public Lobby CreateNewLobby(baseDatosTrucoEntities context, LobbyCreationOptions options)
         {
             try
             {
+                if (options == null)
+                {
+                    throw new ArgumentNullException(nameof(options));
+                }
+
+                if (options.Host == null)
+                {
+                    throw new ArgumentNullException(nameof(options.Host));
+                }
+
                 var newLobby = new Lobby
                 {
-                    ownerID = host.userID,
-                    versionID = versionId,
-                    maxPlayers = maxPlayers,
-                    status = status,
+                    ownerID = options.Host.userID,
+                    versionID = options.VersionId,
+                    maxPlayers = options.MaxPlayers,
+                    status = options.Status,
                     createdAt = DateTime.Now
                 };
 

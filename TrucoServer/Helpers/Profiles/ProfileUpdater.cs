@@ -9,6 +9,8 @@ namespace TrucoServer.Helpers.Profiles
 {
     public class ProfileUpdater : IProfileUpdater
     {
+        private const string DEFAULT_LANGUAGE = "es-MX";
+        private const string DEAULT_AVATAR_ID = "avatar_aaa_default";
         public bool ValidateProfileInput(UserProfileData profile)
         {
             if (profile == null)
@@ -27,9 +29,9 @@ namespace TrucoServer.Helpers.Profiles
             UserProfile profile = new UserProfile
             {
                 userID = userId,
-                avatarID = "avatar_aaa_default",
+                avatarID = DEAULT_AVATAR_ID,
                 socialLinksJson = Encoding.UTF8.GetBytes("{}"),
-                languageCode = "es-MX",
+                languageCode = DEFAULT_LANGUAGE,
                 isMusicMuted = false,
             };
 
@@ -60,43 +62,69 @@ namespace TrucoServer.Helpers.Profiles
             return true;
         }
 
-        public void UpdateProfileDetails(baseDatosTrucoEntities context, User user, UserProfileData profile, string defaultLangCode, string defaultAvatar)
+        public void UpdateProfileDetails(baseDatosTrucoEntities context, User user, ProfileUpdateOptions options)
         {
-            EnsureUserProfileExists(context, user, defaultLangCode, defaultAvatar);
-
-            user.UserProfile.avatarID = profile.AvatarId ?? user.UserProfile.avatarID ?? defaultAvatar;
-
-            if (!string.IsNullOrWhiteSpace(profile.LanguageCode))
+            if (options == null)
             {
-                user.UserProfile.languageCode = profile.LanguageCode;
-                user.UserProfile.isMusicMuted = profile.IsMusicMuted;
-            }
-            else if (string.IsNullOrWhiteSpace(user.UserProfile.languageCode))
-            {
-                user.UserProfile.languageCode = defaultLangCode;
+                throw new ArgumentNullException(nameof(options));
             }
 
+            if (options.ProfileData == null)
+            {
+                throw new ArgumentNullException(nameof(options.ProfileData));
+            }
+
+            EnsureUserProfileExists(context, user, options);
+
+            var userProfile = user.UserProfile;
+            var inputData = options.ProfileData;
+
+            UpdateAvatar(userProfile, inputData, options.DefaultAvatarId);
+            UpdateLanguageSettings(userProfile, inputData, options.DefaultLanguageCode);
+            UpdateSocialLinks(userProfile, inputData);
+        }
+
+        private void UpdateAvatar(UserProfile userProfile, UserProfileData data, string defaultAvatar)
+        {
+            userProfile.avatarID = data.AvatarId ?? userProfile.avatarID ?? defaultAvatar;
+        }
+
+        private void UpdateLanguageSettings(UserProfile userProfile, UserProfileData data, string defaultLang)
+        {
+            if (!string.IsNullOrWhiteSpace(data.LanguageCode))
+            {
+                userProfile.languageCode = data.LanguageCode;
+                userProfile.isMusicMuted = data.IsMusicMuted;
+            }
+            else if (string.IsNullOrWhiteSpace(userProfile.languageCode))
+            {
+                userProfile.languageCode = defaultLang;
+            }
+        }
+
+        private void UpdateSocialLinks(UserProfile userProfile, UserProfileData data)
+        {
             var links = new SocialLinks
             {
-                FacebookHandle = (profile.FacebookHandle ?? "").Trim(),
-                XHandle = (profile.XHandle ?? "").Trim(),
-                InstagramHandle = (profile.InstagramHandle ?? "").Trim()
+                FacebookHandle = (data.FacebookHandle ?? "").Trim(),
+                XHandle = (data.XHandle ?? "").Trim(),
+                InstagramHandle = (data.InstagramHandle ?? "").Trim()
             };
 
             string json = JsonConvert.SerializeObject(links);
-            user.UserProfile.socialLinksJson = Encoding.UTF8.GetBytes(json);
+            userProfile.socialLinksJson = Encoding.UTF8.GetBytes(json);
         }
 
-        public void EnsureUserProfileExists(baseDatosTrucoEntities context, User user, string defaultLangCode, string defaultAvatar)
+        public void EnsureUserProfileExists(baseDatosTrucoEntities context, User user, ProfileUpdateOptions options)
         {
             if (user.UserProfile == null)
             {
                 user.UserProfile = new UserProfile
                 {
                     userID = user.userID,
-                    languageCode = defaultLangCode,
+                    languageCode = options.DefaultLanguageCode,
                     isMusicMuted = false,
-                    avatarID = defaultAvatar,
+                    avatarID = options.DefaultAvatarId,
                     socialLinksJson = Encoding.UTF8.GetBytes("{}")
                 };
 
@@ -107,23 +135,23 @@ namespace TrucoServer.Helpers.Profiles
         public bool ProcessAvatarUpdate(baseDatosTrucoEntities context, string username, string newAvatarId)
         {
             User user = context.User.FirstOrDefault(u => u.username == username);
-
-            if (user == null)
-            {
-                return false;
-            }
+            if (user == null) return false;
 
             UserProfile profile = context.UserProfile.FirstOrDefault(p => p.userID == user.userID);
 
             if (profile == null)
             {
-                EnsureUserProfileExists(context, user, "es-MX", "avatar_aaa_default");
+                var defaultOptions = new ProfileUpdateOptions
+                {
+                    DefaultLanguageCode = DEFAULT_LANGUAGE,
+                    DefaultAvatarId = DEAULT_AVATAR_ID
+                };
+                EnsureUserProfileExists(context, user, defaultOptions);
                 profile = user.UserProfile;
             }
 
             profile.avatarID = newAvatarId;
             context.SaveChanges();
-           
             return true;
         }
     }

@@ -55,10 +55,15 @@ namespace TrucoServer.GameLogic
             }
         }
 
-        public void SaveMatchResult(int matchId, string winnerTeam, int winnerScore, int loserScore)
+        public void SaveMatchResult(int matchId, MatchOutcome outcome)
         {
             try
             {
+                if (outcome == null)
+                {
+                    throw new ArgumentNullException(nameof(outcome));
+                }
+
                 using (var context = GetContext())
                 {
                     var match = context.Match.Find(matchId);
@@ -76,7 +81,7 @@ namespace TrucoServer.GameLogic
 
                     foreach (var mp in dbPlayers)
                     {
-                        UpdatePlayerAndUserStats(context, mp, winnerTeam, winnerScore, loserScore);
+                        UpdatePlayerAndUserStats(context, mp, outcome);
                     }
 
                     context.SaveChanges();
@@ -93,12 +98,12 @@ namespace TrucoServer.GameLogic
             return new baseDatosTrucoEntities();
         }
 
-        private static void UpdatePlayerAndUserStats(baseDatosTrucoEntities context, MatchPlayer mp, string winnerTeam, int winnerScore, int loserScore)
+        private static void UpdatePlayerAndUserStats(baseDatosTrucoEntities context, MatchPlayer mp, MatchOutcome outcome)
         {
-            bool isWinnerTeam = string.Equals(mp.team.Trim(), winnerTeam.Trim(), StringComparison.OrdinalIgnoreCase);
+            bool isWinnerTeam = string.Equals(mp.team.Trim(), outcome.WinnerTeam.Trim(), StringComparison.OrdinalIgnoreCase);
 
             mp.isWinner = isWinnerTeam;
-            mp.score = isWinnerTeam ? winnerScore : loserScore;
+            mp.score = isWinnerTeam ? outcome.WinnerScore : outcome.LoserScore;
 
             var userStats = context.User.FirstOrDefault(u => u.userID == mp.userID);
             if (userStats != null)

@@ -168,7 +168,15 @@ namespace TrucoServer.Services
                         return false;
                     }
 
-                    profileUpdater.UpdateProfileDetails(context, user, profile, DEFAULT_LANG_CODE, DEFAULT_AVATAR_ID);
+                    var updateOptions = new ProfileUpdateOptions
+                    {
+                        ProfileData = profile,
+                        DefaultLanguageCode = DEFAULT_LANG_CODE,
+                        DefaultAvatarId = DEFAULT_AVATAR_ID
+                    };
+
+                    profileUpdater.UpdateProfileDetails(context, user, updateOptions);
+
                     context.SaveChanges();
                     return true;
                 }
@@ -218,19 +226,29 @@ namespace TrucoServer.Services
             return passwordManager.UpdatePasswordAndNotify(email, newPassword, languageCode, nameof(PasswordChange));
         }
 
-        public bool PasswordReset(string email, string code, string newPassword, string languageCode)
+        public bool PasswordReset(PasswordResetOptions options)
         {
-            if (!ServerValidator.IsEmailValid(email) || !ServerValidator.IsPasswordValid(newPassword))
+            if (options == null)
+            {
+                throw new ArgumentNullException(nameof(options));
+            }
+
+            if (!ServerValidator.IsEmailValid(options.Email) || !ServerValidator.IsPasswordValid(options.NewPassword))
             {
                 return false;
             }
 
-            if (!verificationService.ConfirmEmailVerification(email, code))
+            if (!verificationService.ConfirmEmailVerification(options.Email, options.Code))
             {
                 return false;
             }
 
-            return passwordManager.UpdatePasswordAndNotify(email, newPassword, languageCode, nameof(PasswordReset));
+            return passwordManager.UpdatePasswordAndNotify(
+                options.Email,
+                options.NewPassword,
+                options.LanguageCode,
+                nameof(PasswordReset)
+            );
         }
 
         public bool RequestEmailVerification(string email, string languageCode)

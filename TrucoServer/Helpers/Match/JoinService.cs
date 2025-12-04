@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using TrucoServer.Data.DTOs;
 using TrucoServer.Utilities;
 
 namespace TrucoServer.Helpers.Match
@@ -32,22 +33,47 @@ namespace TrucoServer.Helpers.Match
                 }
 
                 bool isGuest = player.StartsWith(GUEST_PREFIX);
-                return isGuest ? TryJoinAsGuest(context, freshLobby, matchCode, player) : TryJoinAsUser(context, freshLobby, player);
+
+                if (isGuest)
+                {
+                    var guestOptions = new GuestJoinOptions
+                    {
+                        Lobby = freshLobby,
+                        MatchCode = matchCode,
+                        PlayerUsername = player
+                    };
+                    return TryJoinAsGuest(context, guestOptions);
+                }
+                else
+                {
+                    return TryJoinAsUser(context, freshLobby, player);
+                }
             }
         }
 
-        public bool TryJoinAsGuest(baseDatosTrucoEntities context, Lobby lobby, string matchCode, string player)
+        public bool TryJoinAsGuest(baseDatosTrucoEntities context, GuestJoinOptions options)
         {
-            if (!lobby.status.Equals(STATUS_PUBLIC, StringComparison.OrdinalIgnoreCase))
+            if (options == null)
+            {
+                throw new ArgumentNullException(nameof(options));
+            }
+
+            if (options.Lobby == null)
+            {
+                throw new ArgumentNullException(nameof(options.Lobby));
+            }
+
+            if (!options.Lobby.status.Equals(STATUS_PUBLIC, StringComparison.OrdinalIgnoreCase))
             {
                 return false;
             }
 
-            int currentDbPlayers = context.LobbyMember.Count(lm => lm.lobbyID == lobby.lobbyID);
-            int guestCount = coordinator.GetGuestCountInMemory(matchCode);
+            int currentDbPlayers = context.LobbyMember.Count(lm => lm.lobbyID == options.Lobby.lobbyID);
+
+            int guestCount = coordinator.GetGuestCountInMemory(options.MatchCode);
             int totalPlayers = currentDbPlayers + guestCount;
 
-            if (totalPlayers >= lobby.maxPlayers)
+            if (totalPlayers >= options.Lobby.maxPlayers)
             {
                 return false;
             }
@@ -107,7 +133,16 @@ namespace TrucoServer.Helpers.Match
 
                 int team1Count = context.LobbyMember.Count(lm => lm.lobbyID == lobby.lobbyID && lm.team == TEAM_1);
                 int team2Count = context.LobbyMember.Count(lm => lm.lobbyID == lobby.lobbyID && lm.team == TEAM_2);
-                string assignedTeam = DetermineTeamForNewPlayer(lobby.maxPlayers, team1Count, team2Count, playerUser.username);
+
+                var teamOptions = new TeamDeterminationOptions
+                {
+                    MaxPlayers = lobby.maxPlayers,
+                    Team1Count = team1Count,
+                    Team2Count = team2Count,
+                    Username = playerUser.username
+                };
+
+                string assignedTeam = DetermineTeamForNewPlayer(teamOptions);
 
                 context.LobbyMember.Add(new LobbyMember
                 {
@@ -125,11 +160,16 @@ namespace TrucoServer.Helpers.Match
             }
         }
 
-        public string DetermineTeamForNewPlayer(int maxPlayers, int team1Count, int team2Count, string username)
+        public string DetermineTeamForNewPlayer(TeamDeterminationOptions options)
         {
-            if (maxPlayers == 2)
+            if (options == null)
             {
-                if (team1Count == 0 && team2Count == 0)
+                throw new ArgumentNullException(nameof(options));
+            }
+
+            if (options.MaxPlayers == 2)
+            {
+                if (options.Team1Count == 0 && options.Team2Count == 0)
                 {
                     return TEAM_1;
                 }
@@ -137,7 +177,7 @@ namespace TrucoServer.Helpers.Match
                 return TEAM_2;
             }
 
-            return (team1Count > team2Count) ? TEAM_2 : TEAM_1;
+            return (options.Team1Count > options.Team2Count) ? TEAM_2 : TEAM_1;
         }
 
         public bool SwitchGuestTeam(string matchCode, string username)

@@ -7,12 +7,22 @@ namespace TrucoServer.Helpers.Friends
 {
     public class FriendRepository : IFriendRepository
     {
-        public bool GetUsersFromDatabase(baseDatosTrucoEntities context, string username1, string username2, out User user1, out User user2)
+        public UserLookupResult GetUsersFromDatabase(baseDatosTrucoEntities context, UserLookupOptions options)
         {
-            user1 = context.User.FirstOrDefault(u => u.username == username1);
-            user2 = context.User.FirstOrDefault(u => u.username == username2);
+            if (options == null)
+            {
+                throw new ArgumentNullException(nameof(options));
+            }
 
-            return user1 != null && user2 != null;
+            var user1 = context.User.FirstOrDefault(u => u.username == options.Username1);
+            var user2 = context.User.FirstOrDefault(u => u.username == options.Username2);
+
+            return new UserLookupResult
+            {
+                User1 = user1,
+                User2 = user2,
+                Success = user1 != null && user2 != null
+            };
         }
 
         public bool CheckFriendshipExists(baseDatosTrucoEntities context, int userId1, int userId2)
@@ -43,15 +53,25 @@ namespace TrucoServer.Helpers.Friends
                 f.status == statusPending);
         }
 
-        public void CommitFriendshipAcceptance(baseDatosTrucoEntities context, Friendship request, int requesterId, int acceptorId, string statusAccepted)
+        public void CommitFriendshipAcceptance(baseDatosTrucoEntities context, FriendshipCommitOptions options)
         {
-            request.status = statusAccepted;
+            if (options == null)
+            {
+                throw new ArgumentNullException(nameof(options));
+            }
+
+            if (options.Request == null)
+            {
+                throw new ArgumentNullException(nameof(options.Request));
+            }
+
+            options.Request.status = options.StatusAccepted;
 
             var reciprocalFriendship = new Friendship
             {
-                userID = acceptorId,
-                friendID = requesterId,
-                status = statusAccepted
+                userID = options.AcceptorId,
+                friendID = options.RequesterId,
+                status = options.StatusAccepted
             };
 
             context.Friendship.Add(reciprocalFriendship);
