@@ -1116,12 +1116,6 @@ namespace TrucoServer.GameLogic
 
             try
             {
-
-                foreach (var p in Players)
-                {
-                    Console.WriteLine($"  - {p.Username} (ID: {p.PlayerID}, Team: {p.Team})");
-                }
-
                 var leaver = Players.FirstOrDefault(p => p.Username.Equals(playerUsername, StringComparison.OrdinalIgnoreCase));
 
                 if (leaver == null)
@@ -1130,11 +1124,6 @@ namespace TrucoServer.GameLogic
                     {
                         int guestId = -Math.Abs(playerUsername.GetHashCode());
                         leaver = Players.FirstOrDefault(p => p.PlayerID == guestId);
-
-                        if (leaver != null)
-                        {
-                            Console.WriteLine($"[ABORT] Found guest by ID: {guestId}");
-                        }
                     }
 
                     if (leaver == null)
@@ -1223,10 +1212,6 @@ namespace TrucoServer.GameLogic
                     if (candidate.Team != caller.Team)
                     {
                         return candidate;
-                    }
-                    else
-                    {
-                        Console.WriteLine($"[GET OPPONENT] Skipping {candidate.Username} (idx {nextIndex}, {candidate.Team}) - same team as caller");
                     }
                 }
 
@@ -1394,11 +1379,8 @@ namespace TrucoServer.GameLogic
                 var caller = Players.First(p => p.PlayerID == callerId);
                 var responder = Players.First(p => p.PlayerID == responderId);
 
-                Console.WriteLine($"[NOTIFY ENVIDO] Caller: {caller.Username} (ID: {callerId}), Responder: {responder.Username} (ID: {responderId}), Bet: {betName}");
-
                 NotifyPlayer(responderId, callback =>
                 {
-                    Console.WriteLine($"[NOTIFY ENVIDO] Sending to responder {responder.Username}: needsResponse=TRUE");
                     callback.NotifyEnvidoCall(caller.Username, betName, true);
                 });
 
@@ -1406,7 +1388,6 @@ namespace TrucoServer.GameLogic
                 {
                     NotifyPlayer(player.PlayerID, callback =>
                     {
-                        Console.WriteLine($"[NOTIFY ENVIDO] Sending to observer {player.Username}: needsResponse=FALSE");
                         callback.NotifyEnvidoCall(caller.Username, betName, false);
                     });
                 }

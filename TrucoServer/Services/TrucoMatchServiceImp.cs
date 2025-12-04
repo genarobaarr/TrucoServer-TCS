@@ -158,11 +158,6 @@ namespace TrucoServer.Services
                 {
                     joinSuccess = joinService.ProcessSafeJoin(lobbyId, matchCode, player);
                 }
-
-                if (joinSuccess)
-                {
-                    Console.WriteLine($"[SERVER] {player} joined lobby {matchCode}.");
-                }
             }
             catch (Exception ex)
             {
@@ -174,7 +169,10 @@ namespace TrucoServer.Services
 
         public void LeaveMatch(string matchCode, string player)
         {
-            if (!ServerValidator.IsMatchCodeValid(matchCode) || !ServerValidator.IsUsernameValid(player)) return;
+            if (!ServerValidator.IsMatchCodeValid(matchCode) || !ServerValidator.IsUsernameValid(player))
+            {
+                return;
+            }
 
             try
             {
@@ -281,11 +279,6 @@ namespace TrucoServer.Services
                         AvatarId = starter.GetAvatarIdForPlayer(p.Username),
                         OwnerUsername = starter.GetOwnerUsername(matchCode)
                     }).ToList();
-
-                    for (int i = 0; i < gamePlayers.Count; i++)
-                    {
-                        Console.WriteLine($"  [{i}] {gamePlayers[i].Username} - {gamePlayers[i].Team}");
-                    }
 
                     return gamePlayers;
                 }
@@ -422,10 +415,6 @@ namespace TrucoServer.Services
                     {
                         lobbyCoordinator.NotifyPlayerJoined(matchCode, player);
                     });
-                }
-                else
-                {
-                    Console.WriteLine($"[CHAT JOIN] {player} already in lobby {matchCode} chat, skipping notification.");
                 }
             }
             catch (Exception ex)

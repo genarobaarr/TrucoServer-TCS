@@ -70,7 +70,10 @@ namespace TrucoServer.Data.Entities
         {
             try
             {
-                if (value == null) return default;
+                if (value == null)
+                {
+                    return default;
+                }
 
                 if (typeof(T) == typeof(string))
                 {

@@ -42,11 +42,6 @@ namespace TrucoServer.Helpers.Match
 
             try
             {
-                foreach (var pInfo in playersList)
-                {
-                    Console.WriteLine($"  - {pInfo.Username} (Team: {pInfo.Team})");
-                }
-
                 using (var context = new baseDatosTrucoEntities())
                 {
                     foreach (var pInfo in playersList)
@@ -72,11 +67,6 @@ namespace TrucoServer.Helpers.Match
                 {
                     LogManager.LogError(new Exception($"Discrepancy: {gamePlayers.Count} players vs {gameCallbacks.Count} connections."), nameof(BuildGamePlayersAndCallbacks));
                     return false;
-                }
-
-                for (int i = 0; i < gamePlayers.Count; i++)
-                {
-                    Console.WriteLine($"  [{i}] {gamePlayers[i].Username}: PlayerID={gamePlayers[i].PlayerID}, Team={gamePlayers[i].Team}");
                 }
 
                 return gamePlayers.Count == gameCallbacks.Count && gamePlayers.Count > 0;
@@ -149,11 +139,6 @@ namespace TrucoServer.Helpers.Match
         {
             try
             {
-                foreach (var p in gamePlayers)
-                {
-                    Console.WriteLine($"  - {p.Username} (ID: {p.PlayerID}, Team: {p.Team})");
-                }
-
                 string ownerUsername = null;
 
                 using (var context = new baseDatosTrucoEntities())
@@ -181,11 +166,6 @@ namespace TrucoServer.Helpers.Match
                 if (orderedPlayers.Count != gamePlayers.Count)
                 {
                     orderedPlayers = gamePlayers;
-                }
-
-                for (int i = 0; i < orderedPlayers.Count; i++)
-                {
-                    Console.WriteLine($"  Position {i}: {orderedPlayers[i].Username} (ID: {orderedPlayers[i].PlayerID}, Team: {orderedPlayers[i].Team})");
                 }
 
                 var newDeck = new Deck(shuffler);
@@ -226,11 +206,6 @@ namespace TrucoServer.Helpers.Match
 
             if (owner4 == null)
             {
-                foreach (var p in players)
-                {
-                    Console.WriteLine($"  - {p.Username} ({p.Team})");
-                }
-
                 return players;
             }
 
@@ -272,11 +247,6 @@ namespace TrucoServer.Helpers.Match
                         AvatarId = GetAvatarIdForPlayer(p.Username),
                         OwnerUsername = GetOwnerUsername(matchCode)
                     }).ToList();
-
-                    for (int i = 0; i < orderedPlayers.Count; i++)
-                    {
-                        Console.WriteLine($"  [{i}] {orderedPlayers[i].Username} - {orderedPlayers[i].Team}");
-                    }
 
                     coordinator.BroadcastToMatchCallbacksAsync(matchCode, cb =>
                     {
