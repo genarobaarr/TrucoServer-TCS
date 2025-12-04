@@ -13,7 +13,7 @@ namespace TrucoServer.Helpers.Match
     {
         private const string GUEST_PREFIX = "Guest_";
         private const string TEAM_1 = "Team 1";
-        private const string TEAM_2 = "Team 2";
+        private const string DEFAULT_AVATAR_NAME = "avatar_aaa_default";
 
         private readonly IGameRegistry gameRegistry;
         private readonly ILobbyCoordinator coordinator;
@@ -97,7 +97,7 @@ namespace TrucoServer.Helpers.Match
                 if (coordinator.TryGetActiveCallbackForPlayer(pInfo.Username, out var guestCb))
                 {
                     var registeredInfo = coordinator.GetPlayerInfoFromCallback(guestCb);
-                    string team = registeredInfo?.Team ?? pInfo.Team ?? "Team 1";
+                    string team = registeredInfo?.Team ?? pInfo.Team ?? TEAM_1;
 
                     gamePlayers.Add(new PlayerInformation(guestTempId, pInfo.Username, pInfo.Team));
                     gameCallbacks[guestTempId] = guestCb;
@@ -195,10 +195,6 @@ namespace TrucoServer.Helpers.Match
                 {
                     LogManager.LogError(new Exception($"Failed to add running game {matchCode}"), nameof(InitializeAndRegisterGame));
                 }
-                else
-                {
-                    Console.WriteLine($"[MATCH INIT] Game {matchCode} successfully registered");
-                }
             }
             catch (Exception ex)
             {
@@ -267,21 +263,51 @@ namespace TrucoServer.Helpers.Match
         {
             try
             {
-                coordinator.BroadcastToMatchCallbacksAsync(matchCode, cb =>
+                if (gameRegistry.TryGetGame(matchCode, out var match))
                 {
-                    try
+                    var orderedPlayers = match.Players.Select(p => new PlayerInfo
                     {
-                        cb.OnMatchStarted(matchCode, players);
-                    }
-                    catch (Exception ex)
+                        Username = p.Username,
+                        Team = p.Team,
+                        AvatarId = GetAvatarIdForPlayer(p.Username),
+                        OwnerUsername = GetOwnerUsername(matchCode)
+                    }).ToList();
+
+                    for (int i = 0; i < orderedPlayers.Count; i++)
                     {
-                        // Individual callback failure should not affect others
+                        Console.WriteLine($"  [{i}] {orderedPlayers[i].Username} - {orderedPlayers[i].Team}");
                     }
-                });
+
+                    coordinator.BroadcastToMatchCallbacksAsync(matchCode, cb =>
+                    {
+                        try
+                        {
+                            cb.OnMatchStarted(matchCode, orderedPlayers);
+                        }
+                        catch (Exception ex)
+                        {
+                            LogManager.LogError(ex, nameof(NotifyMatchStart));
+                        }
+                    });
+                }
+                else
+                {
+                    coordinator.BroadcastToMatchCallbacksAsync(matchCode, cb =>
+                    {
+                        try
+                        {
+                            cb.OnMatchStarted(matchCode, players);
+                        }
+                        catch (Exception ex)
+                        {
+                            LogManager.LogError(ex, nameof(NotifyMatchStart));
+                        }
+                    });
+                }
             }
             catch (Exception ex)
             {
-                ServerException.HandleException(ex, nameof(NotifyMatchStart));
+                LogManager.LogError(ex, nameof(NotifyMatchStart));
             }
         }
 
@@ -358,9 +384,9 @@ namespace TrucoServer.Helpers.Match
         {
             try
             {
-                if (username.StartsWith("Guest_"))
+                if (username.StartsWith(GUEST_PREFIX))
                 {
-                    return "avatar_aaa_default";
+                    return DEFAULT_AVATAR_NAME;
                 }
 
                 using (var context = new baseDatosTrucoEntities())
@@ -371,7 +397,7 @@ namespace TrucoServer.Helpers.Match
                     {
                         var profile = context.UserProfile.FirstOrDefault(up => up.userID == user.userID);
                        
-                        return profile?.avatarID ?? "avatar_aaa_default";
+                        return profile?.avatarID ?? DEFAULT_AVATAR_NAME;
                     }
                 }
             }
@@ -380,7 +406,7 @@ namespace TrucoServer.Helpers.Match
                 ServerException.HandleException(ex, nameof(GetAvatarIdForPlayer));
             }
 
-            return "avatar_aaa_default";
+            return DEFAULT_AVATAR_NAME;
         }
 
         public string GetOwnerUsername(string matchCode)
@@ -392,11 +418,9 @@ namespace TrucoServer.Helpers.Match
                     using (var context = new baseDatosTrucoEntities())
                     {
                         var lobby = context.Lobby.Find(lobbyId);
-                        
                         if (lobby != null)
                         {
                             var owner = context.User.Find(lobby.ownerID);
-                            
                             return owner?.username;
                         }
                     }
@@ -404,7 +428,7 @@ namespace TrucoServer.Helpers.Match
             }
             catch (Exception ex)
             {
-                ServerException.HandleException(ex, nameof(GetOwnerUsername));
+                LogManager.LogError(ex, nameof(GetOwnerUsername));
             }
 
             return null;

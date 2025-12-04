@@ -47,6 +47,7 @@ namespace TrucoServer.GameLogic
         private const int MAX_ROUNDS = 3;
         private const string TEAM_1 = "Team 1";
         private const string TEAM_2 = "Team 2";
+        private const string GUEST_PREFFIX = "Guest_";
         private const string DRAW_STATUS = "Draw";
         private const string NO_QUIERO_STATUS = "NoQuiero";
         private const string QUIERO_STATUS = "Quiero";
@@ -456,8 +457,7 @@ namespace TrucoServer.GameLogic
                     currentEnvidoPoints += GetPointsForEnvidoBet(newBet);
                 }
 
-                NotifyAll(cb => cb.NotifyEnvidoCall(caller.Username, betType, true));
-                NotifyPlayer(opponent.PlayerID, cb => cb.NotifyEnvidoCall(caller.Username, betType, true));
+                NotifyEnvidoCall(playerID, betType, opponent.PlayerID);
 
                 return true;
             }
@@ -1126,7 +1126,7 @@ namespace TrucoServer.GameLogic
 
                 if (leaver == null)
                 {
-                    if (playerUsername.StartsWith("Guest_"))
+                    if (playerUsername.StartsWith(GUEST_PREFIX))
                     {
                         int guestId = -Math.Abs(playerUsername.GetHashCode());
                         leaver = Players.FirstOrDefault(p => p.PlayerID == guestId);
@@ -1144,13 +1144,13 @@ namespace TrucoServer.GameLogic
                 }
 
                 string loserTeam = leaver.Team;
-                string winnerTeam = (loserTeam == "Team 1") ? "Team 2" : "Team 1";
+                string winnerTeam = (loserTeam == TEAM_1) ? TEAM_2 : TEAM_1;
 
-                int winnerScore = (winnerTeam == "Team 1") ? Team1Score : Team2Score;
-                int loserScore = (loserTeam == "Team 1") ? Team1Score : Team2Score;
+                int winnerScore = (winnerTeam == TEAM_1) ? Team1Score : Team2Score;
+                int loserScore = (loserTeam == TEAM_1) ? Team1Score : Team2Score;
 
                 var winnerPlayer = Players.FirstOrDefault(p => p.Team == winnerTeam);
-                string matchWinnerName = winnerPlayer != null ? winnerPlayer.Username : "Oponente";
+                string matchWinnerName = winnerPlayer != null ? winnerPlayer.Username : "Oponent";
 
                 gameManager.SaveMatchResult(this.DbMatchId, winnerTeam, winnerScore, loserScore);
 
@@ -1384,6 +1384,44 @@ namespace TrucoServer.GameLogic
             catch (Exception ex)
             {
                 ServerException.HandleException(ex, nameof(NotifyFlorCallHelper));
+            }
+        }
+
+        private void NotifyEnvidoCall(int callerId, string betName, int responderId)
+        {
+            try
+            {
+                var caller = Players.First(p => p.PlayerID == callerId);
+                var responder = Players.First(p => p.PlayerID == responderId);
+
+                Console.WriteLine($"[NOTIFY ENVIDO] Caller: {caller.Username} (ID: {callerId}), Responder: {responder.Username} (ID: {responderId}), Bet: {betName}");
+
+                NotifyPlayer(responderId, callback =>
+                {
+                    Console.WriteLine($"[NOTIFY ENVIDO] Sending to responder {responder.Username}: needsResponse=TRUE");
+                    callback.NotifyEnvidoCall(caller.Username, betName, true);
+                });
+
+                foreach (var player in Players.Where(p => p.PlayerID != responderId))
+                {
+                    NotifyPlayer(player.PlayerID, callback =>
+                    {
+                        Console.WriteLine($"[NOTIFY ENVIDO] Sending to observer {player.Username}: needsResponse=FALSE");
+                        callback.NotifyEnvidoCall(caller.Username, betName, false);
+                    });
+                }
+            }
+            catch (InvalidOperationException ex)
+            {
+                LogManager.LogWarn(ex.Message, nameof(NotifyEnvidoCall));
+            }
+            catch (CommunicationException ex)
+            {
+                LogManager.LogError(ex, nameof(NotifyEnvidoCall));
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError(ex, nameof(NotifyEnvidoCall));
             }
         }
 

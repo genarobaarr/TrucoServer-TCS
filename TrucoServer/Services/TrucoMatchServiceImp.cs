@@ -482,7 +482,7 @@ namespace TrucoServer.Services
                         { 
                             cb.OnChatMessage(matchCode, player, message); 
                         }
-                        catch (Exception ex)
+                        catch (Exception)
                         {
                             // Log and ignore exceptions from individual callbacks
                         }
