@@ -43,6 +43,7 @@ namespace TrucoServer.GameLogic
     public class TrucoMatch
     {
         private const int MAX_SCORE = 30;
+        private const int MALAS_SCORE = 15;
         private const int CARDS_IN_HAND = 3;
         private const int MAX_ROUNDS = 3;
         private const string TEAM_1 = "Team 1";
@@ -84,7 +85,7 @@ namespace TrucoServer.GameLogic
         private int currentRound;
         private int handStartingPlayerIndex;
         private int turnIndex;
-        
+
         public TrucoBet TrucoBetValue { get; private set; }
         private int? bettingPlayerId;
         private int? waitingForResponseToId;
@@ -98,15 +99,15 @@ namespace TrucoServer.GameLogic
         private bool envidoWasPlayed;
         private bool matchEnded = false;
         private Dictionary<int, int> playerEnvidoScores;
-        
+
         public FlorBet FlorBetValue { get; private set; }
         private int currentFlorPoints;
         private int? florBettorId;
         private int? waitingForFlorResponseId;
         private bool florWasPlayed;
         private Dictionary<int, int> playerFlorScores;
-        
-        public TrucoMatch(string matchCode, int lobbyId, List<PlayerInformation> players, Dictionary<int, 
+
+        public TrucoMatch(string matchCode, int lobbyId, List<PlayerInformation> players, Dictionary<int,
             ITrucoCallback> callbacks, ITrucoDeck deck, IGameManager gameManager)
         {
             try
@@ -450,7 +451,7 @@ namespace TrucoServer.GameLogic
 
                 if (newBet == EnvidoBet.FaltaEnvido)
                 {
-                    currentEnvidoPoints = GetPointsForFaltaEnvido();
+                    currentEnvidoPoints = 0;
                 }
                 else
                 {
@@ -521,8 +522,22 @@ namespace TrucoServer.GameLogic
 
                 if (envidoWinner != null)
                 {
-                    NotifyAll(cb => cb.NotifyEnvidoResult(envidoWinner.Username, highestScore, currentEnvidoPoints));
-                    AwardEnvidoPoints(envidoWinner.Team, currentEnvidoPoints);
+                    int pointsToAward;
+                    int pointsToNotify;
+
+                    if (proposedEnvidoBet == EnvidoBet.FaltaEnvido || EnvidoBetValue == EnvidoBet.FaltaEnvido)
+                    {
+                        pointsToAward = CalculateFaltaEnvidoPoints(envidoWinner.Team);
+                        pointsToNotify = pointsToAward;
+                    }
+                    else
+                    {
+                        pointsToAward = currentEnvidoPoints;
+                        pointsToNotify = currentEnvidoPoints;
+                    }
+
+                    NotifyAll(cb => cb.NotifyEnvidoResult(envidoWinner.Username, highestScore, pointsToNotify));
+                    AwardEnvidoPoints(envidoWinner.Team, pointsToAward);
                 }
 
                 ResetEnvidoState();
@@ -1487,7 +1502,7 @@ namespace TrucoServer.GameLogic
 
                     case EnvidoBet.RealEnvido:
                         return 3;
-                                        
+
                     default:
                         return 0;
                 }
@@ -1497,18 +1512,6 @@ namespace TrucoServer.GameLogic
                 ServerException.HandleException(ex, nameof(GetPointsForEnvidoBet));
                 return 0;
             }
-        }
-
-        private int GetPointsForFaltaEnvido()
-        {
-            bool bothInMalas = Team1Score < 15 && Team2Score < 15;
-            int targetScore = bothInMalas ? 15 : 30;
-
-            int leadingScore = Math.Max(Team1Score, Team2Score);
-
-            int pointsNeeded = targetScore - leadingScore;
-
-            return pointsNeeded;
         }
 
         private static int GetPointsForFlorBet(FlorBet bet)
@@ -1532,6 +1535,24 @@ namespace TrucoServer.GameLogic
                 ServerException.HandleException(ex, nameof(GetPointsForFlorBet));
                 return 0;
             }
+        }
+
+        private int CalculateFaltaEnvidoPoints(string winningTeam)
+        {
+            int winnerCurrentScore = (winningTeam == TEAM_1) ? Team1Score : Team2Score;
+
+            bool winnerInMalas = winnerCurrentScore < MALAS_SCORE;
+
+            int targetScore = winnerInMalas ? MALAS_SCORE : MAX_SCORE;
+
+            int pointsNeeded = targetScore - winnerCurrentScore;
+
+            if (pointsNeeded < 1)
+            {
+                pointsNeeded = 1;
+            }
+
+            return pointsNeeded;
         }
     }
 }
