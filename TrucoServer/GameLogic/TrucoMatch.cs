@@ -47,7 +47,7 @@ namespace TrucoServer.GameLogic
         private const int MAX_ROUNDS = 3;
         private const string TEAM_1 = "Team 1";
         private const string TEAM_2 = "Team 2";
-        private const string GUEST_PREFFIX = "Guest_";
+        private const string GUEST_PREFIX = "Guest_";
         private const string DRAW_STATUS = "Draw";
         private const string NO_QUIERO_STATUS = "NoQuiero";
         private const string QUIERO_STATUS = "Quiero";
