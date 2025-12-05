@@ -12,45 +12,45 @@ namespace TrucoServer.Tests.DataTests.DTOsTests
     public class FriendDataTests
     {
         [TestMethod]
-        public void TestSetUsernameShouldRetrieveSameString()
+        public void TestUsernameSetEmptyReturnsEmpty()
         {
-            var friend = new FriendData();
-            string expectedUser = "Crosby";
-            friend.Username = expectedUser;
-            Assert.AreEqual(expectedUser, friend.Username);
+            var data = new FriendData();
+            string empty = "";
+            data.Username = empty;
+            Assert.AreEqual(string.Empty, data.Username);
         }
 
         [TestMethod]
-        public void TestEmptyAvatarIdShouldBeAllowed()
+        public void TestAvatarIdSetStringReturnsString()
         {
-            var friend = new FriendData();
-            friend.AvatarId = "";
-            Assert.AreEqual("", friend.AvatarId);
+            var data = new FriendData();
+            string avatar = "avatar_aaa_deault.png";
+            data.AvatarId = avatar;
+            Assert.AreEqual(avatar, data.AvatarId);
         }
 
         [TestMethod]
-        public void TestNullUsernameShouldBeNull()
+        public void TestUsernameSetNullReturnsNull()
         {
-            var friend = new FriendData();
-            friend.Username = null;
-            Assert.IsNull(friend.Username);
+            var data = new FriendData();
+            data.Username = null;
+            Assert.IsNull(data.Username);
         }
 
         [TestMethod]
-        public void TestSpecialCharactersShouldPersist()
+        public void TestAvatarIdSetNumericStringReturnsString()
         {
-            var friend = new FriendData();
-            string trickyName = "Ñoño@#123";
-            friend.Username = trickyName;
-            Assert.AreEqual(trickyName, friend.Username);
+            var data = new FriendData();
+            string numAvatar = "12345";
+            data.AvatarId = numAvatar;
+            Assert.AreEqual("12345", data.AvatarId);
         }
 
         [TestMethod]
-        public void TestNewInstancePropertiesShouldBeNullByDefault()
+        public void TestConstructorPropertiesStartNull()
         {
-            var friend = new FriendData();
-            var avatar = friend.AvatarId;
-            Assert.IsNull(avatar);
+            var data = new FriendData();
+            Assert.IsNull(data.Username);
         }
     }
 }

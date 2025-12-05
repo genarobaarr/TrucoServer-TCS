@@ -12,45 +12,51 @@ namespace TrucoServer.Tests.DataTests.DTOsTests
     public class BannedWordListTests
     {
         [TestMethod]
-        public void TestSetUsernameShouldRetrieveSameString()
+        public void TestConstructorInitializesBannedWordsList()
         {
-            var friend = new FriendData();
-            string expectedUser = "Crosby";
-            friend.Username = expectedUser;
-            Assert.AreEqual(expectedUser, friend.Username);
+            var bannedList = new BannedWordList();
+            Assert.IsNotNull(bannedList.BannedWords);
         }
 
         [TestMethod]
-        public void TestEmptyAvatarIdShouldBeAllowed()
+        public void TestBannedWordsAddWordCountIncreases()
         {
-            var friend = new FriendData();
-            friend.AvatarId = "";
-            Assert.AreEqual("", friend.AvatarId);
+            var bannedList = new BannedWordList();
+            string word = "badword";
+            bannedList.BannedWords.Add(word);
+            Assert.AreEqual(1, bannedList.BannedWords.Count);
         }
 
         [TestMethod]
-        public void TestNullUsernameShouldBeNull()
+        public void TestBannedWordsSetNewListReturnsNewList()
         {
-            var friend = new FriendData();
-            friend.Username = null;
-            Assert.IsNull(friend.Username);
+            var bannedList = new BannedWordList();
+            
+            var newList = new List<string> 
+            {
+                "one",
+                "two" 
+            };
+
+            bannedList.BannedWords = newList;
+            Assert.AreEqual(2, bannedList.BannedWords.Count);
         }
 
         [TestMethod]
-        public void TestSpecialCharactersShouldPersist()
+        public void TestBannedWordsAddEmptyStringStoresEmptyString()
         {
-            var friend = new FriendData();
-            string trickyName = "Ñoño@#123";
-            friend.Username = trickyName;
-            Assert.AreEqual(trickyName, friend.Username);
+            var bannedList = new BannedWordList();
+            string emptyWord = "";
+            bannedList.BannedWords.Add(emptyWord);
+            Assert.IsTrue(bannedList.BannedWords.Contains(emptyWord));
         }
 
         [TestMethod]
-        public void TestNewInstancePropertiesShouldBeNullByDefault()
+        public void TestBannedWordsSetNullReturnsNull()
         {
-            var friend = new FriendData();
-            var avatar = friend.AvatarId;
-            Assert.IsNull(avatar);
+            var bannedList = new BannedWordList();
+            bannedList.BannedWords = null;
+            Assert.IsNull(bannedList.BannedWords);
         }
     }
 }

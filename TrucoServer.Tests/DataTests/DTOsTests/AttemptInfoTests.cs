@@ -12,45 +12,43 @@ namespace TrucoServer.Tests.DataTests.DTOsTests
     public class AttemptInfoTests
     {
         [TestMethod]
-        public void TestConstructorShouldInitializeWithDefaultValues()
+        public void TestFailedCountDefaultValueIsZero()
         {
-            var attempt = new AttemptInfo();
-            int failedCount = attempt.FailedCount;
-            Assert.AreEqual(0, failedCount, "The fault counter should start at 0");
+            var info = new AttemptInfo();
+            Assert.AreEqual(0, info.FailedCount);
         }
 
         [TestMethod]
-        public void TestDefaultDateShouldBeMinValue()
+        public void TestBlockedUntilDefaultValueIsMinValue()
         {
-            var attempt = new AttemptInfo();
-            DateTime blockedDate = attempt.BlockedUntil;
-            Assert.AreEqual(DateTime.MinValue, blockedDate, "The default lock date must be MinValue");
+            var info = new AttemptInfo();
+            Assert.AreEqual(DateTime.MinValue, info.BlockedUntil);
         }
 
         [TestMethod]
-        public void TestSetPropertiesShouldStoreCorrectValues()
+        public void TestFailedCountIncrementReturnsIncrementedValue()
         {
-            var attempt = new AttemptInfo();
-            int expectedCount = 5;
-            attempt.FailedCount = expectedCount;
-            Assert.AreEqual(expectedCount, attempt.FailedCount);
+            var info = new AttemptInfo();
+            info.FailedCount++;
+            Assert.AreEqual(1, info.FailedCount);
         }
 
         [TestMethod]
-        public void TestNegativeCountShouldStoreValue()
-        {
-            var attempt = new AttemptInfo();
-            attempt.FailedCount = -1;
-            Assert.AreEqual(-1, attempt.FailedCount);
+        public void TestBlockedUntilSetFutureDateReturnsDate()
+        { 
+            var info = new AttemptInfo();
+            var future = DateTime.Now.AddHours(1);
+            info.BlockedUntil = future;
+            Assert.AreEqual(future, info.BlockedUntil);
         }
 
         [TestMethod]
-        public void TestFutureDateShouldBeStored()
+        public void TestFailedCountSetNegativeReturnsNegative()
         {
-            var attempt = new AttemptInfo();
-            DateTime futureDate = DateTime.Now.AddMinutes(15);
-            attempt.BlockedUntil = futureDate;
-            Assert.AreEqual(futureDate, attempt.BlockedUntil);
+            var info = new AttemptInfo();
+            int negative = -5;
+            info.FailedCount = negative;
+            Assert.AreEqual(negative, info.FailedCount);
         }
     }
 }

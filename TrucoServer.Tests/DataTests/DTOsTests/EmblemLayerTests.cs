@@ -12,45 +12,48 @@ namespace TrucoServer.Tests.DataTests.DTOsTests
     public class EmblemLayerTests
     {
         [TestMethod]
-        public void TestSetCoordinatesShouldStoreDoubles()
+        public void TestShapeIdSetValidValueReturnsValue()
         {
             var layer = new EmblemLayer();
-            double xVal = 50.5;
-            layer.X = xVal;
-            Assert.AreEqual(xVal, layer.X);
+            int expectedId = 10;
+            layer.ShapeId = expectedId;
+            Assert.AreEqual(expectedId, layer.ShapeId);
         }
 
         [TestMethod]
-        public void TestNegativeScaleShouldStoreValue()
+        public void TestColorHexSetStringReturnsString()
         {
             var layer = new EmblemLayer();
-            layer.ScaleX = -1.0;
-            Assert.AreEqual(-1.0, layer.ScaleX);
+            string color = "#FFFFFF";
+            layer.ColorHex = color;
+            Assert.AreEqual(color, layer.ColorHex);
         }
 
         [TestMethod]
-        public void TestHexColorShouldStoreString()
+        public void TestScaleXSetDoubleValueReturnsDouble()
         {
             var layer = new EmblemLayer();
-            string white = "#FFFFFF";
-            layer.ColorHex = white;
-            Assert.AreEqual(white, layer.ColorHex);
+            double scale = 1.55;
+            layer.ScaleX = scale;
+            Assert.AreEqual(scale, layer.ScaleX);
         }
 
         [TestMethod]
-        public void TestRotation360ShouldStoreValue()
+        public void TestZIndexSetMinValueReturnsMinValue()
         {
             var layer = new EmblemLayer();
-            layer.Rotation = 360.0;
-            Assert.AreEqual(360.0, layer.Rotation);
+            int minVal = int.MinValue;
+            layer.ZIndex = minVal;
+            Assert.AreEqual(minVal, layer.ZIndex);
         }
 
         [TestMethod]
-        public void TestZIndexShouldAcceptIntegers()
+        public void TestRotationSetZeroReturnsZero()
         {
             var layer = new EmblemLayer();
-            layer.ZIndex = 5;
-            Assert.AreEqual(5, layer.ZIndex);
+            double rotation = 0.0;
+            layer.Rotation = rotation;
+            Assert.AreEqual(rotation, layer.Rotation);
         }
     }
 }

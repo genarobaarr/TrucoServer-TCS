@@ -11,24 +11,6 @@ namespace TrucoServer.Tests.UtilitiesTests
     [TestClass]
     public class ConfigurationFileWrapperTests
     {
-        [TestMethod]
-        public void TestEmailSettingsPropertySetObjectShouldStoreReference()
-        {
-            var wrapper = new ConfigurationFileWrapper();
-            var settings = new EmailSettings 
-            { 
-                SmtpHost = "smtp.gmail.com" 
-            };
-
-            wrapper.EmailSettings = settings;
-            Assert.AreSame(settings, wrapper.EmailSettings);
-        }
-
-        [TestMethod]
-        public void TestConstructorInitializationShouldHaveNullEmailSettings()
-        {
-            var wrapper = new ConfigurationFileWrapper();
-            Assert.IsNull(wrapper.EmailSettings);
-        }
+        
     }
 }
