@@ -1,7 +1,9 @@
-﻿namespace TrucoServer.Helpers.Password
+﻿using TrucoServer.Data.DTOs;
+
+namespace TrucoServer.Helpers.Password
 {
     public interface IPasswordManager
     {
-        bool UpdatePasswordAndNotify(string email, string newPassword, string languageCode, string callingMethod);
+        bool UpdatePasswordAndNotify(PasswordUpdateOptions context);
     }
 }

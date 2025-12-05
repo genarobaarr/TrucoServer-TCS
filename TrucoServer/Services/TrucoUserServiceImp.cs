@@ -163,7 +163,14 @@ namespace TrucoServer.Services
                         return false;
                     }
 
-                    if (!profileUpdater.TryUpdateUsername(context, user, profile.Username, MAX_NAME_CHANGES))
+                    var updateContext = new UsernameUpdateContext
+                    {
+                        User = user,
+                        NewUsername = profile.Username,
+                        MaxNameChanges = MAX_NAME_CHANGES
+                    };
+
+                    if (!profileUpdater.TryUpdateUsername(context, updateContext))
                     {
                         return false;
                     }
@@ -223,7 +230,15 @@ namespace TrucoServer.Services
                 return false;
             }
 
-            return passwordManager.UpdatePasswordAndNotify(email, newPassword, languageCode, nameof(PasswordChange));
+            var context = new PasswordUpdateOptions
+            {
+                Email = email,
+                NewPassword = newPassword,
+                LanguageCode = languageCode,
+                CallingMethod = nameof(PasswordChange)
+            };
+
+            return passwordManager.UpdatePasswordAndNotify(context);
         }
 
         public bool PasswordReset(PasswordResetOptions options)
@@ -243,12 +258,15 @@ namespace TrucoServer.Services
                 return false;
             }
 
-            return passwordManager.UpdatePasswordAndNotify(
-                options.Email,
-                options.NewPassword,
-                options.LanguageCode,
-                nameof(PasswordReset)
-            );
+            var context = new PasswordUpdateOptions
+            {
+                Email = options.Email,
+                NewPassword = options.NewPassword,
+                LanguageCode = options.LanguageCode,
+                CallingMethod = nameof(PasswordReset)
+            };
+
+            return passwordManager.UpdatePasswordAndNotify(context);
         }
 
         public bool RequestEmailVerification(string email, string languageCode)

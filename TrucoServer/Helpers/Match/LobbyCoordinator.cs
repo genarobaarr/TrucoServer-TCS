@@ -47,6 +47,25 @@ namespace TrucoServer.Helpers.Match
             return matchCodeToLobbyId.FirstOrDefault(x => x.Value == lobbyId).Key;
         }
 
+        private PlayerInfo GetRegisteredPlayerInfo(baseDatosTrucoEntities context, int lobbyId, string username)
+        {
+            var user = context.User.FirstOrDefault(u => u.username == username);
+
+            if (user == null)
+            {
+                return new PlayerInfo { Username = username, Team = TEAM_1 };
+            }
+
+            var member = context.LobbyMember.FirstOrDefault(lm =>
+                lm.lobbyID == lobbyId && lm.userID == user.userID);
+
+            return new PlayerInfo
+            {
+                Username = username,
+                Team = member?.team ?? TEAM_1
+            };
+        }
+
         public bool RegisterChatCallback(string matchCode, string player, Contracts.ITrucoCallback callback)
         {
             lock (matchCallbacks)
@@ -273,6 +292,20 @@ namespace TrucoServer.Helpers.Match
             }
         }
 
+        private int? ResolveLobbyId(string matchCode)
+        {
+            if (TryGetLobbyIdFromCode(matchCode, out int lobbyId))
+            {
+                return lobbyId;
+            }
+
+            using (var context = new baseDatosTrucoEntities())
+            {
+                var lobby = new LobbyRepository().FindLobbyByMatchCode(context, matchCode, true);
+                return lobby?.lobbyID;
+            }
+        }
+
         public void NotifyPlayerJoined(string matchCode, string player)
         {
             BroadcastToMatchCallbacksAsync(matchCode, cb =>
@@ -362,28 +395,16 @@ namespace TrucoServer.Helpers.Match
         {
             try
             {
-                int lobbyId;
+                int? lobbyId = ResolveLobbyId(matchCode);
 
-                if (!TryGetLobbyIdFromCode(matchCode, out lobbyId))
+                if (!lobbyId.HasValue)
                 {
-                    using (var context = new baseDatosTrucoEntities())
-                    {
-                        var lobby = new LobbyRepository().FindLobbyByMatchCode(context, matchCode, true);
-
-                        if (lobby != null)
-                        {
-                            lobbyId = lobby.lobbyID;
-                        }
-                        else
-                        {
-                            return new PlayerInfo { Username = player };
-                        }
-                    }
+                    return new PlayerInfo { Username = player };
                 }
 
                 using (var context = new baseDatosTrucoEntities())
                 {
-                    var lobby = context.Lobby.Find(lobbyId);
+                    var lobby = context.Lobby.Find(lobbyId.Value);
 
                     if (lobby == null)
                     {
@@ -392,45 +413,33 @@ namespace TrucoServer.Helpers.Match
 
                     if (player.StartsWith(GUEST_PREFIX))
                     {
-                        return CreateGuestPlayerInfo(context, lobby, matchCode, player);
+                        var guestContext = new GuestCreationContext
+                        {
+                            Lobby = lobby,
+                            MatchCode = matchCode,
+                            PlayerUsername = player
+                        };
+                        return CreateGuestPlayerInfo(context, guestContext);
                     }
-
-                    var user = context.User.FirstOrDefault(u => u.username == player);
-
-                    if (user != null)
+                    else
                     {
-                        var member = context.LobbyMember.FirstOrDefault(lm =>
-                            lm.lobbyID == lobby.lobbyID && lm.userID == user.userID);
-
-                        if (member != null)
-                        {
-                            return new PlayerInfo
-                            {
-                                Username = player,
-                                Team = member.team
-                            };
-                        }
-                        else
-                        {
-                            return new PlayerInfo
-                            {
-                                Username = player,
-                                Team = TEAM_1
-                            };
-                        }
+                        return GetRegisteredPlayerInfo(context, lobby.lobbyID, player);
                     }
                 }
             }
             catch (Exception ex)
             {
                 ServerException.HandleException(ex, nameof(CreatePlayerInfoForChat));
+                return new PlayerInfo { Username = player };
             }
-
-            return new PlayerInfo { Username = player };
         }
 
-        private PlayerInfo CreateGuestPlayerInfo(baseDatosTrucoEntities context, Lobby lobby, string matchCode, string player)
+        private PlayerInfo CreateGuestPlayerInfo(baseDatosTrucoEntities context, GuestCreationContext creationContext)
         {
+            var lobby = creationContext.Lobby;
+            var matchCode = creationContext.MatchCode;
+            var player = creationContext.PlayerUsername;
+
             string assignedTeam = TEAM_1;
 
             try
@@ -447,9 +456,9 @@ namespace TrucoServer.Helpers.Match
                     {
                         var guestInfos = callbacks
                             .Select(GetPlayerInfoFromCallback)
-                            .Where(i => i != null && 
-                                i.Username.StartsWith(GUEST_PREFIX) && 
-                                i.Username != player && 
+                            .Where(i => i != null &&
+                                i.Username.StartsWith(GUEST_PREFIX) &&
+                                i.Username != player &&
                                 !string.IsNullOrEmpty(i.Team))
                             .ToList();
 

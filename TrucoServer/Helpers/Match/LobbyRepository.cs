@@ -14,6 +14,7 @@ namespace TrucoServer.Helpers.Match
         private const string STATUS_PRIVATE = "Private";
         private const string STATUS_CLOSED = "Closed";
         private const string TEAM_1 = "Team 1";
+        private const string TEAM_2 = "Team 2";
         private const string MATCH_1V1 = "1v1";
         private const string MATCH_2V2 = "2v2";
         private const string ROLE_OWNER = "Owner";
@@ -152,21 +153,28 @@ namespace TrucoServer.Helpers.Match
             }
         }
 
-        public Lobby ResolveLobbyForLeave(baseDatosTrucoEntities context, string matchCode, string username, out User player)
+        public LobbyLeaveResult ResolveLobbyForLeave(baseDatosTrucoEntities context, LobbyLeaveCriteria criteria)
         {
-            player = null;
             try
             {
-                player = context.User.FirstOrDefault(u => u.username == username);
+                var player = context.User.FirstOrDefault(u => u.username == criteria.Username);
+
                 if (player == null)
                 {
                     return null;
                 }
-                return FindLobbyByMatchCode(context, matchCode, true);
+
+                var lobby = FindLobbyByMatchCode(context, criteria.MatchCode, true);
+
+                return new LobbyLeaveResult
+                {
+                    Lobby = lobby,
+                    Player = player
+                };
             }
             catch (Exception ex)
             {
-                ServerException.HandleException(ex,nameof(ResolveLobbyForLeave));
+                ServerException.HandleException(ex, nameof(ResolveLobbyForLeave));
                 return null;
             }
         }
@@ -351,6 +359,31 @@ namespace TrucoServer.Helpers.Match
                 ServerException.HandleException(ex, nameof(RemoveLobbyMembersById));
                 return false;
             }
+        }
+
+        public bool IsPlayerInLobby(baseDatosTrucoEntities context, int lobbyId, int userId)
+        {
+            return context.LobbyMember.Any(lm => lm.lobbyID == lobbyId && lm.userID == userId);
+        }
+
+        public TeamCountsResult GetTeamCounts(baseDatosTrucoEntities context, int lobbyId)
+        {
+            int t1 = context.LobbyMember.Count(lm => lm.lobbyID == lobbyId && lm.team == TEAM_1);
+            int t2 = context.LobbyMember.Count(lm => lm.lobbyID == lobbyId && lm.team == TEAM_2);
+
+            return new TeamCountsResult { Team1Count = t1, Team2Count = t2 };
+        }
+
+        public void AddMember(baseDatosTrucoEntities context, int lobbyId, int userId, string role, string team)
+        {
+            context.LobbyMember.Add(new LobbyMember
+            {
+                lobbyID = lobbyId,
+                userID = userId,
+                role = role,
+                team = team
+            });
+            context.SaveChanges();
         }
     }
 }

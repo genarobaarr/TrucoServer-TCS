@@ -39,14 +39,18 @@ namespace TrucoServer.Helpers.Profiles
             context.SaveChanges();
         }
 
-        public bool TryUpdateUsername(baseDatosTrucoEntities context, User user, string newUsername, int maxNameChanges)
+        public bool TryUpdateUsername(baseDatosTrucoEntities context, UsernameUpdateContext updateContext)
         {
+            var user = updateContext.User;
+            var newUsername = updateContext.NewUsername;
+            var maxChanges = updateContext.MaxNameChanges;
+
             if (string.Equals(user.username, newUsername, StringComparison.Ordinal))
             {
                 return true;
             }
 
-            if (user.nameChangeCount >= maxNameChanges)
+            if (user.nameChangeCount >= maxChanges)
             {
                 return false;
             }
@@ -58,7 +62,7 @@ namespace TrucoServer.Helpers.Profiles
 
             user.username = newUsername;
             user.nameChangeCount++;
-            
+
             return true;
         }
 

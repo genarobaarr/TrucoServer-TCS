@@ -54,7 +54,14 @@ namespace TrucoServer.Services
                         return false;
                     }
 
-                    friendshipRepository.RegisterFriendRequest(context, requester.userID, target.userID, STATUS_PENDING);
+                    var requestDto = new FriendRequest
+                    {
+                        RequesterId = requester.userID,
+                        TargetId = target.userID,
+                        Status = STATUS_PENDING
+                    };
+
+                    friendshipRepository.RegisterFriendRequest(context, requestDto);
                     notificationService.NotifyRequestReceived(toUser, fromUser);
 
                     return true;
@@ -89,8 +96,15 @@ namespace TrucoServer.Services
                     User requester = lookupResult.User1;
                     User target = lookupResult.User2;
 
-                    var request = friendshipRepository.FindPendingFriendship(context, requester.userID, target.userID, STATUS_PENDING);
-                    
+                    var searchCriteria = new FriendRequest
+                    {
+                        RequesterId = requester.userID,
+                        TargetId = target.userID,
+                        Status = STATUS_PENDING
+                    };
+
+                    var request = friendshipRepository.FindPendingFriendship(context, searchCriteria);
+
                     if (request == null)
                     {
                         return false;

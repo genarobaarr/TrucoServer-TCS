@@ -5,6 +5,7 @@ using System.Data.Entity.Validation;
 using System.Data.SqlClient;
 using System.Linq;
 using TrucoServer.Data.DTOs;
+using TrucoServer.Helpers.Ranking;
 using TrucoServer.Utilities;
 
 namespace TrucoServer.GameLogic
@@ -13,18 +14,23 @@ namespace TrucoServer.GameLogic
     {
         private const string STATUS_INPROGRESS = "InProgress";
         private const string STATUS_FINISHED = "Finished";
-        private const string TEAM_1 = "Team 1";
-        private const string TEAM_2 = "Team 2";
 
         private const int INITIAL_SCORE = 0;
         private const int VERSION_1V1 = 1;
         private const int VERSION_2V2 = 2;
 
+        private readonly IUserStatsService userStatsService;
+
+        public TrucoGameManager(IUserStatsService userStatsService)
+        {
+            this.userStatsService = userStatsService ?? throw new ArgumentNullException(nameof(userStatsService));
+        }
+
         public int SaveMatchToDatabase(string matchCode, int lobbyId, List<PlayerInformation> players)
         {
             try
             {
-                using (var context = GetContext())
+                using (var context = new baseDatosTrucoEntities())
                 {
                     var existingMatch = GetExistingInProgressMatch(context, lobbyId);
 
@@ -59,20 +65,12 @@ namespace TrucoServer.GameLogic
         {
             try
             {
-                if (outcome == null)
-                {
-                    throw new ArgumentNullException(nameof(outcome));
-                }
+                if (outcome == null) throw new ArgumentNullException(nameof(outcome));
 
-                using (var context = GetContext())
+                using (var context = new baseDatosTrucoEntities())
                 {
                     var match = context.Match.Find(matchId);
-
-                    if (match == null)
-                    {
-                        LogManager.LogError(new Exception($"[CREATE MATCH] Match ID {matchId} not found in DB"), nameof(SaveMatchResult));
-                        return;
-                    }
+                    if (match == null) return;
 
                     match.status = STATUS_FINISHED;
                     match.endedAt = DateTime.Now;
@@ -81,7 +79,9 @@ namespace TrucoServer.GameLogic
 
                     foreach (var mp in dbPlayers)
                     {
-                        UpdatePlayerAndUserStats(context, mp, outcome);
+                        UpdateMatchPlayerResult(mp, outcome);
+
+                        userStatsService.UpdateUserStats(context, mp.userID, mp.isWinner);
                     }
 
                     context.SaveChanges();
@@ -93,30 +93,12 @@ namespace TrucoServer.GameLogic
             }
         }
 
-        private static baseDatosTrucoEntities GetContext()
-        {
-            return new baseDatosTrucoEntities();
-        }
-
-        private static void UpdatePlayerAndUserStats(baseDatosTrucoEntities context, MatchPlayer mp, MatchOutcome outcome)
+        private static void UpdateMatchPlayerResult(MatchPlayer mp, MatchOutcome outcome)
         {
             bool isWinnerTeam = string.Equals(mp.team.Trim(), outcome.WinnerTeam.Trim(), StringComparison.OrdinalIgnoreCase);
 
             mp.isWinner = isWinnerTeam;
             mp.score = isWinnerTeam ? outcome.WinnerScore : outcome.LoserScore;
-
-            var userStats = context.User.FirstOrDefault(u => u.userID == mp.userID);
-            if (userStats != null)
-            {
-                if (isWinnerTeam)
-                {
-                    userStats.wins++;
-                }
-                else
-                {
-                    userStats.losses++;
-                }
-            }
         }
 
         private Match CreateAndSaveMatch(baseDatosTrucoEntities context, int lobbyId, int playerCount)

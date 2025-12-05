@@ -32,25 +32,25 @@ namespace TrucoServer.Helpers.Friends
                 (f.userID == userId2 && f.friendID == userId1));
         }
 
-        public void RegisterFriendRequest(baseDatosTrucoEntities context, int requesterId, int targetId, string statusPending)
+        public void RegisterFriendRequest(baseDatosTrucoEntities context, FriendRequest request)
         {
             var newRequest = new Friendship
             {
-                userID = requesterId,
-                friendID = targetId,
-                status = statusPending
+                userID = request.RequesterId,
+                friendID = request.TargetId,
+                status = request.Status
             };
 
             context.Friendship.Add(newRequest);
             context.SaveChanges();
         }
 
-        public Friendship FindPendingFriendship(baseDatosTrucoEntities context, int requesterId, int acceptorId, string statusPending)
+        public Friendship FindPendingFriendship(baseDatosTrucoEntities context, FriendRequest request)
         {
             return context.Friendship.FirstOrDefault(f =>
-                f.userID == requesterId &&
-                f.friendID == acceptorId &&
-                f.status == statusPending);
+                f.userID == request.RequesterId &&
+                f.friendID == request.TargetId &&
+                f.status == request.Status);
         }
 
         public void CommitFriendshipAcceptance(baseDatosTrucoEntities context, FriendshipCommitOptions options)

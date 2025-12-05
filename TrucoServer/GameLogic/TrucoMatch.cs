@@ -168,47 +168,14 @@ namespace TrucoServer.GameLogic
         {
             try
             {
-                if (waitingForFlorResponseId.HasValue)
+                if (!IsValidPlay(playerID, cardFileName, out TrucoCard cardToPlay, out PlayerInformation player))
                 {
                     return false;
                 }
 
-                if (waitingForEnvidoResponseId.HasValue)
-                {
-                    return false;
-                }
+                PerformCardMove(playerID, cardToPlay);
 
-                var player = GetCurrentTurnPlayer();
-
-                if (player.PlayerID != playerID || (CurrentState != GameState.Truco && CurrentState != GameState.Envido && CurrentState != GameState.Flor))
-                {
-                    return false;
-                }
-
-                if (!playerHands.ContainsKey(playerID))
-                {
-                    return false;
-                }
-
-                var hand = playerHands[playerID];
-                var cardInHand = hand.FirstOrDefault(c => c.FileName == cardFileName);
-
-                if (cardInHand == null)
-                {
-                    return false;
-                }
-
-                if (waitingForResponseToId.HasValue)
-                {
-                    return false;
-                }
-
-                hand.Remove(cardInHand);
-                playedCards[playerID].Add(cardInHand);
-                cardsOnTable.Add(playerID, cardInHand);
-
-                bool isLastCardOfRound = (playedCards[playerID].Count == CARDS_IN_HAND);
-                NotifyAll(callback => callback.NotifyCardPlayed(player.Username, cardFileName, isLastCardOfRound));
+                NotifyCardPlayed(player, cardFileName);
 
                 AdvanceTurn();
 
@@ -219,6 +186,45 @@ namespace TrucoServer.GameLogic
                 ServerException.HandleException(ex, nameof(PlayCard));
                 return false;
             }
+        }
+
+        private bool IsValidPlay(int playerID, string cardFileName, out TrucoCard cardToPlay, out PlayerInformation player)
+        {
+            cardToPlay = null;
+            player = null;
+
+            if (waitingForFlorResponseId.HasValue || waitingForEnvidoResponseId.HasValue || waitingForResponseToId.HasValue)
+            {
+                return false;
+            }
+
+            player = GetCurrentTurnPlayer();
+            if (player.PlayerID != playerID ||
+               (CurrentState != GameState.Truco && CurrentState != GameState.Envido && CurrentState != GameState.Flor))
+            {
+                return false;
+            }
+
+            if (!playerHands.TryGetValue(playerID, out var hand))
+            {
+                return false;
+            }
+
+            cardToPlay = hand.FirstOrDefault(c => c.FileName == cardFileName);
+            return cardToPlay != null;
+        }
+
+        private void PerformCardMove(int playerID, TrucoCard card)
+        {
+            playerHands[playerID].Remove(card);
+            playedCards[playerID].Add(card);
+            cardsOnTable.Add(playerID, card);
+        }
+
+        private void NotifyCardPlayed(PlayerInformation player, string cardFileName)
+        {
+            bool isLastCardOfRound = (playedCards[player.PlayerID].Count == CARDS_IN_HAND);
+            NotifyAll(callback => callback.NotifyCardPlayed(player.Username, cardFileName, isLastCardOfRound));
         }
 
         private void AdvanceTurn()

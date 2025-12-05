@@ -1,10 +1,8 @@
 ﻿using System;
-using System.Data.Entity.Infrastructure;
-using System.Data.SqlClient;
 using System.Linq;
-using System.Net.Mail;
 using TrucoServer.Helpers.Email;
 using TrucoServer.Utilities;
+using TrucoServer.Data.DTOs;
 
 namespace TrucoServer.Helpers.Password
 {
@@ -17,23 +15,23 @@ namespace TrucoServer.Helpers.Password
             this.emailSender = emailSender;
         }
 
-        public bool UpdatePasswordAndNotify(string email, string newPassword, string languageCode, string callingMethod)
+        public bool UpdatePasswordAndNotify(PasswordUpdateOptions context)
         {
             try
             {
-                using (var context = new baseDatosTrucoEntities())
+                using (var dbContext = new baseDatosTrucoEntities())
                 {
-                    User user = context.User.FirstOrDefault(u => u.email == email);
+                    User user = dbContext.User.FirstOrDefault(u => u.email == context.Email);
 
                     if (user == null)
                     {
                         return false;
                     }
 
-                    user.passwordHash = PasswordHasher.Hash(newPassword);
-                    context.SaveChanges();
+                    user.passwordHash = PasswordHasher.Hash(context.NewPassword);
+                    dbContext.SaveChanges();
 
-                    Langs.LanguageManager.SetLanguage(languageCode);
+                    Langs.LanguageManager.SetLanguage(context.LanguageCode);
                     emailSender.NotifyPasswordChange(user);
 
                     return true;
@@ -41,7 +39,7 @@ namespace TrucoServer.Helpers.Password
             }
             catch (Exception ex)
             {
-                ServerException.HandleException(ex, nameof(callingMethod));
+                ServerException.HandleException(ex, context.CallingMethod);
                 return false;
             }
         }

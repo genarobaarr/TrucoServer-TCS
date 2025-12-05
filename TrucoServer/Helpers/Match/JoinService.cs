@@ -15,10 +15,12 @@ namespace TrucoServer.Helpers.Match
         private const string STATUS_PUBLIC = "Public";
 
         private readonly ILobbyCoordinator coordinator;
+        private readonly ILobbyRepository lobbyRepository;
 
-        public JoinService(ILobbyCoordinator coordinator)
+        public JoinService(ILobbyCoordinator coordinator, ILobbyRepository lobbyRepository)
         {
             this.coordinator = coordinator;
+            this.lobbyRepository = lobbyRepository ?? throw new ArgumentNullException(nameof(lobbyRepository));
         }
 
         public bool ProcessSafeJoin(int lobbyId, string matchCode, string player)
@@ -126,32 +128,24 @@ namespace TrucoServer.Helpers.Match
         {
             try
             {
-                if (context.LobbyMember.Any(lm => lm.lobbyID == lobby.lobbyID && lm.userID == playerUser.userID))
+                if (lobbyRepository.IsPlayerInLobby(context, lobby.lobbyID, playerUser.userID))
                 {
                     return;
                 }
 
-                int team1Count = context.LobbyMember.Count(lm => lm.lobbyID == lobby.lobbyID && lm.team == TEAM_1);
-                int team2Count = context.LobbyMember.Count(lm => lm.lobbyID == lobby.lobbyID && lm.team == TEAM_2);
+                var counts = lobbyRepository.GetTeamCounts(context, lobby.lobbyID);
 
                 var teamOptions = new TeamDeterminationOptions
                 {
                     MaxPlayers = lobby.maxPlayers,
-                    Team1Count = team1Count,
-                    Team2Count = team2Count,
+                    Team1Count = counts.Team1Count,
+                    Team2Count = counts.Team2Count,
                     Username = playerUser.username
                 };
 
                 string assignedTeam = DetermineTeamForNewPlayer(teamOptions);
 
-                context.LobbyMember.Add(new LobbyMember
-                {
-                    lobbyID = lobby.lobbyID,
-                    userID = playerUser.userID,
-                    role = ROLE_PLAYER,
-                    team = assignedTeam
-                });
-                context.SaveChanges();
+                lobbyRepository.AddMember(context, lobby.lobbyID, playerUser.userID, ROLE_PLAYER, assignedTeam);
             }
             catch (Exception ex)
             {

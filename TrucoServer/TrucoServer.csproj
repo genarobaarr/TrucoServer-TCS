@@ -75,18 +75,25 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Data\DTOs\BannedWordList.cs" />
+    <Compile Include="Data\DTOs\FriendRequest.cs" />
     <Compile Include="Data\DTOs\FriendshipCommitOptions.cs" />
     <Compile Include="Data\DTOs\GameInitializationOptions.cs" />
+    <Compile Include="Data\DTOs\GuestCreationContext.cs" />
     <Compile Include="Data\DTOs\GuestJoinOptions.cs" />
     <Compile Include="Data\DTOs\LobbyCreationOptions.cs" />
+    <Compile Include="Data\DTOs\LobbyLeaveCriteria.cs" />
+    <Compile Include="Data\DTOs\LobbyLeaveResult.cs" />
     <Compile Include="Data\DTOs\MatchOutcome.cs" />
     <Compile Include="Data\DTOs\MatchStartValidation.cs" />
     <Compile Include="Data\DTOs\PasswordResetOptions.cs" />
+    <Compile Include="Data\DTOs\PasswordUpdateOptions.cs" />
     <Compile Include="Data\DTOs\ProfileUpdateOptions.cs" />
+    <Compile Include="Data\DTOs\TeamCountResult.cs" />
     <Compile Include="Data\DTOs\TeamDeterminationOptions.cs" />
     <Compile Include="Data\DTOs\TrucoMatchContext.cs" />
     <Compile Include="Data\DTOs\UserLookupOptions.cs" />
     <Compile Include="Data\DTOs\UserLookupResult.cs" />
+    <Compile Include="Data\DTOs\UsernameUpdateContext.cs" />
     <Compile Include="Data\Entitites\BannedWordEntity.cs" />
     <Compile Include="GameLogic\IDeckShuffler.cs" />
     <Compile Include="GameLogic\ITrucoDeck.cs" />
@@ -151,8 +158,10 @@
     <Compile Include="Helpers\Profiles\ProfileUpdater.cs" />
     <Compile Include="Helpers\Ranking\IMatchHistoryService.cs" />
     <Compile Include="Helpers\Ranking\IRankingService.cs" />
+    <Compile Include="Helpers\Ranking\IUserStatsService.cs" />
     <Compile Include="Helpers\Ranking\MatchHistoryService.cs" />
     <Compile Include="Helpers\Ranking\RankingService.cs" />
+    <Compile Include="Helpers\Ranking\UserStatsService.cs" />
     <Compile Include="Helpers\Sessions\IUserSessionManager.cs" />
     <Compile Include="Helpers\Sessions\UserSessionManager.cs" />
     <Compile Include="Helpers\Verification\IVerificationService.cs" />

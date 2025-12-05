@@ -6,9 +6,10 @@ using System.Threading.Tasks;
 using TrucoServer.Contracts;
 using TrucoServer.Data.DTOs;
 using TrucoServer.GameLogic;
-using TrucoServer.Utilities;
 using TrucoServer.Helpers.Match;
 using TrucoServer.Helpers.Profanity;
+using TrucoServer.Helpers.Ranking;
+using TrucoServer.Utilities;
 
 namespace TrucoServer.Services
 {
@@ -35,11 +36,12 @@ namespace TrucoServer.Services
             var repository = new LobbyRepository();
             var generator = new MatchCodeGenerator();
             var profanity = new BannedWordRepository();
-            var gameManager = new TrucoGameManager();
+            var statsService = new UserStatsService();
+            var gameManager = new TrucoGameManager(statsService);
             var shuffler = new DefaultDeckShuffler();
 
 
-            var join = new JoinService(coordinator);
+            var join = new JoinService(coordinator, repository);
 
             var matchStarter = new MatchStarter(
                 registry,
@@ -187,7 +189,8 @@ namespace TrucoServer.Services
                 using (var context = new baseDatosTrucoEntities())
                 {
                     Lobby lobby = null;
-                  
+                    User user = null;
+
                     if (lobbyCoordinator.TryGetLobbyIdFromCode(matchCode, out int id))
                     {
                         lobby = context.Lobby.FirstOrDefault(l => l.lobbyID == id);
@@ -195,14 +198,24 @@ namespace TrucoServer.Services
 
                     if (lobby == null)
                     {
-                        lobby = lobbyRepository.ResolveLobbyForLeave(context, matchCode, player, out _);
+                        var criteria = new LobbyLeaveCriteria
+                        {
+                            MatchCode = matchCode,
+                            Username = player
+                        };
+
+                        var result = lobbyRepository.ResolveLobbyForLeave(context, criteria);
+
+                        if (result != null)
+                        {
+                            lobby = result.Lobby;
+                            user = result.Player;
+                        }
                     }
 
-                    var user = context.User.FirstOrDefault(u => u.username == player);
-
-                    if (lobby == null || user == null)
+                    if (user == null)
                     {
-                        return;
+                        user = context.User.FirstOrDefault(u => u.username == player);
                     }
 
                     var member = context.LobbyMember.FirstOrDefault(lm => lm.lobbyID == lobby.lobbyID && lm.userID == user.userID);

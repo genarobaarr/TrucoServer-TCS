@@ -218,52 +218,28 @@ namespace TrucoServer.Helpers.Match
                     throw new ArgumentNullException(nameof(options));
                 }
 
-                string ownerUsername = null;
+                string ownerName = GetOwnerUsernameByLobbyId(options.LobbyId);
 
-                using (var context = new baseDatosTrucoEntities())
+                if (ownerName == null)
                 {
-                    var lobby = context.Lobby.Find(options.LobbyId);
-
-                    if (lobby == null)
-                    {
-                        LogManager.LogError(new Exception($"Lobby {options.LobbyId} not found"), nameof(InitializeAndRegisterGame));
-                        return;
-                    }
-
-                    var owner = context.User.Find(lobby.ownerID);
-                    ownerUsername = owner?.username;
-
-                    if (string.IsNullOrEmpty(ownerUsername))
-                    {
-                        ownerUsername = options.GamePlayers.FirstOrDefault()?.Username;
-                    }
+                    LogManager.LogError(new Exception($"Lobby {options.LobbyId} not found"), nameof(InitializeAndRegisterGame));
+                    return;
                 }
 
-                var orderedPlayers = OrderPlayersForMatch(options.GamePlayers, ownerUsername);
+                string finalOwner = string.IsNullOrEmpty(ownerName)
+                    ? options.GamePlayers.FirstOrDefault()?.Username
+                    : ownerName;
+
+                var orderedPlayers = OrderPlayersForMatch(options.GamePlayers, finalOwner);
 
                 if (orderedPlayers.Count != options.GamePlayers.Count)
                 {
                     orderedPlayers = options.GamePlayers;
                 }
 
-                var newDeck = new Deck(shuffler);
+                var newGame = CreateMatchInstance(options, orderedPlayers);
 
-                var matchContext = new TrucoMatchContext
-                {
-                    MatchCode = options.MatchCode,
-                    LobbyId = options.LobbyId,
-                    Players = orderedPlayers,
-                    Callbacks = options.GameCallbacks,
-                    Deck = newDeck,
-                    GameManager = gameManager
-                };
-
-                var newGame = new TrucoMatch(matchContext);
-
-                if (!gameRegistry.TryAddGame(options.MatchCode, newGame))
-                {
-                    LogManager.LogError(new Exception($"Failed to add running game {options.MatchCode}"), nameof(InitializeAndRegisterGame));
-                }
+                RegisterGame(options.MatchCode, newGame);
             }
             catch (Exception ex)
             {
@@ -389,6 +365,31 @@ namespace TrucoServer.Helpers.Match
             }
         }
 
+        private TrucoMatch CreateMatchInstance(GameInitializationOptions options, List<PlayerInformation> orderedPlayers)
+        {
+            var newDeck = new Deck(shuffler);
+
+            var matchContext = new TrucoMatchContext
+            {
+                MatchCode = options.MatchCode,
+                LobbyId = options.LobbyId,
+                Players = orderedPlayers,
+                Callbacks = options.GameCallbacks,
+                Deck = newDeck,
+                GameManager = gameManager
+            };
+
+            return new TrucoMatch(matchContext);
+        }
+
+        private void RegisterGame(string matchCode, TrucoMatch newGame)
+        {
+            if (!gameRegistry.TryAddGame(matchCode, newGame))
+            {
+                LogManager.LogError(new Exception($"Failed to add running game {matchCode}"), nameof(InitializeAndRegisterGame));
+            }
+        }
+
         public bool GetMatchAndPlayerID(string matchCode, out TrucoMatch match, out int playerID)
         {
             match = null;
@@ -488,6 +489,32 @@ namespace TrucoServer.Helpers.Match
             catch (Exception ex)
             {
                 LogManager.LogError(ex, nameof(GetOwnerUsername));
+            }
+
+            return null;
+        }
+
+        private string GetOwnerUsernameByLobbyId(int lobbyId)
+        {
+            try
+            {
+                using (var context = new baseDatosTrucoEntities())
+                {
+                    var lobby = context.Lobby.Find(lobbyId);
+
+                    if (lobby == null)
+                    {
+                        return null;
+                    }
+
+                    var owner = context.User.Find(lobby.ownerID);
+                    return owner?.username ?? string.Empty;
+                }
+
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError(ex, nameof(GetOwnerUsernameByLobbyId));
             }
 
             return null;
