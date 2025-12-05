@@ -11,6 +11,53 @@ namespace TrucoServer.Tests.UtilitiesTests
     [TestClass]
     public class ConfigurationFileWrapperTests
     {
-        
+        [TestMethod]
+        public void TestEmailSettingsSetObjectReturnsObject()
+        {
+            var wrapper = new ConfigurationFileWrapper();
+            var emailSettings = new EmailSettings();
+            wrapper.EmailSettings = emailSettings;
+            Assert.AreSame(emailSettings, wrapper.EmailSettings);
+        }
+
+        [TestMethod]
+        public void TestEmailSettingsSetNullReturnsNull()
+        {
+            var wrapper = new ConfigurationFileWrapper();
+            wrapper.EmailSettings = null;
+            Assert.IsNull(wrapper.EmailSettings);
+        }
+
+        [TestMethod]
+        public void TestConstructorInstanceIsNotNull()
+        {
+            var wrapper = new ConfigurationFileWrapper();
+            Assert.IsNotNull(wrapper);
+        }
+
+        [TestMethod]
+        public void TestEmailSettingsPropertyCanBeAccessed()
+        {
+            var wrapper = new ConfigurationFileWrapper();
+
+            wrapper.EmailSettings = new EmailSettings 
+            { 
+                SmtpPort = 25 
+            };
+
+            int port = wrapper.EmailSettings.SmtpPort;
+            Assert.AreEqual(25, port);
+        }
+
+        [TestMethod]
+        public void TestEmailSettingsReassignmentUpdatesReference()
+        {
+            var wrapper = new ConfigurationFileWrapper();
+            var settingsA = new EmailSettings();
+            var settingsB = new EmailSettings();
+            wrapper.EmailSettings = settingsA;
+            wrapper.EmailSettings = settingsB;
+            Assert.AreSame(settingsB, wrapper.EmailSettings);
+        }
     }
 }

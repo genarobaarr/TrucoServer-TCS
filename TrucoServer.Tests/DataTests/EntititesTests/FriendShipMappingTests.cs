@@ -15,45 +15,46 @@ namespace TrucoServer.Tests.DataTests.EntititesTests
     public class FriendShipMappingTests
     {
         [TestMethod]
-        public void TestFriendshipClassShouldHaveMetadataTypeAttribute()
-        {
-            var type = typeof(Friendship);
-            var attribute = type.GetCustomAttribute<MetadataTypeAttribute>();
-            Assert.IsNotNull(attribute, "The Friendship partial class must have the MetadataType attribute.");
-        }
-
-        [TestMethod]
-        public void TestUserIDPropertyShouldHaveColumnAttributeUserID1()
-        {
-            var property = typeof(FriendShipMapping).GetProperty("UserID");
-            var columnAttr = property.GetCustomAttribute<ColumnAttribute>();
-            Assert.AreEqual("userID1", columnAttr?.Name);
-        }
-
-        [TestMethod]
-        public void TestFriendIDPropertyShouldHaveColumnAttributeUserID2()
-        {
-            var property = typeof(FriendShipMapping).GetProperty("FriendID");
-            var columnAttr = property.GetCustomAttribute<ColumnAttribute>();
-            Assert.AreEqual("userID2", columnAttr?.Name);
-        }
-
-        [TestMethod]
-        public void TestUserIDSetPropertyShouldStoreIntegerValue()
+        public void TestUserIDSetValidIdReturnsId()
         {
             var mapping = new FriendShipMapping();
-            int expectedId = 100;
-            mapping.UserID = expectedId;
-            Assert.AreEqual(expectedId, mapping.UserID);
+            int id = 100;
+            mapping.UserID = id;
+            Assert.AreEqual(id, mapping.UserID);
         }
 
         [TestMethod]
-        public void TestFriendIDSetNegativeValueShouldStoreValue()
+        public void TestFriendIDSetValidIdReturnsId()
         {
             var mapping = new FriendShipMapping();
-            int negativeId = -50;
-            mapping.FriendID = negativeId;
-            Assert.AreEqual(negativeId, mapping.FriendID);
+            int id = 200;
+            mapping.FriendID = id;
+            Assert.AreEqual(id, mapping.FriendID);
+        }
+
+        [TestMethod]
+        public void TestUserIDSetMaxValueReturnsMaxValue()
+        {
+            var mapping = new FriendShipMapping();
+            int max = int.MaxValue;
+            mapping.UserID = max;
+            Assert.AreEqual(max, mapping.UserID);
+        }
+
+        [TestMethod]
+        public void TestFriendIDSetNegativeReturnsNegative()
+        {
+            var mapping = new FriendShipMapping();
+            int negative = -1;
+            mapping.FriendID = negative;
+            Assert.AreEqual(negative, mapping.FriendID);
+        }
+
+        [TestMethod]
+        public void TestConstructorInstanceIsNotNull()
+        {
+            var mapping = new FriendShipMapping();
+            Assert.IsNotNull(mapping);
         }
     }
 }

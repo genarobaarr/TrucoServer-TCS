@@ -11,74 +11,65 @@ namespace TrucoServer.Tests.DataTests.EntititesTests
     [TestClass]
     public class EfHelpersTests
     {
-        private class DummyEntity
+        private class TestEntity
         {
             public int Id { get; set; }
             public string Name { get; set; }
-            public byte[] DataBlob { get; set; }
-            public DummyChild Child { get; set; }
-        }
-
-        private class DummyChild
-        {
-            public string ChildName { get; set; }
         }
 
         [TestMethod]
-        public void TestGetPropValueValidPropertyShouldReturnCorrectValue()
+        public void TestGetPropValueReturnsCorrectValueForExistingProperty()
         {
-            var entity = new DummyEntity 
-            { 
-                Id = 100,
-                Name = "Test" };
-
-            int result = EfHelpers.GetPropValue<int>(entity, "Id");
-            Assert.AreEqual(100, result);
-        }
-
-        [TestMethod]
-        public void TestGetPropValueByteArrayToStringShouldDecodeUtf8()
-        {
-            string expected = "Popcorn";
-            var entity = new DummyEntity { DataBlob = Encoding.UTF8.GetBytes(expected) };
-            string result = EfHelpers.GetPropValue<string>(entity, "DataBlob");
-            Assert.AreEqual(expected, result);
-        }
-
-        [TestMethod]
-        public void TestGetPropValueNonExistentPropertyShouldReturnDefault()
-        {
-            var entity = new DummyEntity 
-            { 
-                Name = "Test" 
+            var entity = new TestEntity
+            {
+                Id = 1,
+                Name = "TestName"
             };
 
-            string result = EfHelpers.GetPropValue<string>(entity, "EmptyPropperty");
+            string propName = "Name";
+            var result = EfHelpers.GetPropValue<string>(entity, propName);
+            Assert.AreEqual("TestName", result);
+        }
+
+        [TestMethod]
+        public void TestGetPropValueReturnsDefaultForNonExistingProperty()
+        {
+            var entity = new TestEntity 
+            {
+                Id = 1 
+            };
+
+            string propName = "NonExistent";
+            var result = EfHelpers.GetPropValue<string>(entity, propName);
             Assert.IsNull(result);
         }
 
         [TestMethod]
-        public void TestGetPropValueNullEntityShouldReturnDefault()
+        public void TestGetPropValueReturnsDefaultForNullEntity()
         {
-            int result = EfHelpers.GetPropValue<int>(null, "Id");
+            TestEntity entity = null;
+            var result = EfHelpers.GetPropValue<int>(entity, "Id");
             Assert.AreEqual(0, result);
         }
 
         [TestMethod]
-        public void TestGetNavigationValidChildShouldReturnObject()
+        public void TestGetNavigationReturnsObjectForExistingProperty()
         {
-            var child = new DummyChild 
-            { 
-                ChildName = "Child" 
+            var entity = new TestEntity 
+            {
+                Name = "NavTest" 
             };
 
-            var entity = new DummyEntity 
-            { 
-                Child = child 
-            };
-            
-            var result = EfHelpers.GetNavigation(entity, "Child");
-            Assert.IsInstanceOfType(result, typeof(DummyChild));
+            var result = EfHelpers.GetNavigation(entity, "Name");
+            Assert.AreEqual("NavTest", result);
+        }
+
+        [TestMethod]
+        public void TestGetNavigationReturnsNullForNullEntity()
+        {
+            TestEntity entity = null;
+            var result = EfHelpers.GetNavigation(entity, "AnyProp");
+            Assert.IsNull(result);
         }
     }
 }

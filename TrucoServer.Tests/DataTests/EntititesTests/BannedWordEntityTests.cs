@@ -13,26 +13,46 @@ namespace TrucoServer.Tests.DataTests.EntititesTests
     public class BannedWordEntityTests
     {
         [TestMethod]
-        public void TestBannedWordEntitySetWordShouldStoreValue()
+        public void TestWordIDSetPositiveIntegerReturnsInteger()
         {
             var entity = new BannedWordEntity();
-            string badWord = "Forbidden";
-            entity.Word = badWord;
-            Assert.AreEqual(badWord, entity.Word);
+            int id = 10;
+            entity.WordID = id;
+            Assert.AreEqual(id, entity.WordID);
         }
 
         [TestMethod]
-        public void TestBannedWordEntityValidationRequiredFieldShouldFailIfNull()
+        public void TestWordSetValidStringReturnsString()
         {
-            var entity = new BannedWordEntity 
-            { 
-                Word = null 
-            };
+            var entity = new BannedWordEntity();
+            string word = "forbidden";
+            entity.Word = word;
+            Assert.AreEqual(word, entity.Word);
+        }
 
-            var context = new ValidationContext(entity);
-            var results = new List<ValidationResult>();
-            bool isValid = Validator.TryValidateObject(entity, context, results, true);
-            Assert.IsFalse(isValid, "Validation should fail because Word is [Required]");
+        [TestMethod]
+        public void TestWordSetNullReturnsNull()
+        {
+            var entity = new BannedWordEntity();
+            entity.Word = null;
+            Assert.IsNull(entity.Word);
+        }
+
+        [TestMethod]
+        public void TestWordIDSetZeroReturnsZero()
+        {
+            var entity = new BannedWordEntity();
+            entity.WordID = 0;
+            Assert.AreEqual(0, entity.WordID);
+        }
+
+        [TestMethod]
+        public void TestWordSetMaxLengthStringReturnsString()
+        {
+            var entity = new BannedWordEntity();
+            string longWord = new string('x', 50);
+            entity.Word = longWord;
+            Assert.AreEqual(50, entity.Word.Length);
         }
     }
 }

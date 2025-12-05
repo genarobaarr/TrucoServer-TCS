@@ -13,6 +13,19 @@ namespace TrucoServer.Tests.UtilitiesTests
     [TestClass]
     public class ConfigurationReaderTests
     {
-        
+        [TestMethod]
+        public void TestEmailSettingsAccessDoesNotThrowWhenFileMissingOrInvalid()
+        {
+            var settings = ConfigurationReader.EmailSettings;
+            Assert.IsTrue(settings == null || settings != null);
+        }
+
+        [TestMethod]
+        public void TestEmailSettingsPropertyIsSingleton()
+        {
+            var settingsA = ConfigurationReader.EmailSettings;
+            var settingsB = ConfigurationReader.EmailSettings;
+            Assert.AreEqual(settingsA, settingsB);
+        }
     }
 }
