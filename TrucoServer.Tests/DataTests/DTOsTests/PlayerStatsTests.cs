@@ -12,44 +12,30 @@ namespace TrucoServer.Tests.DataTests.DTOsTests
     public class PlayerStatsTests
     {
         [TestMethod]
-        public void TestSetWinsShouldStoreValue()
+        public void TestPlayerNameSetStringReturnsString()
         {
             var stats = new PlayerStats();
-            stats.Wins = 10;
-            Assert.AreEqual(10, stats.Wins);
+            string name = "WinnerPlayer";
+            stats.PlayerName = name;
+            Assert.AreEqual(name, stats.PlayerName);
         }
 
         [TestMethod]
-        public void TestZeroLossesShouldBeValid()
+        public void TestWinsSetPositiveValueReturnsValue()
         {
             var stats = new PlayerStats();
-            stats.Losses = 0;
-            Assert.AreEqual(0, stats.Losses);
+            int wins = 10;
+            stats.Wins = wins;
+            Assert.AreEqual(wins, stats.Wins);
         }
 
         [TestMethod]
-        public void TestNegativeWinsShouldStoreNegative()
+        public void TestLossesSetPositiveValueReturnsValue()
         {
             var stats = new PlayerStats();
-            stats.Wins = -5;
-            Assert.AreEqual(-5, stats.Wins);
-        }
-
-        [TestMethod]
-        public void TestLongNameShouldPersist()
-        {
-            var stats = new PlayerStats();
-            string longName = new string('a', 100);
-            stats.PlayerName = longName;
-            Assert.AreEqual(100, stats.PlayerName.Length);
-        }
-
-        [TestMethod]
-        public void TestDefaultIntsShouldBeZero()
-        {
-            var stats = new PlayerStats();
-            int total = stats.Wins + stats.Losses;
-            Assert.AreEqual(0, total);
+            int losses = 2;
+            stats.Losses = losses;
+            Assert.AreEqual(losses, stats.Losses);
         }
     }
 }

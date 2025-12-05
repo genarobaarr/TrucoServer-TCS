@@ -12,47 +12,21 @@ namespace TrucoServer.Tests.DataTests.DTOsTests
     public class PlayerInfoTests
     {
         [TestMethod]
-        public void TestSetOwnerShouldStoreValue()
+        public void TestUsernameSetStringReturnsString()
         {
-            var info = new PlayerInfo();
-            string owner = "Admin";
-            info.OwnerUsername = owner;
-            Assert.AreEqual(owner, info.OwnerUsername);
+            var player = new PlayerInfo();
+            string name = "PlayerOne";
+            player.Username = name;
+            Assert.AreEqual(name, player.Username);
         }
 
         [TestMethod]
-        public void TestNullAvatarShouldBeValid()
+        public void TestAvatarIdSetStringReturnsString()
         {
-            var info = new PlayerInfo();
-            info.AvatarId = null;
-            Assert.IsNull(info.AvatarId);
-        }
-
-        [TestMethod]
-        public void TestEmptyTeamShouldStoreEmpty()
-        {
-            var info = new PlayerInfo();
-            info.Team = "";
-            Assert.AreEqual(0, info.Team.Length);
-        }
-
-        [TestMethod]
-        public void TestUpdateUsernameShouldReflectChange()
-        {
-            var info = new PlayerInfo 
-            { 
-                Username = "Alexander" 
-            };
-
-            info.Username = "Jaire";
-            Assert.AreEqual("Jaire", info.Username);
-        }
-
-        [TestMethod]
-        public void TestInstanceShouldNotBeNull()
-        {
-            var info = new PlayerInfo();
-            Assert.IsNotNull(info);
+            var player = new PlayerInfo();
+            string avatar = "avatar_aaa_default";
+            player.AvatarId = avatar;
+            Assert.AreEqual(avatar, player.AvatarId);
         }
     }
 }

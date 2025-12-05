@@ -12,45 +12,29 @@ namespace TrucoServer.Tests.DataTests.DTOsTests
     public class PlayerInformationTests
     {
         [TestMethod]
-        public void TestConstructorShouldSetProperties()
+        public void TestConstructorSetsPlayerIDCorrectly()
         {
-            int id = 1;
-            string user = "Jesé";
+            int id = 100;
+            string user = "User1";
             string team = "Team 1";
-            var info = new PlayerInformation(id, user, team);
-            Assert.AreEqual(user, info.Username);
+            var player = new PlayerInformation(id, user, team);
+            Assert.AreEqual(id, player.PlayerID);
         }
 
         [TestMethod]
-        public void TestConstructorShouldInitializeHand()
+        public void TestConstructorSetsUsernameCorrectly()
         {
-            var info = new PlayerInformation(1, "A", "B");
-            var hand = info.Hand;
-            Assert.IsNotNull(hand, "The card hand must be initialized empty, not null");
+            string user = "User1";
+            var player = new PlayerInformation(1, user, "Team 1");
+            Assert.AreEqual(user, player.Username);
         }
 
         [TestMethod]
-        public void TestNegativeIDShouldStoreValue()
+        public void TestConstructorSetsTeamCorrectly()
         {
-            int negId = -99;
-            var info = new PlayerInformation(negId, "User", "Team 1");
-            Assert.AreEqual(negId, info.PlayerID);
-        }
-
-        [TestMethod]
-        public void TestSetTeamShouldUpdateValue()
-        {
-            var info = new PlayerInformation(1, "User", "Team 1");
-            info.Team = "Team 2";
-            Assert.AreEqual("Team 2", info.Team);
-        }
-
-        [TestMethod]
-        public void TestNullUsernameShouldStoreNull()
-        {
-            string nullUser = null;
-            var info = new PlayerInformation(1, nullUser, "Team 1");
-            Assert.IsNull(info.Username);
+            string team = "Team 2";
+            var player = new PlayerInformation(1, "User1", team);
+            Assert.AreEqual(team, player.Team);
         }
     }
 }

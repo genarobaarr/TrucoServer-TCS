@@ -12,11 +12,30 @@ namespace TrucoServer.Tests.DataTests.DTOsTests
     public class PublicLobbyInfoTests
     {
         [TestMethod]
-        public void TestPublicLobbyInfoSetMaxPlayersShouldStoreValue()
+        public void TestMatchNameSetValidStringReturnsString()
         {
-            var lobby = new PublicLobbyInfo();
-            lobby.MaxPlayers = 4;
-            Assert.AreEqual(4, lobby.MaxPlayers);
+            var info = new PublicLobbyInfo();
+            string name = "Fun Room";
+            info.MatchName = name;
+            Assert.AreEqual(name, info.MatchName);
+        }
+
+        [TestMethod]
+        public void TestCurrentPlayersSetZeroReturnsZero()
+        {
+            var info = new PublicLobbyInfo();
+            int count = 0;
+            info.CurrentPlayers = count;
+            Assert.AreEqual(0, info.CurrentPlayers);
+        }
+
+        [TestMethod]
+        public void TestMaxPlayersSetPositiveValueReturnsValue()
+        {
+            var info = new PublicLobbyInfo();
+            int max = 4;
+            info.MaxPlayers = max;
+            Assert.AreEqual(max, info.MaxPlayers);
         }
     }
 }

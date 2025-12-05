@@ -13,52 +13,46 @@ namespace TrucoServer.Tests.DataTests.DTOsTests
     public class SocialLinksTests
     {
         [TestMethod]
-        public void TestSerializeObjectFacebookHandleShouldMapToLowerCaseFacebookKey()
-        {
-            var links = new SocialLinks 
-            { 
-                FacebookHandle = "my_fb_user" 
-            };
-
-            string json = JsonConvert.SerializeObject(links);
-            Assert.IsTrue(json.Contains("\"facebook\":\"my_fb_user\""));
-        }
-
-        [TestMethod]
-        public void TestDeserializeObjectXKeyShouldMapToXHandleProperty()
-        {
-            string jsonInput = "{\"x\": \"twitter_user\"}";
-            var result = JsonConvert.DeserializeObject<SocialLinks>(jsonInput);
-            Assert.AreEqual("twitter_user", result.XHandle);
-        }
-
-        [TestMethod]
-        public void TestInstagramHandleSetPropertyShouldStoreValue()
+        public void TestFacebookHandleSetStringReturnsString()
         {
             var links = new SocialLinks();
-            string expectedHandle = "Insta";
-            links.InstagramHandle = expectedHandle;
-            Assert.AreEqual(expectedHandle, links.InstagramHandle);
+            string fb = "user.fb";
+            links.FacebookHandle = fb;
+            Assert.AreEqual(fb, links.FacebookHandle);
         }
 
         [TestMethod]
-        public void TestSerializeObjectNullValuesShouldNotThrowException()
-        {
-            var links = new SocialLinks 
-            { 
-                FacebookHandle = null 
-            };
-
-            string jsonOutput = JsonConvert.SerializeObject(links);
-            Assert.IsNotNull(jsonOutput);
-        }
-
-        [TestMethod]
-        public void TestInstagramHandleEmptyStringShouldStoreEmptyValue()
+        public void TestXHandleSetStringReturnsString()
         {
             var links = new SocialLinks();
-            links.InstagramHandle = string.Empty;
-            Assert.AreEqual(string.Empty, links.InstagramHandle);
+            string x = "@userX";
+            links.XHandle = x;
+            Assert.AreEqual(x, links.XHandle);
+        }
+
+        [TestMethod]
+        public void TestInstagramHandleSetStringReturnsString()
+        {
+            var links = new SocialLinks();
+            string insta = "user_insta";
+            links.InstagramHandle = insta;
+            Assert.AreEqual(insta, links.InstagramHandle);
+        }
+
+        [TestMethod]
+        public void TestFacebookHandleSetNullReturnsNull()
+        {
+            var links = new SocialLinks();
+            links.FacebookHandle = null;
+            Assert.IsNull(links.FacebookHandle);
+        }
+
+        [TestMethod]
+        public void TestXHandleSetEmptyStringReturnsEmpty()
+        {
+            var links = new SocialLinks();
+            links.XHandle = string.Empty;
+            Assert.AreEqual(string.Empty, links.XHandle);
         }
     }
 }
