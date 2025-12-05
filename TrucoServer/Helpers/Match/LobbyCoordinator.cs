@@ -11,6 +11,7 @@ namespace TrucoServer.Helpers.Match
 {
     public class LobbyCoordinator : ILobbyCoordinator
     {
+        private readonly baseDatosTrucoEntities context;
         private readonly ConcurrentDictionary<string, int> matchCodeToLobbyId = new ConcurrentDictionary<string, int>();
         private readonly ConcurrentDictionary<int, object> lobbyLocks = new ConcurrentDictionary<int, object>();
         private readonly ConcurrentDictionary<string, List<Contracts.ITrucoCallback>> matchCallbacks = new ConcurrentDictionary<string, List<Contracts.ITrucoCallback>>();
@@ -20,6 +21,11 @@ namespace TrucoServer.Helpers.Match
         private const string TEAM_1 = "Team 1";
         private const string TEAM_2 = "Team 2";
         private const string DEFAULT_AVATAR_ID = "avatar_aaa_default";
+
+        public LobbyCoordinator(baseDatosTrucoEntities context)
+        {
+            this.context = context;
+        }
 
         public void RegisterLobbyMapping(string matchCode, Lobby lobby)
         {
@@ -47,7 +53,7 @@ namespace TrucoServer.Helpers.Match
             return matchCodeToLobbyId.FirstOrDefault(x => x.Value == lobbyId).Key;
         }
 
-        private PlayerInfo GetRegisteredPlayerInfo(baseDatosTrucoEntities context, int lobbyId, string username)
+        private PlayerInfo GetRegisteredPlayerInfo(int lobbyId, string username)
         {
             var user = context.User.FirstOrDefault(u => u.username == username);
 
@@ -299,11 +305,9 @@ namespace TrucoServer.Helpers.Match
                 return lobbyId;
             }
 
-            using (var context = new baseDatosTrucoEntities())
-            {
-                var lobby = new LobbyRepository().FindLobbyByMatchCode(context, matchCode, true);
-                return lobby?.lobbyID;
-            }
+            var lobby = new LobbyRepository(context).FindLobbyByMatchCode(matchCode, true);
+            return lobby?.lobbyID;
+            
         }
 
         public void NotifyPlayerJoined(string matchCode, string player)
@@ -402,30 +406,28 @@ namespace TrucoServer.Helpers.Match
                     return new PlayerInfo { Username = player };
                 }
 
-                using (var context = new baseDatosTrucoEntities())
+                var lobby = context.Lobby.Find(lobbyId.Value);
+
+                if (lobby == null)
                 {
-                    var lobby = context.Lobby.Find(lobbyId.Value);
-
-                    if (lobby == null)
-                    {
-                        return new PlayerInfo { Username = player };
-                    }
-
-                    if (player.StartsWith(GUEST_PREFIX))
-                    {
-                        var guestContext = new GuestCreationContext
-                        {
-                            Lobby = lobby,
-                            MatchCode = matchCode,
-                            PlayerUsername = player
-                        };
-                        return CreateGuestPlayerInfo(context, guestContext);
-                    }
-                    else
-                    {
-                        return GetRegisteredPlayerInfo(context, lobby.lobbyID, player);
-                    }
+                    return new PlayerInfo { Username = player };
                 }
+
+                if (player.StartsWith(GUEST_PREFIX))
+                {
+                    var guestContext = new GuestCreationContext
+                    {
+                        Lobby = lobby,
+                        MatchCode = matchCode,
+                        PlayerUsername = player
+                    };
+                    return CreateGuestPlayerInfo(guestContext);
+                }
+                else
+                {
+                    return GetRegisteredPlayerInfo(lobby.lobbyID, player);
+                }
+                
             }
             catch (Exception ex)
             {
@@ -434,7 +436,7 @@ namespace TrucoServer.Helpers.Match
             }
         }
 
-        private PlayerInfo CreateGuestPlayerInfo(baseDatosTrucoEntities context, GuestCreationContext creationContext)
+        private PlayerInfo CreateGuestPlayerInfo(GuestCreationContext creationContext)
         {
             var lobby = creationContext.Lobby;
             var matchCode = creationContext.MatchCode;

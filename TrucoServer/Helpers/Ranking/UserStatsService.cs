@@ -1,10 +1,18 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 
 namespace TrucoServer.Helpers.Ranking
 {
     public class UserStatsService : IUserStatsService
     {
-        public void UpdateUserStats(baseDatosTrucoEntities context, int userId, bool isWinner)
+        private readonly baseDatosTrucoEntities context;
+
+        public UserStatsService(baseDatosTrucoEntities context)
+        {
+            this.context = context ?? throw new ArgumentNullException(nameof(context));
+        }
+
+        public void UpdateUserStats(int userId, bool isWinner)
         {
             var user = context.User.FirstOrDefault(u => u.userID == userId);
             if (user != null)

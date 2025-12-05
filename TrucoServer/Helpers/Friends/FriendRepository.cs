@@ -7,7 +7,14 @@ namespace TrucoServer.Helpers.Friends
 {
     public class FriendRepository : IFriendRepository
     {
-        public UserLookupResult GetUsersFromDatabase(baseDatosTrucoEntities context, UserLookupOptions options)
+        private readonly baseDatosTrucoEntities context;
+
+        public FriendRepository(baseDatosTrucoEntities context)
+        {
+            this.context = context ?? throw new ArgumentNullException(nameof(context));
+        }
+
+        public UserLookupResult GetUsersFromDatabase(UserLookupOptions options)
         {
             if (options == null)
             {
@@ -25,14 +32,14 @@ namespace TrucoServer.Helpers.Friends
             };
         }
 
-        public bool CheckFriendshipExists(baseDatosTrucoEntities context, int userId1, int userId2)
+        public bool CheckFriendshipExists(int userId1, int userId2)
         {
             return context.Friendship.Any(f =>
                 (f.userID == userId1 && f.friendID == userId2) ||
                 (f.userID == userId2 && f.friendID == userId1));
         }
 
-        public void RegisterFriendRequest(baseDatosTrucoEntities context, FriendRequest request)
+        public void RegisterFriendRequest(FriendRequest request)
         {
             var newRequest = new Friendship
             {
@@ -45,7 +52,7 @@ namespace TrucoServer.Helpers.Friends
             context.SaveChanges();
         }
 
-        public Friendship FindPendingFriendship(baseDatosTrucoEntities context, FriendRequest request)
+        public Friendship FindPendingFriendship(FriendRequest request)
         {
             return context.Friendship.FirstOrDefault(f =>
                 f.userID == request.RequesterId &&
@@ -53,7 +60,7 @@ namespace TrucoServer.Helpers.Friends
                 f.status == request.Status);
         }
 
-        public void CommitFriendshipAcceptance(baseDatosTrucoEntities context, FriendshipCommitOptions options)
+        public void CommitFriendshipAcceptance(FriendshipCommitOptions options)
         {
             if (options == null)
             {
@@ -78,7 +85,7 @@ namespace TrucoServer.Helpers.Friends
             context.SaveChanges();
         }
 
-        public bool DeleteFriendships(baseDatosTrucoEntities context, int userId1, int userId2)
+        public bool DeleteFriendships(int userId1, int userId2)
         {
             var toRemove = context.Friendship.Where(f =>
                 (f.userID == userId1 && f.friendID == userId2) ||
@@ -94,7 +101,7 @@ namespace TrucoServer.Helpers.Friends
             return true;
         }
 
-        public List<FriendData> QueryFriendsList(baseDatosTrucoEntities context, int currentUserId, string statusAccepted)
+        public List<FriendData> QueryFriendsList(int currentUserId, string statusAccepted)
         {
             return context.Friendship
                 .Where(f => (f.userID == currentUserId || f.friendID == currentUserId) && f.status == statusAccepted)
@@ -111,7 +118,7 @@ namespace TrucoServer.Helpers.Friends
                 .ToList();
         }
 
-        public List<FriendData> QueryPendingRequests(baseDatosTrucoEntities context, int currentUserId, string statusPending)
+        public List<FriendData> QueryPendingRequests(int currentUserId, string statusPending)
         {
             return context.Friendship
                 .Where(f => f.friendID == currentUserId && f.status == statusPending)

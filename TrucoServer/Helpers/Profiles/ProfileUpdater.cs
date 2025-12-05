@@ -11,6 +11,13 @@ namespace TrucoServer.Helpers.Profiles
     {
         private const string DEFAULT_LANGUAGE = "es-MX";
         private const string DEAULT_AVATAR_ID = "avatar_aaa_default";
+
+        private readonly baseDatosTrucoEntities context;
+
+        public ProfileUpdater(baseDatosTrucoEntities context)
+        {
+            this.context = context ?? throw new ArgumentNullException(nameof(context));
+        }
         public bool ValidateProfileInput(UserProfileData profile)
         {
             if (profile == null)
@@ -24,7 +31,7 @@ namespace TrucoServer.Helpers.Profiles
             return isEmailValid && isUsernameValid;
         }
 
-        public void CreateAndSaveDefaultProfile(baseDatosTrucoEntities context, int userId)
+        public void CreateAndSaveDefaultProfile(int userId)
         {
             UserProfile profile = new UserProfile
             {
@@ -39,7 +46,7 @@ namespace TrucoServer.Helpers.Profiles
             context.SaveChanges();
         }
 
-        public bool TryUpdateUsername(baseDatosTrucoEntities context, UsernameUpdateContext updateContext)
+        public bool TryUpdateUsername(UsernameUpdateContext updateContext)
         {
             var user = updateContext.User;
             var newUsername = updateContext.NewUsername;
@@ -66,7 +73,7 @@ namespace TrucoServer.Helpers.Profiles
             return true;
         }
 
-        public void UpdateProfileDetails(baseDatosTrucoEntities context, User user, ProfileUpdateOptions options)
+        public void UpdateProfileDetails(User user, ProfileUpdateOptions options)
         {
             if (options == null)
             {
@@ -78,7 +85,7 @@ namespace TrucoServer.Helpers.Profiles
                 throw new ArgumentNullException(nameof(options.ProfileData));
             }
 
-            EnsureUserProfileExists(context, user, options);
+            EnsureUserProfileExists(user, options);
 
             var userProfile = user.UserProfile;
             var inputData = options.ProfileData;
@@ -119,7 +126,7 @@ namespace TrucoServer.Helpers.Profiles
             userProfile.socialLinksJson = Encoding.UTF8.GetBytes(json);
         }
 
-        public void EnsureUserProfileExists(baseDatosTrucoEntities context, User user, ProfileUpdateOptions options)
+        public void EnsureUserProfileExists(User user, ProfileUpdateOptions options)
         {
             if (user.UserProfile == null)
             {
@@ -136,10 +143,13 @@ namespace TrucoServer.Helpers.Profiles
             }
         }
 
-        public bool ProcessAvatarUpdate(baseDatosTrucoEntities context, string username, string newAvatarId)
+        public bool ProcessAvatarUpdate(string username, string newAvatarId)
         {
             User user = context.User.FirstOrDefault(u => u.username == username);
-            if (user == null) return false;
+            if (user == null)
+            {
+                return false;
+            }
 
             UserProfile profile = context.UserProfile.FirstOrDefault(p => p.userID == user.userID);
 
@@ -150,7 +160,7 @@ namespace TrucoServer.Helpers.Profiles
                     DefaultLanguageCode = DEFAULT_LANGUAGE,
                     DefaultAvatarId = DEAULT_AVATAR_ID
                 };
-                EnsureUserProfileExists(context, user, defaultOptions);
+                EnsureUserProfileExists(user, defaultOptions);
                 profile = user.UserProfile;
             }
 

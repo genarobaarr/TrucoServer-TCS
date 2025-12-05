@@ -2,11 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Data.Entity;
-using System.Data.Entity.Infrastructure;
-using System.Data.Entity.Validation;
-using System.Data.SqlClient;
 using System.Linq;
-using System.Net.Mail;
 using System.ServiceModel;
 using System.Threading.Tasks;
 using TrucoServer.Contracts;
@@ -42,14 +38,16 @@ namespace TrucoServer.Services
         private readonly IMatchHistoryService matchHistoryService;
 
         private static readonly IUserSessionManager sessionManagerStatic = new UserSessionManager();
+        private readonly baseDatosTrucoEntities context;
 
         public TrucoUserServiceImp()
         {
+            context = new baseDatosTrucoEntities();
             this.authenticationHelper = new UserAuthenticationHelper();
             this.sessionManager = new UserSessionManager();
             this.emailSender = new EmailSender();
             this.verificationService = new VerificationService(authenticationHelper, emailSender);
-            this.profileUpdater = new ProfileUpdater();
+            this.profileUpdater = new ProfileUpdater(context);
             this.passwordManager = new PasswordManager(emailSender);
             this.userMapper = new UserMapper();
             this.rankingService = new RankingService();
@@ -114,29 +112,27 @@ namespace TrucoServer.Services
 
             try
             {
-                using (var context = new baseDatosTrucoEntities())
+                if (context.User.Any(u => u.email == email || u.username == username))
                 {
-                    if (context.User.Any(u => u.email == email || u.username == username))
-                    {
-                        return false;
-                    }
-
-                    User newUser = new User
-                    {
-                        username = username,
-                        passwordHash = PasswordHasher.Hash(password),
-                        email = email,
-                        wins = 0,
-                        nameChangeCount = 0
-                    };
-
-                    context.User.Add(newUser);
-                    context.SaveChanges();
-
-                    profileUpdater.CreateAndSaveDefaultProfile(context, newUser.userID);
-
-                    return true;
+                    return false;
                 }
+
+                User newUser = new User
+                {
+                    username = username,
+                    passwordHash = PasswordHasher.Hash(password),
+                    email = email,
+                    wins = 0,
+                    nameChangeCount = 0
+                };
+
+                context.User.Add(newUser);
+                context.SaveChanges();
+
+                profileUpdater.CreateAndSaveDefaultProfile(newUser.userID);
+
+                return true;
+                
             }
             catch (Exception ex)
             {
@@ -154,39 +150,37 @@ namespace TrucoServer.Services
 
             try
             {
-                using (var context = new baseDatosTrucoEntities())
+                User user = context.User.Include(u => u.UserProfile).SingleOrDefault(u => u.email == profile.Email);
+
+                if (user == null)
                 {
-                    User user = context.User.Include(u => u.UserProfile).SingleOrDefault(u => u.email == profile.Email);
-
-                    if (user == null)
-                    {
-                        return false;
-                    }
-
-                    var updateContext = new UsernameUpdateContext
-                    {
-                        User = user,
-                        NewUsername = profile.Username,
-                        MaxNameChanges = MAX_NAME_CHANGES
-                    };
-
-                    if (!profileUpdater.TryUpdateUsername(context, updateContext))
-                    {
-                        return false;
-                    }
-
-                    var updateOptions = new ProfileUpdateOptions
-                    {
-                        ProfileData = profile,
-                        DefaultLanguageCode = DEFAULT_LANG_CODE,
-                        DefaultAvatarId = DEFAULT_AVATAR_ID
-                    };
-
-                    profileUpdater.UpdateProfileDetails(context, user, updateOptions);
-
-                    context.SaveChanges();
-                    return true;
+                    return false;
                 }
+
+                var updateContext = new UsernameUpdateContext
+                {
+                    User = user,
+                    NewUsername = profile.Username,
+                    MaxNameChanges = MAX_NAME_CHANGES
+                };
+
+                if (!profileUpdater.TryUpdateUsername(updateContext))
+                {
+                    return false;
+                }
+
+                var updateOptions = new ProfileUpdateOptions
+                {
+                    ProfileData = profile,
+                    DefaultLanguageCode = DEFAULT_LANG_CODE,
+                    DefaultAvatarId = DEFAULT_AVATAR_ID
+                };
+
+                profileUpdater.UpdateProfileDetails(user, updateOptions);
+
+                context.SaveChanges();
+                return true;
+                
             }
             catch (JsonSerializationException ex)
             {
@@ -209,11 +203,9 @@ namespace TrucoServer.Services
 
             try
             {
-                using (var context = new baseDatosTrucoEntities())
-                {
-                    bool result = profileUpdater.ProcessAvatarUpdate(context, username, newAvatarId);
-                    return Task.FromResult(result);
-                }
+                bool result = profileUpdater.ProcessAvatarUpdate(username, newAvatarId);
+                return Task.FromResult(result);
+                
             }
             catch (Exception ex)
             {
@@ -230,7 +222,7 @@ namespace TrucoServer.Services
                 return false;
             }
 
-            var context = new PasswordUpdateOptions
+            var passwordUpdate = new PasswordUpdateOptions
             {
                 Email = email,
                 NewPassword = newPassword,
@@ -238,7 +230,7 @@ namespace TrucoServer.Services
                 CallingMethod = nameof(PasswordChange)
             };
 
-            return passwordManager.UpdatePasswordAndNotify(context);
+            return passwordManager.UpdatePasswordAndNotify(passwordUpdate);
         }
 
         public bool PasswordReset(PasswordResetOptions options)
@@ -258,7 +250,7 @@ namespace TrucoServer.Services
                 return false;
             }
 
-            var context = new PasswordUpdateOptions
+            var passwordUpdate = new PasswordUpdateOptions
             {
                 Email = options.Email,
                 NewPassword = options.NewPassword,
@@ -266,7 +258,7 @@ namespace TrucoServer.Services
                 CallingMethod = nameof(PasswordReset)
             };
 
-            return passwordManager.UpdatePasswordAndNotify(context);
+            return passwordManager.UpdatePasswordAndNotify(passwordUpdate);
         }
 
         public bool RequestEmailVerification(string email, string languageCode)
@@ -302,10 +294,8 @@ namespace TrucoServer.Services
 
             try
             {
-                using (var context = new baseDatosTrucoEntities())
-                {
-                    return context.User.Any(u => u.username == username);
-                }
+                return context.User.Any(u => u.username == username);
+                
             }
             catch (Exception ex)
             {
@@ -323,10 +313,8 @@ namespace TrucoServer.Services
 
             try
             {
-                using (var context = new baseDatosTrucoEntities())
-                {
-                    return context.User.Any(u => u.email == email);
-                }
+                return context.User.Any(u => u.email == email);
+                
             }
             catch (Exception ex)
             {
@@ -344,17 +332,15 @@ namespace TrucoServer.Services
 
             try
             {
-                using (var context = new baseDatosTrucoEntities())
+                User user = context.User.Include(u => u.UserProfile).FirstOrDefault(u => u.username == username);
+
+                if (user == null)
                 {
-                    User user = context.User.Include(u => u.UserProfile).FirstOrDefault(u => u.username == username);
-
-                    if (user == null)
-                    {
-                        return null;
-                    }
-
-                    return userMapper.MapUserToProfileData(user);
+                    return null;
                 }
+
+                return userMapper.MapUserToProfileData(user);
+                
             }
             catch (Exception ex)
             {
@@ -372,17 +358,15 @@ namespace TrucoServer.Services
 
             try
             {
-                using (var context = new baseDatosTrucoEntities())
+                var user = await context.User.Include(u => u.UserProfile).FirstOrDefaultAsync(u => u.email == email);
+
+                if (user == null)
                 {
-                    var user = await context.User.Include(u => u.UserProfile).FirstOrDefaultAsync(u => u.email == email);
-
-                    if (user == null)
-                    {
-                        return null;
-                    }
-
-                    return userMapper.MapUserToProfileData(user);
+                    return null;
                 }
+
+                return userMapper.MapUserToProfileData(user);
+                
             }
             catch (Exception ex)
             {

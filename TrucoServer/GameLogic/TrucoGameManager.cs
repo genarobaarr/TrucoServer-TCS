@@ -20,9 +20,11 @@ namespace TrucoServer.GameLogic
         private const int VERSION_2V2 = 2;
 
         private readonly IUserStatsService userStatsService;
+        private readonly baseDatosTrucoEntities context;
 
-        public TrucoGameManager(IUserStatsService userStatsService)
+        public TrucoGameManager(baseDatosTrucoEntities context, IUserStatsService userStatsService)
         {
+            this.context = context ?? throw new ArgumentNullException(nameof(context));
             this.userStatsService = userStatsService ?? throw new ArgumentNullException(nameof(userStatsService));
         }
 
@@ -30,29 +32,26 @@ namespace TrucoServer.GameLogic
         {
             try
             {
-                using (var context = new baseDatosTrucoEntities())
+                var existingMatch = GetExistingInProgressMatch(lobbyId);
+
+                if (existingMatch != null)
                 {
-                    var existingMatch = GetExistingInProgressMatch(context, lobbyId);
-
-                    if (existingMatch != null)
-                    {
-                        return existingMatch.matchID;
-                    }
-                    
-                    var match = CreateAndSaveMatch(context, lobbyId, players?.Count ?? 0);
-                    
-                    if (players != null && players.Any())
-                    {
-                        var registeredPlayers = players.Where(p => p.PlayerID > 0).ToList();
-
-                        if (registeredPlayers.Any())
-                        {
-                            AddPlayersToMatch(context, match.matchID, registeredPlayers);
-                        }
-                    }
-
-                    return match.matchID;
+                    return existingMatch.matchID;
                 }
+                    
+                var match = CreateAndSaveMatch(lobbyId, players?.Count ?? 0);
+                    
+                if (players != null && players.Any())
+                {
+                    var registeredPlayers = players.Where(p => p.PlayerID > 0).ToList();
+
+                    if (registeredPlayers.Any())
+                    {
+                        AddPlayersToMatch(match.matchID, registeredPlayers);
+                    }
+                }
+
+                return match.matchID;
             }
             catch (Exception ex)
             {
@@ -65,27 +64,31 @@ namespace TrucoServer.GameLogic
         {
             try
             {
-                if (outcome == null) throw new ArgumentNullException(nameof(outcome));
-
-                using (var context = new baseDatosTrucoEntities())
-                {
-                    var match = context.Match.Find(matchId);
-                    if (match == null) return;
-
-                    match.status = STATUS_FINISHED;
-                    match.endedAt = DateTime.Now;
-
-                    var dbPlayers = context.MatchPlayer.Where(mp => mp.matchID == matchId).ToList();
-
-                    foreach (var mp in dbPlayers)
-                    {
-                        UpdateMatchPlayerResult(mp, outcome);
-
-                        userStatsService.UpdateUserStats(context, mp.userID, mp.isWinner);
-                    }
-
-                    context.SaveChanges();
+                if (outcome == null)
+                { 
+                    throw new ArgumentNullException(nameof(outcome));
                 }
+
+                var match = context.Match.Find(matchId);
+                if (match == null) 
+                {
+                    return;
+                }
+
+                match.status = STATUS_FINISHED;
+                match.endedAt = DateTime.Now;
+
+                var dbPlayers = context.MatchPlayer.Where(mp => mp.matchID == matchId).ToList();
+
+                foreach (var mp in dbPlayers)
+                {
+                    UpdateMatchPlayerResult(mp, outcome);
+
+                    userStatsService.UpdateUserStats(mp.userID, mp.isWinner);
+                }
+
+                context.SaveChanges();
+                
             }
             catch (Exception ex)
             {
@@ -101,7 +104,7 @@ namespace TrucoServer.GameLogic
             mp.score = isWinnerTeam ? outcome.WinnerScore : outcome.LoserScore;
         }
 
-        private Match CreateAndSaveMatch(baseDatosTrucoEntities context, int lobbyId, int playerCount)
+        private Match CreateAndSaveMatch(int lobbyId, int playerCount)
         {
             int versionId = (playerCount == 4) ? VERSION_2V2 : VERSION_1V1;
 
@@ -118,7 +121,7 @@ namespace TrucoServer.GameLogic
             return match;
         }
 
-        private void AddPlayersToMatch(baseDatosTrucoEntities context, int matchId, List<PlayerInformation> players)
+        private void AddPlayersToMatch(int matchId, List<PlayerInformation> players)
         {
             foreach (var p in players)
             {
@@ -147,7 +150,7 @@ namespace TrucoServer.GameLogic
             context.SaveChanges();
         }
 
-        private static Match GetExistingInProgressMatch(baseDatosTrucoEntities context, int lobbyId)
+        private Match GetExistingInProgressMatch(int lobbyId)
         {
             return context.Match
                 .FirstOrDefault(m => m.lobbyID == lobbyId && m.status == STATUS_INPROGRESS);

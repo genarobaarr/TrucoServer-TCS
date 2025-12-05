@@ -22,13 +22,17 @@ namespace TrucoServer.Helpers.Match
         private readonly IDeckShuffler shuffler;
         private readonly IGameManager gameManager;
 
+        private readonly baseDatosTrucoEntities context;
+
         public MatchStarter(
+            baseDatosTrucoEntities context,
             IGameRegistry gameRegistry,
             ILobbyCoordinator coordinator,
             ILobbyRepository repository,
             IDeckShuffler shuffler,
             IGameManager gameManager)
         {
+            this.context = context;
             this.gameRegistry = gameRegistry;
             this.coordinator = coordinator;
             this.repository = repository;
@@ -43,25 +47,23 @@ namespace TrucoServer.Helpers.Match
 
             try
             {
-                using (var context = new baseDatosTrucoEntities())
+                foreach (var pInfo in playersList)
                 {
-                    foreach (var pInfo in playersList)
+                    if (pInfo.Username.StartsWith(GUEST_PREFIX))
                     {
-                        if (pInfo.Username.StartsWith(GUEST_PREFIX))
+                        if (!ProcessGuestPlayer(pInfo, gamePlayers, gameCallbacks))
                         {
-                            if (!ProcessGuestPlayer(pInfo, gamePlayers, gameCallbacks))
-                            {
-                                return false;
-                            }
-                        }
-                        else
-                        {
-                            if (!ProcessRegisteredPlayer(context, pInfo, gamePlayers, gameCallbacks))
-                            {
-                                return false;
-                            }
+                            return false;
                         }
                     }
+                    else
+                    {
+                        if (!ProcessRegisteredPlayer(pInfo, gamePlayers, gameCallbacks))
+                        {
+                            return false;
+                        }
+                    }
+                    
                 }
 
                 if (gamePlayers.Count != gameCallbacks.Count)
@@ -107,7 +109,7 @@ namespace TrucoServer.Helpers.Match
             }
         }
 
-        private bool ProcessRegisteredPlayer(baseDatosTrucoEntities context, PlayerInfo pInfo, List<PlayerInformation> gamePlayers, Dictionary<int, ITrucoCallback> gameCallbacks)
+        private bool ProcessRegisteredPlayer(PlayerInfo pInfo, List<PlayerInformation> gamePlayers, Dictionary<int, ITrucoCallback> gameCallbacks)
         {
             try
             {
@@ -142,36 +144,34 @@ namespace TrucoServer.Helpers.Match
 
             try
             {
-                using (var context = new baseDatosTrucoEntities())
+                Lobby lobby = null;
+
+                if (coordinator.TryGetLobbyIdFromCode(matchCode, out int id))
                 {
-                    Lobby lobby = null;
-
-                    if (coordinator.TryGetLobbyIdFromCode(matchCode, out int id))
-                    {
-                        lobby = context.Lobby.Find(id);
-                    }
-
-                    if (lobby == null)
-                    {
-                        lobby = repository.FindLobbyByMatchCode(context, matchCode, true);
-                    }
-
-                    if (lobby == null)
-                    {
-                        return result;
-                    }
-
-                    int dbCount = context.LobbyMember.Count(lm => lm.lobbyID == lobby.lobbyID);
-                    int guestCount = coordinator.GetGuestCountInMemory(matchCode);
-                    int totalPlayers = dbCount + guestCount;
-
-                    if (totalPlayers == lobby.maxPlayers)
-                    {
-                        result.IsValid = true;
-                        result.LobbyId = lobby.lobbyID;
-                        result.ExpectedPlayers = lobby.maxPlayers;
-                    }
+                    lobby = context.Lobby.Find(id);
                 }
+
+                if (lobby == null)
+                {
+                    lobby = repository.FindLobbyByMatchCode(matchCode, true);
+                }
+
+                if (lobby == null)
+                {
+                    return result;
+                }
+
+                int dbCount = context.LobbyMember.Count(lm => lm.lobbyID == lobby.lobbyID);
+                int guestCount = coordinator.GetGuestCountInMemory(matchCode);
+                int totalPlayers = dbCount + guestCount;
+
+                if (totalPlayers == lobby.maxPlayers)
+                {
+                    result.IsValid = true;
+                    result.LobbyId = lobby.lobbyID;
+                    result.ExpectedPlayers = lobby.maxPlayers;
+                }
+                
             }
             catch (Exception ex)
             {
@@ -419,19 +419,17 @@ namespace TrucoServer.Helpers.Match
 
             try
             {
-                using (var context = new baseDatosTrucoEntities())
+                var user = context.User.FirstOrDefault(u => u.username == playerInfo.Username);
+
+                if (user == null)
                 {
-                    var user = context.User.FirstOrDefault(u => u.username == playerInfo.Username);
-
-                    if (user == null)
-                    {
-                        return false;
-                    }
-
-                    playerID = user.userID;
-                    
-                    return true;
+                    return false;
                 }
+
+                playerID = user.userID;
+                    
+                return true;
+                
             }
             catch (Exception ex)
             {
@@ -449,17 +447,15 @@ namespace TrucoServer.Helpers.Match
                     return DEFAULT_AVATAR_NAME;
                 }
 
-                using (var context = new baseDatosTrucoEntities())
-                {
-                    var user = context.User.FirstOrDefault(u => u.username == username);
+                var user = context.User.FirstOrDefault(u => u.username == username);
                     
-                    if (user != null)
-                    {
-                        var profile = context.UserProfile.FirstOrDefault(up => up.userID == user.userID);
+                if (user != null)
+                {
+                    var profile = context.UserProfile.FirstOrDefault(up => up.userID == user.userID);
                        
-                        return profile?.avatarID ?? DEFAULT_AVATAR_NAME;
-                    }
+                    return profile?.avatarID ?? DEFAULT_AVATAR_NAME;
                 }
+                
             }
             catch (Exception ex)
             {
@@ -475,16 +471,14 @@ namespace TrucoServer.Helpers.Match
             {
                 if (coordinator.TryGetLobbyIdFromCode(matchCode, out int lobbyId))
                 {
-                    using (var context = new baseDatosTrucoEntities())
+                    var lobby = context.Lobby.Find(lobbyId);
+                    if (lobby != null)
                     {
-                        var lobby = context.Lobby.Find(lobbyId);
-                        if (lobby != null)
-                        {
-                            var owner = context.User.Find(lobby.ownerID);
-                            return owner?.username;
-                        }
+                        var owner = context.User.Find(lobby.ownerID);
+                        return owner?.username;
                     }
                 }
+                
             }
             catch (Exception ex)
             {
@@ -498,18 +492,16 @@ namespace TrucoServer.Helpers.Match
         {
             try
             {
-                using (var context = new baseDatosTrucoEntities())
+                var lobby = context.Lobby.Find(lobbyId);
+
+                if (lobby == null)
                 {
-                    var lobby = context.Lobby.Find(lobbyId);
-
-                    if (lobby == null)
-                    {
-                        return null;
-                    }
-
-                    var owner = context.User.Find(lobby.ownerID);
-                    return owner?.username ?? string.Empty;
+                    return null;
                 }
+
+                var owner = context.User.Find(lobby.ownerID);
+                return owner?.username ?? string.Empty;
+                
 
             }
             catch (Exception ex)

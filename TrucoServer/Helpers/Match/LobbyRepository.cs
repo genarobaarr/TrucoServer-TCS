@@ -20,7 +20,14 @@ namespace TrucoServer.Helpers.Match
         private const string ROLE_OWNER = "Owner";
         private const string DEFAULT_AVATAR_ID = "avatar_aaa_default";
 
-        public int ResolveVersionId(baseDatosTrucoEntities context, int maxPlayers)
+        private readonly baseDatosTrucoEntities context;
+
+        public LobbyRepository(baseDatosTrucoEntities context)
+        {
+            this.context = context ?? throw new ArgumentNullException(nameof(context));
+        }
+
+        public int ResolveVersionId(int maxPlayers)
         {
             try
             {
@@ -40,7 +47,7 @@ namespace TrucoServer.Helpers.Match
             }
         }
 
-        public Lobby CreateNewLobby(baseDatosTrucoEntities context, LobbyCreationOptions options)
+        public Lobby CreateNewLobby(LobbyCreationOptions options)
         {
             try
             {
@@ -74,7 +81,7 @@ namespace TrucoServer.Helpers.Match
             }
         }
 
-        public void AddLobbyOwner(baseDatosTrucoEntities context, Lobby lobby, User host)
+        public void AddLobbyOwner(Lobby lobby, User host)
         {
             try
             {
@@ -93,7 +100,7 @@ namespace TrucoServer.Helpers.Match
             }
         }
 
-        public void CreatePrivateInvitation(baseDatosTrucoEntities context, User host, string matchCode)
+        public void CreatePrivateInvitation(User host, string matchCode)
         {
             try
             {
@@ -124,7 +131,7 @@ namespace TrucoServer.Helpers.Match
             }
         }
 
-        public Lobby ResolveLobbyForJoin(baseDatosTrucoEntities context, string matchCode)
+        public Lobby ResolveLobbyForJoin(string matchCode)
         {
             try
             {
@@ -153,7 +160,7 @@ namespace TrucoServer.Helpers.Match
             }
         }
 
-        public LobbyLeaveResult ResolveLobbyForLeave(baseDatosTrucoEntities context, LobbyLeaveCriteria criteria)
+        public LobbyLeaveResult ResolveLobbyForLeave(LobbyLeaveCriteria criteria)
         {
             try
             {
@@ -164,7 +171,7 @@ namespace TrucoServer.Helpers.Match
                     return null;
                 }
 
-                var lobby = FindLobbyByMatchCode(context, criteria.MatchCode, true);
+                var lobby = FindLobbyByMatchCode(criteria.MatchCode, true);
 
                 return new LobbyLeaveResult
                 {
@@ -179,12 +186,12 @@ namespace TrucoServer.Helpers.Match
             }
         }
 
-        public Lobby FindLobbyByMatchCode(baseDatosTrucoEntities context, string matchCode, bool onlyOpen = true)
+        public Lobby FindLobbyByMatchCode(string matchCode, bool onlyOpen = true)
         {
             try
             {
                 int numericCode = new MatchCodeGenerator().GenerateNumericCodeFromString(matchCode);
-                Lobby lobby = GetLobbyByMapping(context, matchCode, onlyOpen);
+                Lobby lobby = GetLobbyByMapping(matchCode, onlyOpen);
                 
                 if (lobby != null)
                 {
@@ -198,7 +205,7 @@ namespace TrucoServer.Helpers.Match
                     return null;
                 }
 
-                return GetLobbyByOwner(context, invitation.senderID, onlyOpen);
+                return GetLobbyByOwner(invitation.senderID, onlyOpen);
             }
             catch (Exception ex)
             {
@@ -207,7 +214,7 @@ namespace TrucoServer.Helpers.Match
             }
         }
 
-        private static Lobby GetLobbyByMapping(baseDatosTrucoEntities context, string matchCode, bool onlyOpen)
+        private Lobby GetLobbyByMapping(string matchCode, bool onlyOpen)
         {
             try
             {
@@ -219,7 +226,7 @@ namespace TrucoServer.Helpers.Match
                     return null;
                 }
 
-                return GetLobbyByOwner(context, invitation.senderID, onlyOpen);
+                return GetLobbyByOwner(invitation.senderID, onlyOpen);
             }
             catch (Exception ex)
             {
@@ -228,7 +235,7 @@ namespace TrucoServer.Helpers.Match
             }
         }
 
-        private static Lobby GetLobbyByOwner(baseDatosTrucoEntities context, int ownerId, bool onlyOpen)
+        private Lobby GetLobbyByOwner(int ownerId, bool onlyOpen)
         {
             try
             {
@@ -248,7 +255,7 @@ namespace TrucoServer.Helpers.Match
             }
         }
 
-        public List<PlayerInfo> GetDatabasePlayers(baseDatosTrucoEntities context, Lobby lobby, string ownerUsername)
+        public List<PlayerInfo> GetDatabasePlayers(Lobby lobby, string ownerUsername)
         {
             try
             {
@@ -272,7 +279,7 @@ namespace TrucoServer.Helpers.Match
             }
         }
 
-        public string GetLobbyOwnerName(baseDatosTrucoEntities context, int ownerId)
+        public string GetLobbyOwnerName(int ownerId)
         {
             return context.User.Where(u => u.userID == ownerId).Select(u => u.username).FirstOrDefault();
         }
@@ -281,20 +288,17 @@ namespace TrucoServer.Helpers.Match
         {
             try
             {
-                using (var context = new baseDatosTrucoEntities())
+                var lobby = context.Lobby.FirstOrDefault(l => l.lobbyID == lobbyId);
+                if (lobby == null)
                 {
-                    var lobby = context.Lobby.FirstOrDefault(l => l.lobbyID == lobbyId);
-                    if (lobby == null)
-                    {
-                        return false;
-                    }
-                    if (lobby.status != STATUS_CLOSED)
-                    {
-                        lobby.status = STATUS_CLOSED;
-                        context.SaveChanges();
-                    }
-                    return true;
+                    return false;
                 }
+                if (lobby.status != STATUS_CLOSED)
+                {
+                    lobby.status = STATUS_CLOSED;
+                    context.SaveChanges();
+                }
+                return true;
             }
             catch (Exception ex)
             {
@@ -308,25 +312,21 @@ namespace TrucoServer.Helpers.Match
             try
             {
                 int numericCode = new MatchCodeGenerator().GenerateNumericCodeFromString(matchCode);
-                
-                using (var context = new baseDatosTrucoEntities())
-                {
-                    var invitations = context.Invitation.Where(i => i.code == numericCode && i.status == STATUS_PENDING).ToList();
+                var invitations = context.Invitation.Where(i => i.code == numericCode && i.status == STATUS_PENDING).ToList();
                    
-                    if (!invitations.Any())
-                    {
-                        return true;
-                    }
-                
-                    foreach (var inv in invitations)
-                    {
-                        inv.status = STATUS_EXPIRED;
-                        inv.expiresAt = DateTime.Now;
-                    }
-                    context.SaveChanges();
-                    
+                if (!invitations.Any())
+                {
                     return true;
                 }
+                
+                foreach (var inv in invitations)
+                {
+                    inv.status = STATUS_EXPIRED;
+                    inv.expiresAt = DateTime.Now;
+                }
+                context.SaveChanges();
+                    
+                return true;
             }
             catch (Exception ex)
             {
@@ -339,20 +339,17 @@ namespace TrucoServer.Helpers.Match
         {
             try
             {
-                using (var context = new baseDatosTrucoEntities())
-                {
-                    var members = context.LobbyMember.Where(lm => lm.lobbyID == lobbyId).ToList();
+                var members = context.LobbyMember.Where(lm => lm.lobbyID == lobbyId).ToList();
                    
-                    if (!members.Any())
-                    {
-                        return true;
-                    }
-                    
-                    context.LobbyMember.RemoveRange(members);
-                    context.SaveChanges();
-                    
+                if (!members.Any())
+                {
                     return true;
                 }
+                    
+                context.LobbyMember.RemoveRange(members);
+                context.SaveChanges();
+                    
+                return true;
             }
             catch (Exception ex)
             {
@@ -361,12 +358,12 @@ namespace TrucoServer.Helpers.Match
             }
         }
 
-        public bool IsPlayerInLobby(baseDatosTrucoEntities context, int lobbyId, int userId)
+        public bool IsPlayerInLobby(int lobbyId, int userId)
         {
             return context.LobbyMember.Any(lm => lm.lobbyID == lobbyId && lm.userID == userId);
         }
 
-        public TeamCountsResult GetTeamCounts(baseDatosTrucoEntities context, int lobbyId)
+        public TeamCountsResult GetTeamCounts(int lobbyId)
         {
             int t1 = context.LobbyMember.Count(lm => lm.lobbyID == lobbyId && lm.team == TEAM_1);
             int t2 = context.LobbyMember.Count(lm => lm.lobbyID == lobbyId && lm.team == TEAM_2);
@@ -374,14 +371,14 @@ namespace TrucoServer.Helpers.Match
             return new TeamCountsResult { Team1Count = t1, Team2Count = t2 };
         }
 
-        public void AddMember(baseDatosTrucoEntities context, int lobbyId, int userId, string role, string team)
+        public void AddMember(LobbyMemberDetails memberDetails)
         {
             context.LobbyMember.Add(new LobbyMember
             {
-                lobbyID = lobbyId,
-                userID = userId,
-                role = role,
-                team = team
+                lobbyID = memberDetails.LobbyId,
+                userID = memberDetails.UserId,
+                role = memberDetails.Role,
+                team = memberDetails.Team
             });
             context.SaveChanges();
         }

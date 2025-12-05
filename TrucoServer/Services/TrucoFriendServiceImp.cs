@@ -1,9 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Data.Entity.Infrastructure;
-using System.Data.SqlClient;
 using System.Linq;
-using System.ServiceModel;
 using TrucoServer.Contracts;
 using TrucoServer.Data.DTOs;
 using TrucoServer.Utilities;
@@ -19,9 +16,12 @@ namespace TrucoServer.Services
         private readonly IFriendRepository friendshipRepository;
         private readonly IFriendNotifier notificationService;
 
+        private readonly baseDatosTrucoEntities context;
+
         public TrucoFriendServiceImp()
         {
-            this.friendshipRepository = new FriendRepository();
+            this.context = new baseDatosTrucoEntities();
+            this.friendshipRepository = new FriendRepository(context);
             this.notificationService = new FriendNotifier();
         }
 
@@ -36,36 +36,34 @@ namespace TrucoServer.Services
 
             try
             {
-                using (var context = new baseDatosTrucoEntities())
+                var lookupOptions = new UserLookupOptions { Username1 = fromUser, Username2 = toUser };
+                var lookupResult = friendshipRepository.GetUsersFromDatabase(lookupOptions);
+
+                if (!lookupResult.Success)
                 {
-                    var lookupOptions = new UserLookupOptions { Username1 = fromUser, Username2 = toUser };
-                    var lookupResult = friendshipRepository.GetUsersFromDatabase(context, lookupOptions);
-
-                    if (!lookupResult.Success)
-                    {
-                        return false;
-                    }
-
-                    User requester = lookupResult.User1;
-                    User target = lookupResult.User2;
-
-                    if (friendshipRepository.CheckFriendshipExists(context, requester.userID, target.userID))
-                    {
-                        return false;
-                    }
-
-                    var requestDto = new FriendRequest
-                    {
-                        RequesterId = requester.userID,
-                        TargetId = target.userID,
-                        Status = STATUS_PENDING
-                    };
-
-                    friendshipRepository.RegisterFriendRequest(context, requestDto);
-                    notificationService.NotifyRequestReceived(toUser, fromUser);
-
-                    return true;
+                    return false;
                 }
+
+                User requester = lookupResult.User1;
+                User target = lookupResult.User2;
+
+                if (friendshipRepository.CheckFriendshipExists(requester.userID, target.userID))
+                {
+                    return false;
+                }
+
+                var requestDto = new FriendRequest
+                {
+                    RequesterId = requester.userID,
+                    TargetId = target.userID,
+                    Status = STATUS_PENDING
+                };
+
+                friendshipRepository.RegisterFriendRequest(requestDto);
+                notificationService.NotifyRequestReceived(toUser, fromUser);
+
+                return true;
+                
             }
             catch (Exception ex)
             {
@@ -83,46 +81,44 @@ namespace TrucoServer.Services
 
             try
             {
-                using (var context = new baseDatosTrucoEntities())
+                var lookupOptions = new UserLookupOptions { Username1 = fromUser, Username2 = toUser };
+                var lookupResult = friendshipRepository.GetUsersFromDatabase(lookupOptions);
+
+                if (!lookupResult.Success)
                 {
-                    var lookupOptions = new UserLookupOptions { Username1 = fromUser, Username2 = toUser };
-                    var lookupResult = friendshipRepository.GetUsersFromDatabase(context, lookupOptions);
-
-                    if (!lookupResult.Success)
-                    {
-                        return false;
-                    }
-
-                    User requester = lookupResult.User1;
-                    User target = lookupResult.User2;
-
-                    var searchCriteria = new FriendRequest
-                    {
-                        RequesterId = requester.userID,
-                        TargetId = target.userID,
-                        Status = STATUS_PENDING
-                    };
-
-                    var request = friendshipRepository.FindPendingFriendship(context, searchCriteria);
-
-                    if (request == null)
-                    {
-                        return false;
-                    }
-
-                    var commitOptions = new FriendshipCommitOptions
-                    {
-                        Request = request,
-                        RequesterId = requester.userID,
-                        AcceptorId = target.userID,
-                        StatusAccepted = STATUS_ACCEPTED
-                    };
-
-                    friendshipRepository.CommitFriendshipAcceptance(context, commitOptions);
-                    notificationService.NotifyRequestAccepted(fromUser, toUser);
-
-                    return true;
+                    return false;
                 }
+
+                User requester = lookupResult.User1;
+                User target = lookupResult.User2;
+
+                var searchCriteria = new FriendRequest
+                {
+                    RequesterId = requester.userID,
+                    TargetId = target.userID,
+                    Status = STATUS_PENDING
+                };
+
+                var request = friendshipRepository.FindPendingFriendship(searchCriteria);
+
+                if (request == null)
+                {
+                    return false;
+                }
+
+                var commitOptions = new FriendshipCommitOptions
+                {
+                    Request = request,
+                    RequesterId = requester.userID,
+                    AcceptorId = target.userID,
+                    StatusAccepted = STATUS_ACCEPTED
+                };
+
+                friendshipRepository.CommitFriendshipAcceptance(commitOptions);
+                notificationService.NotifyRequestAccepted(fromUser, toUser);
+
+                return true;
+                
             }
             catch (Exception ex)
             {
@@ -140,21 +136,19 @@ namespace TrucoServer.Services
 
             try
             {
-                using (var context = new baseDatosTrucoEntities())
+                var lookupOptions = new UserLookupOptions { Username1 = user1, Username2 = user2 };
+                var lookupResult = friendshipRepository.GetUsersFromDatabase(lookupOptions);
+
+                if (!lookupResult.Success)
                 {
-                    var lookupOptions = new UserLookupOptions { Username1 = user1, Username2 = user2 };
-                    var lookupResult = friendshipRepository.GetUsersFromDatabase(context, lookupOptions);
-
-                    if (!lookupResult.Success)
-                    {
-                        return false;
-                    }
-
-                    User requester = lookupResult.User1;
-                    User target = lookupResult.User2;
-
-                    return friendshipRepository.DeleteFriendships(context, requester.userID, target.userID);
+                    return false;
                 }
+
+                User requester = lookupResult.User1;
+                User target = lookupResult.User2;
+
+                return friendshipRepository.DeleteFriendships(requester.userID, target.userID);
+                
             }
             catch (Exception ex)
             {
@@ -172,17 +166,15 @@ namespace TrucoServer.Services
 
             try
             {
-                using (var context = new baseDatosTrucoEntities())
-                {
-                    var user = context.User.SingleOrDefault(u => u.username == username);
+                var user = context.User.SingleOrDefault(u => u.username == username);
                    
-                    if (user == null)
-                    {
-                        return new List<FriendData>();
-                    }
-
-                    return friendshipRepository.QueryFriendsList(context, user.userID, STATUS_ACCEPTED);
+                if (user == null)
+                {
+                    return new List<FriendData>();
                 }
+
+                return friendshipRepository.QueryFriendsList(user.userID, STATUS_ACCEPTED);
+                
             }
             catch (Exception ex)
             {
@@ -200,17 +192,15 @@ namespace TrucoServer.Services
 
             try
             {
-                using (var context = new baseDatosTrucoEntities())
+                var user = context.User.SingleOrDefault(u => u.username == username);
+
+                if (user == null)
                 {
-                    var user = context.User.SingleOrDefault(u => u.username == username);
-
-                    if (user == null)
-                    {
-                        return new List<FriendData>();
-                    }
-
-                    return friendshipRepository.QueryPendingRequests(context, user.userID, STATUS_PENDING);
+                    return new List<FriendData>();
                 }
+
+                return friendshipRepository.QueryPendingRequests(user.userID, STATUS_PENDING);
+                
             }
             catch (Exception ex)
             {

@@ -37,9 +37,11 @@ namespace TrucoServer.Helpers.Mapping
             };
         }
 
-        public List<MatchScore> FetchLastMatchesForUser(baseDatosTrucoEntities context, int userID)
+        public List<MatchScore> FetchLastMatchesForUser(int userID)
         {
-            return context.MatchPlayer
+            using (var context = new baseDatosTrucoEntities())
+            {
+                return context.MatchPlayer
                 .Where(mp => mp.userID == userID)
                 .Select(mp => new { MatchPlayer = mp, Match = mp.Match })
                 .Where(join => join.Match.status == "Finished" && join.Match.endedAt.HasValue)
@@ -53,6 +55,7 @@ namespace TrucoServer.Helpers.Mapping
                     FinalScore = join.MatchPlayer.score
                 })
                 .ToList();
+            }
         }
     }
 }

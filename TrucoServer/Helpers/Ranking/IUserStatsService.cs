@@ -2,6 +2,6 @@
 {
     public interface IUserStatsService
     {
-        void UpdateUserStats(baseDatosTrucoEntities context, int userId, bool isWinner);
+        void UpdateUserStats(int userId, bool isWinner);
     }
 }

@@ -1,7 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Data.Entity.Core;
-using System.Data.SqlClient;
 using System.Linq;
 using TrucoServer.Utilities;
 

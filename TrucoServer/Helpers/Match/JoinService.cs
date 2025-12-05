@@ -16,44 +16,43 @@ namespace TrucoServer.Helpers.Match
 
         private readonly ILobbyCoordinator coordinator;
         private readonly ILobbyRepository lobbyRepository;
+        private readonly baseDatosTrucoEntities context;
 
-        public JoinService(ILobbyCoordinator coordinator, ILobbyRepository lobbyRepository)
+        public JoinService(baseDatosTrucoEntities context, ILobbyCoordinator coordinator, ILobbyRepository lobbyRepository)
         {
+            this.context = context ?? throw new ArgumentNullException(nameof(context));
             this.coordinator = coordinator;
             this.lobbyRepository = lobbyRepository ?? throw new ArgumentNullException(nameof(lobbyRepository));
         }
 
         public bool ProcessSafeJoin(int lobbyId, string matchCode, string player)
         {
-            using (var context = new baseDatosTrucoEntities())
+            var freshLobby = context.Lobby.Find(lobbyId);
+
+            if (freshLobby == null || freshLobby.status.Equals(STATUS_CLOSED, StringComparison.OrdinalIgnoreCase))
             {
-                var freshLobby = context.Lobby.Find(lobbyId);
+                return false;
+            }
 
-                if (freshLobby == null || freshLobby.status.Equals(STATUS_CLOSED, StringComparison.OrdinalIgnoreCase))
-                {
-                    return false;
-                }
+            bool isGuest = player.StartsWith(GUEST_PREFIX);
 
-                bool isGuest = player.StartsWith(GUEST_PREFIX);
-
-                if (isGuest)
+            if (isGuest)
+            {
+                var guestOptions = new GuestJoinOptions
                 {
-                    var guestOptions = new GuestJoinOptions
-                    {
-                        Lobby = freshLobby,
-                        MatchCode = matchCode,
-                        PlayerUsername = player
-                    };
-                    return TryJoinAsGuest(context, guestOptions);
-                }
-                else
-                {
-                    return TryJoinAsUser(context, freshLobby, player);
-                }
+                    Lobby = freshLobby,
+                    MatchCode = matchCode,
+                    PlayerUsername = player
+                };
+                return TryJoinAsGuest(guestOptions);
+            }
+            else
+            {
+                return TryJoinAsUser(freshLobby, player);
             }
         }
 
-        public bool TryJoinAsGuest(baseDatosTrucoEntities context, GuestJoinOptions options)
+        public bool TryJoinAsGuest(GuestJoinOptions options)
         {
             if (options == null)
             {
@@ -83,20 +82,20 @@ namespace TrucoServer.Helpers.Match
             return true;
         }
 
-        public bool TryJoinAsUser(baseDatosTrucoEntities context, Lobby lobby, string player)
+        public bool TryJoinAsUser(Lobby lobby, string player)
         {
             User playerUser = context.User.FirstOrDefault(u => u.username == player);
 
-            if (!ValidateJoinConditions(context, lobby, playerUser))
+            if (!ValidateJoinConditions(lobby, playerUser))
             {
                 return false;
             }
 
-            AddPlayerToLobby(context, lobby, playerUser);
+            AddPlayerToLobby(lobby, playerUser);
             return true;
         }
 
-        public bool ValidateJoinConditions(baseDatosTrucoEntities context, Lobby lobby, User playerUser)
+        public bool ValidateJoinConditions(Lobby lobby, User playerUser)
         {
             if (playerUser == null)
             {
@@ -124,16 +123,16 @@ namespace TrucoServer.Helpers.Match
             }
         }
 
-        public void AddPlayerToLobby(baseDatosTrucoEntities context, Lobby lobby, User playerUser)
+        public void AddPlayerToLobby(Lobby lobby, User playerUser)
         {
             try
             {
-                if (lobbyRepository.IsPlayerInLobby(context, lobby.lobbyID, playerUser.userID))
+                if (lobbyRepository.IsPlayerInLobby(lobby.lobbyID, playerUser.userID))
                 {
                     return;
                 }
 
-                var counts = lobbyRepository.GetTeamCounts(context, lobby.lobbyID);
+                var counts = lobbyRepository.GetTeamCounts(lobby.lobbyID);
 
                 var teamOptions = new TeamDeterminationOptions
                 {
@@ -145,7 +144,14 @@ namespace TrucoServer.Helpers.Match
 
                 string assignedTeam = DetermineTeamForNewPlayer(teamOptions);
 
-                lobbyRepository.AddMember(context, lobby.lobbyID, playerUser.userID, ROLE_PLAYER, assignedTeam);
+                var memberDetails = new LobbyMemberDetails
+                {
+                    LobbyId = lobby.lobbyID,
+                    UserId = playerUser.userID,
+                    Role = ROLE_PLAYER,
+                    Team = assignedTeam
+                };
+                lobbyRepository.AddMember(memberDetails);
             }
             catch (Exception ex)
             {
@@ -198,63 +204,59 @@ namespace TrucoServer.Helpers.Match
 
         public bool SwitchUserTeam(string matchCode, string username)
         {
-            using (var context = new baseDatosTrucoEntities())
+            var lobby = new LobbyRepository(context).FindLobbyByMatchCode(matchCode, true);
+                
+            if (lobby == null || lobby.maxPlayers == 2)
             {
-                var lobby = new LobbyRepository().FindLobbyByMatchCode(context, matchCode, true);
-                
-                if (lobby == null || lobby.maxPlayers == 2)
-                {
-                    return false;
-                }
-
-                var user = context.User.FirstOrDefault(u => u.username == username);
-                
-                if (user == null)
-                {
-                    return false;
-                }
-
-                var member = context.LobbyMember.FirstOrDefault(lm => lm.lobbyID == lobby.lobbyID && lm.userID == user.userID);
-                
-                if (member == null)
-                {
-                    return false;
-                }
-
-                string newTeam = (member.team == TEAM_1) ? TEAM_2 : TEAM_1;
-                
-                if (CanJoinTeam(matchCode, newTeam))
-                {
-                    member.team = newTeam;
-                    context.SaveChanges();
-                    return true;
-                }
-
                 return false;
             }
+
+            var user = context.User.FirstOrDefault(u => u.username == username);
+                
+            if (user == null)
+            {
+                return false;
+            }
+
+            var member = context.LobbyMember.FirstOrDefault(lm => lm.lobbyID == lobby.lobbyID && lm.userID == user.userID);
+                
+            if (member == null)
+            {
+                return false;
+            }
+
+            string newTeam = (member.team == TEAM_1) ? TEAM_2 : TEAM_1;
+                
+            if (CanJoinTeam(matchCode, newTeam))
+            {
+                member.team = newTeam;
+                context.SaveChanges();
+                return true;
+            }
+
+            return false;
+            
         }
 
         public bool CanJoinTeam(string matchCode, string targetTeam)
         {
-            using (var context = new baseDatosTrucoEntities())
+            var lobby = new LobbyRepository(context).FindLobbyByMatchCode(matchCode, true);
+
+            if (lobby == null)
             {
-                var lobby = new LobbyRepository().FindLobbyByMatchCode(context, matchCode, true);
-
-                if (lobby == null)
-                {
-                    return false;
-                }
-
-                int dbCount = context.LobbyMember.Count(lm => lm.lobbyID == lobby.lobbyID && lm.team == targetTeam);
-                int memCount = coordinator.GetGuestCountInMemory(matchCode);
-
-                if (coordinator.TryGetCallbacksSnapshot(matchCode, out var snapshot))
-                {
-                    memCount = snapshot.Select(cb => coordinator.GetPlayerInfoFromCallback(cb)).Count(info => info != null && info.Username.StartsWith(GUEST_PREFIX) && info.Team == targetTeam);
-                }
-
-                return (dbCount + memCount) < (lobby.maxPlayers / 2);
+                return false;
             }
+
+            int dbCount = context.LobbyMember.Count(lm => lm.lobbyID == lobby.lobbyID && lm.team == targetTeam);
+            int memCount = coordinator.GetGuestCountInMemory(matchCode);
+
+            if (coordinator.TryGetCallbacksSnapshot(matchCode, out var snapshot))
+            {
+                memCount = snapshot.Select(cb => coordinator.GetPlayerInfoFromCallback(cb)).Count(info => info != null && info.Username.StartsWith(GUEST_PREFIX) && info.Team == targetTeam);
+            }
+
+            return (dbCount + memCount) < (lobby.maxPlayers / 2);
         }
+        
     }
 }
