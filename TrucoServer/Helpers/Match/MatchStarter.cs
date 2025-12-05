@@ -16,126 +16,34 @@ namespace TrucoServer.Helpers.Match
         private const string TEAM_1 = "Team 1";
         private const string DEFAULT_AVATAR_NAME = "avatar_aaa_default";
 
-        private readonly IGameRegistry gameRegistry;
-        private readonly ILobbyCoordinator coordinator;
-        private readonly ILobbyRepository repository;
-        private readonly IDeckShuffler shuffler;
-        private readonly IGameManager gameManager;
+        private readonly MatchStarterDependencies dependencies;
 
-        private readonly baseDatosTrucoEntities context;
-
-        public MatchStarter(
-            baseDatosTrucoEntities context,
-            IGameRegistry gameRegistry,
-            ILobbyCoordinator coordinator,
-            ILobbyRepository repository,
-            IDeckShuffler shuffler,
-            IGameManager gameManager)
+        public MatchStarter(MatchStarterDependencies dependencies)
         {
-            this.context = context;
-            this.gameRegistry = gameRegistry;
-            this.coordinator = coordinator;
-            this.repository = repository;
-            this.shuffler = shuffler;
-            this.gameManager = gameManager;
+            if (dependencies == null)
+            {
+                throw new ArgumentNullException(nameof(dependencies));
+            }
+
+            if (dependencies.Context == null)
+            {
+                throw new ArgumentNullException(nameof(dependencies.Context));
+            }
+
+            if (dependencies.Coordinator == null)
+            {
+                throw new ArgumentNullException(nameof(dependencies.Coordinator));
+            }
+
+            this.dependencies = dependencies;
         }
 
         public bool BuildGamePlayersAndCallbacks(List<PlayerInfo> playersList, out List<PlayerInformation> gamePlayers, out Dictionary<int, ITrucoCallback> gameCallbacks)
         {
-            gamePlayers = new List<PlayerInformation>();
-            gameCallbacks = new Dictionary<int, ITrucoCallback>();
-
-            try
-            {
-                foreach (var pInfo in playersList)
-                {
-                    if (pInfo.Username.StartsWith(GUEST_PREFIX))
-                    {
-                        if (!ProcessGuestPlayer(pInfo, gamePlayers, gameCallbacks))
-                        {
-                            return false;
-                        }
-                    }
-                    else
-                    {
-                        if (!ProcessRegisteredPlayer(pInfo, gamePlayers, gameCallbacks))
-                        {
-                            return false;
-                        }
-                    }
-                    
-                }
-
-                if (gamePlayers.Count != gameCallbacks.Count)
-                {
-                    LogManager.LogError(new Exception($"Discrepancy: {gamePlayers.Count} players vs {gameCallbacks.Count} connections."), nameof(BuildGamePlayersAndCallbacks));
-                    return false;
-                }
-
-                return gamePlayers.Count == gameCallbacks.Count && gamePlayers.Count > 0;
-            }
-            catch (Exception ex)
-            {
-                ServerException.HandleException(ex, nameof(BuildGamePlayersAndCallbacks));
-                return false;
-            }
-        }
-
-        private bool ProcessGuestPlayer(PlayerInfo pInfo, List<PlayerInformation> gamePlayers, Dictionary<int, ITrucoCallback> gameCallbacks)
-        {
-            try
-            {
-                int guestTempId = (int)-Math.Abs((long)pInfo.Username.GetHashCode());
-
-                if (coordinator.TryGetActiveCallbackForPlayer(pInfo.Username, out var guestCb))
-                {
-                    var registeredInfo = coordinator.GetPlayerInfoFromCallback(guestCb);
-                    string team = registeredInfo?.Team ?? pInfo.Team ?? TEAM_1;
-
-                    gamePlayers.Add(new PlayerInformation(guestTempId, pInfo.Username, pInfo.Team));
-                    gameCallbacks[guestTempId] = guestCb;
-
-                    return true;
-                }
-                else
-                {
-                    return false;
-                }
-            }
-            catch (Exception ex)
-            {
-                ServerException.HandleException(ex, nameof(ProcessGuestPlayer));
-                return false;
-            }
-        }
-
-        private bool ProcessRegisteredPlayer(PlayerInfo pInfo, List<PlayerInformation> gamePlayers, Dictionary<int, ITrucoCallback> gameCallbacks)
-        {
-            try
-            {
-                var user = context.User.FirstOrDefault(u => u.username == pInfo.Username);
-
-                if (user != null)
-                {
-                    if (coordinator.TryGetActiveCallbackForPlayer(pInfo.Username, out ITrucoCallback activeCallback))
-                    {
-                        gamePlayers.Add(new PlayerInformation(user.userID, user.username, pInfo.Team));
-                        gameCallbacks[user.userID] = activeCallback;
-
-                        return true;
-                    }
-                    else
-                    {
-                        return false;
-                    }
-                }
-                return false;
-            }
-            catch (Exception ex)
-            {
-                ServerException.HandleException(ex, nameof(ProcessRegisteredPlayer));
-                return false;
-            }
+            var result = dependencies.ParticipantBuilder.BuildParticipants(playersList);
+            gamePlayers = result.Players;
+            gameCallbacks = result.Callbacks;
+            return result.IsSuccess;
         }
 
         public MatchStartValidation ValidateMatchStart(string matchCode)
@@ -146,14 +54,14 @@ namespace TrucoServer.Helpers.Match
             {
                 Lobby lobby = null;
 
-                if (coordinator.TryGetLobbyIdFromCode(matchCode, out int id))
+                if ( dependencies.Coordinator.TryGetLobbyIdFromCode(matchCode, out int id))
                 {
-                    lobby = context.Lobby.Find(id);
+                    lobby = dependencies.Context.Lobby.Find(id);
                 }
 
                 if (lobby == null)
                 {
-                    lobby = repository.FindLobbyByMatchCode(matchCode, true);
+                    lobby =  dependencies.Repository.FindLobbyByMatchCode(matchCode, true);
                 }
 
                 if (lobby == null)
@@ -161,8 +69,8 @@ namespace TrucoServer.Helpers.Match
                     return result;
                 }
 
-                int dbCount = context.LobbyMember.Count(lm => lm.lobbyID == lobby.lobbyID);
-                int guestCount = coordinator.GetGuestCountInMemory(matchCode);
+                int dbCount = dependencies.Context.LobbyMember.Count(lm => lm.lobbyID == lobby.lobbyID);
+                int guestCount =  dependencies.Coordinator.GetGuestCountInMemory(matchCode);
                 int totalPlayers = dbCount + guestCount;
 
                 if (totalPlayers == lobby.maxPlayers)
@@ -183,7 +91,9 @@ namespace TrucoServer.Helpers.Match
 
         public void InitiateMatchSequence(string matchCode, int lobbyId, List<PlayerInfo> playersList)
         {
-            if (!BuildGamePlayersAndCallbacks(playersList, out var gamePlayers, out var gameCallbacks))
+            var participantsResult = dependencies.ParticipantBuilder.BuildParticipants(playersList);
+
+            if (!participantsResult.IsSuccess)
             {
                 return;
             }
@@ -192,8 +102,8 @@ namespace TrucoServer.Helpers.Match
             {
                 MatchCode = matchCode,
                 LobbyId = lobbyId,
-                GamePlayers = gamePlayers,
-                GameCallbacks = gameCallbacks
+                GamePlayers = participantsResult.Players,
+                GameCallbacks = participantsResult.Callbacks
             };
 
             InitializeAndRegisterGame(initOptions);
@@ -202,7 +112,7 @@ namespace TrucoServer.Helpers.Match
 
             Task.Delay(500).ContinueWith(_ =>
             {
-                if (gameRegistry.TryGetGame(matchCode, out var match))
+                if (dependencies.GameRegistry.TryGetGame(matchCode, out var match))
                 {
                     match.StartNewHand();
                 }
@@ -220,22 +130,7 @@ namespace TrucoServer.Helpers.Match
 
                 string ownerName = GetOwnerUsernameByLobbyId(options.LobbyId);
 
-                if (ownerName == null)
-                {
-                    LogManager.LogError(new Exception($"Lobby {options.LobbyId} not found"), nameof(InitializeAndRegisterGame));
-                    return;
-                }
-
-                string finalOwner = string.IsNullOrEmpty(ownerName)
-                    ? options.GamePlayers.FirstOrDefault()?.Username
-                    : ownerName;
-
-                var orderedPlayers = OrderPlayersForMatch(options.GamePlayers, finalOwner);
-
-                if (orderedPlayers.Count != options.GamePlayers.Count)
-                {
-                    orderedPlayers = options.GamePlayers;
-                }
+                var orderedPlayers = dependencies.PositionService.DetermineTurnOrder(options.GamePlayers, ownerName);
 
                 var newGame = CreateMatchInstance(options, orderedPlayers);
 
@@ -247,63 +142,11 @@ namespace TrucoServer.Helpers.Match
             }
         }
 
-        private List<PlayerInformation> OrderPlayersForMatch(List<PlayerInformation> players, string ownerUsername)
-        {
-            if (players == null || players.Count == 0)
-            {
-                return players;
-            }
-
-            if (players.Count == 2)
-            {
-                var owner = players.FirstOrDefault(p => p.Username.Equals(ownerUsername, StringComparison.OrdinalIgnoreCase));
-                var opponent = players.FirstOrDefault(p => !p.Username.Equals(ownerUsername, StringComparison.OrdinalIgnoreCase));
-
-                if (owner == null || opponent == null)
-                {
-                    return players;
-                }
-
-                return new List<PlayerInformation> { owner, opponent };
-            }
-
-            var owner4 = players.FirstOrDefault(p => p.Username.Equals(ownerUsername, StringComparison.OrdinalIgnoreCase));
-
-            if (owner4 == null)
-            {
-                return players;
-            }
-
-            var ownerTeam = owner4.Team;
-            var teammates = players.Where(p => p.Team == ownerTeam && p.Username != ownerUsername).ToList();
-            var opponents = players.Where(p => p.Team != ownerTeam).OrderBy(p => p.Username).ToList();
-
-            if (teammates.Count == 0)
-            {
-                return players;
-            }
-
-            if (opponents.Count < 2)
-            {
-                return players;
-            }
-
-            var orderedPlayers = new List<PlayerInformation>
-            {
-                owner4,        
-                opponents[0],
-                teammates[0],
-                opponents[1] 
-            };
-
-            return orderedPlayers;
-        }
-
         public void NotifyMatchStart(string matchCode, List<PlayerInfo> players)
         {
             try
             {
-                if (gameRegistry.TryGetGame(matchCode, out var match))
+                if (dependencies.GameRegistry.TryGetGame(matchCode, out var match))
                 {
                     var orderedPlayers = match.Players.Select(p => new PlayerInfo
                     {
@@ -313,7 +156,7 @@ namespace TrucoServer.Helpers.Match
                         OwnerUsername = GetOwnerUsername(matchCode)
                     }).ToList();
 
-                    coordinator.BroadcastToMatchCallbacksAsync(matchCode, cb =>
+                     dependencies.Coordinator.BroadcastToMatchCallbacksAsync(matchCode, cb =>
                     {
                         try
                         {
@@ -327,7 +170,7 @@ namespace TrucoServer.Helpers.Match
                 }
                 else
                 {
-                    coordinator.BroadcastToMatchCallbacksAsync(matchCode, cb =>
+                     dependencies.Coordinator.BroadcastToMatchCallbacksAsync(matchCode, cb =>
                     {
                         try
                         {
@@ -350,13 +193,13 @@ namespace TrucoServer.Helpers.Match
         {
             try
             {
-                if (coordinator.TryGetLobbyIdFromCode(matchCode, out int lobbyId))
+                if ( dependencies.Coordinator.TryGetLobbyIdFromCode(matchCode, out int lobbyId))
                 {
-                    repository.CloseLobbyById(lobbyId);
-                    repository.ExpireInvitationByMatchCode(matchCode);
-                    repository.RemoveLobbyMembersById(lobbyId);
+                     dependencies.Repository.CloseLobbyById(lobbyId);
+                     dependencies.Repository.ExpireInvitationByMatchCode(matchCode);
+                     dependencies.Repository.RemoveLobbyMembersById(lobbyId);
 
-                    coordinator.RemoveLobbyMapping(matchCode); 
+                     dependencies.Coordinator.RemoveLobbyMapping(matchCode); 
                 }
             }
             catch (Exception ex)
@@ -367,7 +210,7 @@ namespace TrucoServer.Helpers.Match
 
         private TrucoMatch CreateMatchInstance(GameInitializationOptions options, List<PlayerInformation> orderedPlayers)
         {
-            var newDeck = new Deck(shuffler);
+            var newDeck = new Deck(dependencies.Shuffler);
 
             var matchContext = new TrucoMatchContext
             {
@@ -376,7 +219,7 @@ namespace TrucoServer.Helpers.Match
                 Players = orderedPlayers,
                 Callbacks = options.GameCallbacks,
                 Deck = newDeck,
-                GameManager = gameManager
+                GameManager = dependencies.GameManager
             };
 
             return new TrucoMatch(matchContext);
@@ -384,7 +227,7 @@ namespace TrucoServer.Helpers.Match
 
         private void RegisterGame(string matchCode, TrucoMatch newGame)
         {
-            if (!gameRegistry.TryAddGame(matchCode, newGame))
+            if (!dependencies.GameRegistry.TryAddGame(matchCode, newGame))
             {
                 LogManager.LogError(new Exception($"Failed to add running game {matchCode}"), nameof(InitializeAndRegisterGame));
             }
@@ -396,14 +239,14 @@ namespace TrucoServer.Helpers.Match
             playerID = -1;
 
 
-            if (!gameRegistry.TryGetGame(matchCode, out match))
+            if (!dependencies.GameRegistry.TryGetGame(matchCode, out match))
             {
                 return false;
             }
 
             var callback = OperationContext.Current.GetCallbackChannel<ITrucoCallback>();
 
-            var playerInfo = coordinator.GetPlayerInfoFromCallback(callback);
+            var playerInfo =  dependencies.Coordinator.GetPlayerInfoFromCallback(callback);
 
             if (callback == null || playerInfo == null)
             {
@@ -419,7 +262,7 @@ namespace TrucoServer.Helpers.Match
 
             try
             {
-                var user = context.User.FirstOrDefault(u => u.username == playerInfo.Username);
+                var user = dependencies.Context.User.FirstOrDefault(u => u.username == playerInfo.Username);
 
                 if (user == null)
                 {
@@ -447,11 +290,11 @@ namespace TrucoServer.Helpers.Match
                     return DEFAULT_AVATAR_NAME;
                 }
 
-                var user = context.User.FirstOrDefault(u => u.username == username);
+                var user = dependencies.Context.User.FirstOrDefault(u => u.username == username);
                     
                 if (user != null)
                 {
-                    var profile = context.UserProfile.FirstOrDefault(up => up.userID == user.userID);
+                    var profile = dependencies.Context.UserProfile.FirstOrDefault(up => up.userID == user.userID);
                        
                     return profile?.avatarID ?? DEFAULT_AVATAR_NAME;
                 }
@@ -469,12 +312,12 @@ namespace TrucoServer.Helpers.Match
         {
             try
             {
-                if (coordinator.TryGetLobbyIdFromCode(matchCode, out int lobbyId))
+                if ( dependencies.Coordinator.TryGetLobbyIdFromCode(matchCode, out int lobbyId))
                 {
-                    var lobby = context.Lobby.Find(lobbyId);
+                    var lobby = dependencies.Context.Lobby.Find(lobbyId);
                     if (lobby != null)
                     {
-                        var owner = context.User.Find(lobby.ownerID);
+                        var owner = dependencies.Context.User.Find(lobby.ownerID);
                         return owner?.username;
                     }
                 }
@@ -492,14 +335,14 @@ namespace TrucoServer.Helpers.Match
         {
             try
             {
-                var lobby = context.Lobby.Find(lobbyId);
+                var lobby = dependencies.Context.Lobby.Find(lobbyId);
 
                 if (lobby == null)
                 {
                     return null;
                 }
 
-                var owner = context.User.Find(lobby.ownerID);
+                var owner = dependencies.Context.User.Find(lobby.ownerID);
                 return owner?.username ?? string.Empty;
                 
 

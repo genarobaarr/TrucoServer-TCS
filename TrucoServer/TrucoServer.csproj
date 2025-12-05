@@ -85,6 +85,8 @@
     <Compile Include="Data\DTOs\LobbyLeaveResult.cs" />
     <Compile Include="Data\DTOs\LobbyMemberDetails.cs" />
     <Compile Include="Data\DTOs\MatchOutcome.cs" />
+    <Compile Include="Data\DTOs\MatchPlayersResult.cs" />
+    <Compile Include="Data\DTOs\MatchStarterDependencies.cs" />
     <Compile Include="Data\DTOs\MatchStartValidation.cs" />
     <Compile Include="Data\DTOs\PasswordResetOptions.cs" />
     <Compile Include="Data\DTOs\PasswordUpdateOptions.cs" />
@@ -137,6 +139,7 @@
     <Compile Include="Helpers\Friends\IFriendRepository.cs" />
     <Compile Include="Helpers\Mapping\IUserMapper.cs" />
     <Compile Include="Helpers\Mapping\UserMapper.cs" />
+    <Compile Include="Helpers\Match\GamePlayerBuilder.cs" />
     <Compile Include="Helpers\Match\GameRegistry.cs" />
     <Compile Include="Helpers\Match\IGameRegistry.cs" />
     <Compile Include="Helpers\Match\IJoinService.cs" />
@@ -145,6 +148,7 @@
     <Compile Include="Helpers\Match\IMatchCodeGenerator.cs" />
     <Compile Include="Helpers\Match\IMatchStarter.cs" />
     <Compile Include="Helpers\Match\JoinService.cs" />
+    <Compile Include="Helpers\Match\ListPositionForMatch.cs" />
     <Compile Include="Helpers\Match\LobbyCoordinator.cs" />
     <Compile Include="Helpers\Match\LobbyRepository.cs" />
     <Compile Include="Helpers\Match\MatchCodeGenerator.cs" />

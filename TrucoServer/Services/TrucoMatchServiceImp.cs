@@ -28,6 +28,8 @@ namespace TrucoServer.Services
         private readonly IMatchCodeGenerator codeGenerator;
         private readonly IMatchStarter starter;
         private readonly IProfanityServerService profanityService;
+        private readonly GamePlayerBuilder gameBuilderService;
+        private readonly ListPositionService listPositionService;
 
         private readonly baseDatosTrucoEntities context;
 
@@ -43,7 +45,22 @@ namespace TrucoServer.Services
             var gameManager = new TrucoGameManager(context, statsService);
             var shuffler = new DefaultDeckShuffler();
             var join = new JoinService(context, coordinator, repository);
-            var matchStarter = new MatchStarter(context, registry, coordinator, repository, shuffler, gameManager);
+            var participantBuilder = new GamePlayerBuilder(context, coordinator);
+            var positionService = new ListPositionService();
+
+            var matchStarterDependencies = new MatchStarterDependencies
+            {
+                Context = context,
+                GameRegistry = registry,
+                Coordinator = coordinator,
+                Repository = repository,
+                Shuffler = shuffler,
+                GameManager = gameManager,
+                ParticipantBuilder = participantBuilder,
+                PositionService = positionService
+            };
+
+            var matchStarter = new MatchStarter(matchStarterDependencies);
 
             this.gameRegistry = registry;
             this.joinService = join;
@@ -52,6 +69,8 @@ namespace TrucoServer.Services
             this.codeGenerator = generator;
             this.starter = matchStarter;
             this.profanityService = new ProfanityServerService(profanity);
+            this.gameBuilderService = participantBuilder;
+            this.listPositionService = positionService;
 
             this.profanityService.LoadBannedWords();
         }
