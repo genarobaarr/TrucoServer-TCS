@@ -12,27 +12,21 @@ namespace TrucoServer.Tests.DataTests.DTOsTests
     public class UserProfileDataTests
     {
         [TestMethod]
-        public void TestUserProfileDataSetSocialLinksJsonShouldStoreBytes()
+        public void TestUsernameSetValidStringReturnsString()
         {
             var profile = new UserProfileData();
-
-            byte[] data = new byte[]
-            {
-                1,
-                2,
-                3
-            };
-
-            profile.SocialLinksJson = data;
-            CollectionAssert.AreEqual(data, profile.SocialLinksJson);
+            string username = "Gamer123";
+            profile.Username = username;
+            Assert.AreEqual(username, profile.Username);
         }
 
         [TestMethod]
-        public void TestUserProfileDataDefaultBoolShouldBeFalse()
+        public void TestNameChangeCountSetPositiveValueReturnsValue()
         {
             var profile = new UserProfileData();
-            bool isMuted = profile.IsMusicMuted;
-            Assert.IsFalse(isMuted);
+            int count = 5;
+            profile.NameChangeCount = count;
+            Assert.AreEqual(count, profile.NameChangeCount);
         }
     }
 }
