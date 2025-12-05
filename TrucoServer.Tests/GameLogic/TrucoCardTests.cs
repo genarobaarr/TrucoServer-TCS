@@ -12,44 +12,48 @@ namespace TrucoServer.Tests.GameLogic
     public class TrucoCardTests
     {
         [TestMethod]
-        public void TestConstructorOneOfSwordShouldGenerateCorrectFileName()
+        public void TestConstructorSetsRankCorrectly()
+        {
+            Rank rank = Rank.Cinco;
+            Suit suit = Suit.Gold;
+            var card = new TrucoCard(rank, suit);
+            Assert.AreEqual(rank, card.CardRank);
+        }
+
+        [TestMethod]
+        public void TestConstructorSetsSuitCorrectly()
         {
             Rank rank = Rank.Uno;
             Suit suit = Suit.Sword;
             var card = new TrucoCard(rank, suit);
-            Assert.AreEqual("sword_1", card.FileName);
+            Assert.AreEqual(suit, card.CardSuit);
         }
 
         [TestMethod]
-        public void TestConstructorSevenOfGoldShouldGenerateCorrectFileName()
+        public void TestConstructorGeneratesFileNameForGold()
         {
-            Rank rank = Rank.Siete;
-            Suit suit = Suit.Gold;
-            var card = new TrucoCard(rank, suit);
-            Assert.AreEqual("gold_7", card.FileName);
+            var card = new TrucoCard(Rank.Siete, Suit.Gold);
+            string expected = "gold_7";
+            string fileName = card.FileName;
+            Assert.AreEqual(expected, fileName);
         }
 
         [TestMethod]
-        public void TestRankEnumTenShouldHaveIntegerValueTen()
+        public void TestConstructorGeneratesFileNameForClub()
         {
-            Rank rank = Rank.Diez;
-            int value = (int)rank;
-            Assert.AreEqual(10, value);
+            var card = new TrucoCard(Rank.Doce, Suit.Club);
+            string expected = "club_12";
+            string fileName = card.FileName;
+            Assert.AreEqual(expected, fileName);
         }
 
         [TestMethod]
-        public void TestCardSuitPropertyShouldStoreAssignedValue()
+        public void TestCardRankSetNewValueReturnsValue()
         {
-            var card = new TrucoCard(Rank.Dos, Suit.Club);
-            var suit = card.CardSuit;
-            Assert.AreEqual(Suit.Club, suit);
-        }
-
-        [TestMethod]
-        public void TestConstructorCupSuitShouldUseCupPrefix()
-        {
-            var card = new TrucoCard(Rank.Cuatro, Suit.Cup);
-            Assert.IsTrue(card.FileName.StartsWith("cup_"));
+            var card = new TrucoCard(Rank.Uno, Suit.Cup);
+            Rank newRank = Rank.Tres;
+            card.CardRank = newRank;
+            Assert.AreEqual(newRank, card.CardRank);
         }
     }
 }
