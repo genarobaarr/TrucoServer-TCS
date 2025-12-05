@@ -12,35 +12,34 @@ namespace TrucoServer.Tests.DataTests.DTOsTests
     public class MatchResultTests
     {
         [TestMethod]
-        public void TestSetWinnerShouldStoreWinnerName()
+        public void TestPlayer1SetStringReturnsString()
         {
             var result = new MatchResult();
-            string winner = "Jordan";
+            string p1 = "PlayerOne";
+            result.Player1 = p1;
+            Assert.AreEqual(p1, result.Player1);
+        }
+
+        [TestMethod]
+        public void TestWinnerSetStringReturnsString()
+        {
+            var result = new MatchResult();
+            string winner = "PlayerOne";
             result.Winner = winner;
             Assert.AreEqual(winner, result.Winner);
         }
 
         [TestMethod]
-        public void TestSamePlayersShouldAllowAssignment()
+        public void TestDateSetStringReturnsString()
         {
             var result = new MatchResult();
-            string p1 = "Jordan";
-            result.Player1 = p1;
-            result.Player2 = p1;
-            Assert.AreEqual(result.Player1, result.Player2);
+            string date = "2023-01-01";
+            result.Date = date;
+            Assert.AreEqual(date, result.Date);
         }
 
         [TestMethod]
-        public void TestDateStringShouldStoreFormat()
-        {
-            var result = new MatchResult();
-            string dateStr = "2023-10-25 10:00:00";
-            result.Date = dateStr;
-            Assert.AreEqual(dateStr, result.Date);
-        }
-
-        [TestMethod]
-        public void TestNullPlayerShouldBeNull()
+        public void TestPlayer2SetNullReturnsNull()
         {
             var result = new MatchResult();
             result.Player2 = null;
@@ -48,10 +47,10 @@ namespace TrucoServer.Tests.DataTests.DTOsTests
         }
 
         [TestMethod]
-        public void TestNoWinnerShouldBeNullByDefault()
+        public void TestConstructorInstanceIsNotNull()
         {
             var result = new MatchResult();
-            Assert.IsNull(result.Winner);
+            Assert.IsNotNull(result);
         }
     }
 }

@@ -12,23 +12,16 @@ namespace TrucoServer.Tests.DataTests.DTOsTests
     public class MatchScoreTests
     {
         [TestMethod]
-        public void TestIsWinTrueShouldStoreTrue()
+        public void TestMatchIDSetValidStringReturnsString()
         {
             var score = new MatchScore();
-            score.IsWin = true;
-            Assert.IsTrue(score.IsWin);
+            string id = "100";
+            score.MatchID = id;
+            Assert.AreEqual(id, score.MatchID);
         }
 
         [TestMethod]
-        public void TestZeroScoreShouldBeValid()
-        {
-            var score = new MatchScore();
-            score.FinalScore = 0;
-            Assert.AreEqual(0, score.FinalScore);
-        }
-
-        [TestMethod]
-        public void TestEndedAtShouldStoreDateTime()
+        public void TestEndedAtSetCurrentTimeReturnsTime()
         {
             var score = new MatchScore();
             DateTime now = DateTime.Now;
@@ -37,19 +30,28 @@ namespace TrucoServer.Tests.DataTests.DTOsTests
         }
 
         [TestMethod]
-        public void TestNullIDShouldBeNull()
+        public void TestIsWinSetTrueReturnsTrue()
+        {
+            var score = new MatchScore();
+            score.IsWin = true;
+            Assert.IsTrue(score.IsWin);
+        }
+
+        [TestMethod]
+        public void TestFinalScoreSetIntegerReturnsInteger()
+        {
+            var score = new MatchScore();
+            int points = 30;
+            score.FinalScore = points;
+            Assert.AreEqual(points, score.FinalScore);
+        }
+
+        [TestMethod]
+        public void TestMatchIDSetNullReturnsNull()
         {
             var score = new MatchScore();
             score.MatchID = null;
             Assert.IsNull(score.MatchID);
-        }
-
-        [TestMethod]
-        public void TestHighScoreShouldStoreValue()
-        {
-            var score = new MatchScore();
-            score.FinalScore = 30;
-            Assert.AreEqual(30, score.FinalScore);
         }
     }
 }

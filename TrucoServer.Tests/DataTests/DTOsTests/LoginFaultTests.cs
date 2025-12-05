@@ -12,24 +12,25 @@ namespace TrucoServer.Tests.DataTests.DTOsTests
     public class LoginFaultTests
     {
         [TestMethod]
-        public void TestSetErrorMessageShouldStoreMessage()
+        public void TestErrorMessageSetStringReturnsString()
         {
             var fault = new LoginFault();
-            string msg = "Incorrect password";
+            string msg = "Invalid Password";
             fault.ErrorMessage = msg;
             Assert.AreEqual(msg, fault.ErrorMessage);
         }
 
         [TestMethod]
-        public void TestEmptyErrorCodeShouldStoreEmpty()
+        public void TestErrorCodeSetStringReturnsString()
         {
             var fault = new LoginFault();
-            fault.ErrorCode = string.Empty;
-            Assert.AreEqual(string.Empty, fault.ErrorCode);
+            string code = "AUMA001";
+            fault.ErrorCode = code;
+            Assert.AreEqual(code, fault.ErrorCode);
         }
 
         [TestMethod]
-        public void TestNullMessageShouldBeAllowed()
+        public void TestErrorMessageSetNullReturnsNull()
         {
             var fault = new LoginFault();
             fault.ErrorMessage = null;
@@ -37,15 +38,15 @@ namespace TrucoServer.Tests.DataTests.DTOsTests
         }
 
         [TestMethod]
-        public void TestNumericStringCodeShouldPersist()
+        public void TestErrorCodeSetEmptyReturnsEmpty()
         {
             var fault = new LoginFault();
-            fault.ErrorCode = "404";
-            Assert.AreEqual("404", fault.ErrorCode);
+            fault.ErrorCode = string.Empty;
+            Assert.AreEqual(string.Empty, fault.ErrorCode);
         }
 
         [TestMethod]
-        public void TestObjectCreationShouldNotBeNull()
+        public void TestConstructorInstanceIsNotNull()
         {
             var fault = new LoginFault();
             Assert.IsNotNull(fault);
