@@ -21,6 +21,7 @@ namespace TrucoServer.Tests.HelpersTests.ProfanityTests
             using (var context = new baseDatosTrucoEntities())
             {
                 context.Database.ExecuteSqlCommand("DELETE FROM BannedWord");
+                
                 context.BannedWord.Add(new BannedWord 
                 { 
                     word = "TestWord1" 

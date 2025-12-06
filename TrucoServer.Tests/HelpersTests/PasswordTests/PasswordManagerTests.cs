@@ -7,6 +7,7 @@ using System.Net.Mail;
 using System.Text;
 using System.Threading.Tasks;
 using TrucoServer.Data.DTOs;
+using TrucoServer.Helpers.Email;
 using TrucoServer.Helpers.Password;
 using TrucoServer.Utilities;
 

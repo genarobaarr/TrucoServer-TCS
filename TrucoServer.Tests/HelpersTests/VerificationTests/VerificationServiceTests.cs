@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using IEmailSender = TrucoServer.Helpers.Email.IEmailSender;
 using System.Threading.Tasks;
 using TrucoServer.Helpers.Authentication;
 using TrucoServer.Helpers.Verification;
