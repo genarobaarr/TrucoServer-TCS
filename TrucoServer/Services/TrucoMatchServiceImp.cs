@@ -35,7 +35,7 @@ namespace TrucoServer.Services
 
         public TrucoMatchServiceImp()
         {
-            this.context = new baseDatosTrucoEntities(); 
+            this.context = new baseDatosTrucoEntities();
             var coordinator = new LobbyCoordinator(context);
             var registry = new GameRegistry();
             var repository = new LobbyRepository(context);
@@ -60,19 +60,35 @@ namespace TrucoServer.Services
                 PositionService = positionService
             };
 
-            var matchStarter = new MatchStarter(matchStarterDependencies);
-
             this.gameRegistry = registry;
             this.joinService = join;
             this.lobbyCoordinator = coordinator;
             this.lobbyRepository = repository;
             this.codeGenerator = generator;
-            this.starter = matchStarter;
+            this.starter = new MatchStarter(matchStarterDependencies);
             this.profanityService = new ProfanityServerService(profanity);
-            this.gameBuilderService = participantBuilder;
-            this.listPositionService = positionService;
 
             this.profanityService.LoadBannedWords();
+        }
+
+        public TrucoMatchServiceImp(
+            baseDatosTrucoEntities context,
+            IGameRegistry gameRegistry,
+            IJoinService joinService,
+            ILobbyCoordinator lobbyCoordinator,
+            ILobbyRepository lobbyRepository,
+            IMatchCodeGenerator codeGenerator,
+            IMatchStarter starter,
+            IProfanityServerService profanityService)
+        {
+            this.context = context;
+            this.gameRegistry = gameRegistry;
+            this.joinService = joinService;
+            this.lobbyCoordinator = lobbyCoordinator;
+            this.lobbyRepository = lobbyRepository;
+            this.codeGenerator = codeGenerator;
+            this.starter = starter;
+            this.profanityService = profanityService;
         }
 
         public string CreateLobby(string hostUsername, int maxPlayers, string privacy)

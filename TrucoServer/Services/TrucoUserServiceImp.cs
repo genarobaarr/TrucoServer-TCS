@@ -40,18 +40,46 @@ namespace TrucoServer.Services
         private static readonly IUserSessionManager sessionManagerStatic = new UserSessionManager();
         private readonly baseDatosTrucoEntities context;
 
-        public TrucoUserServiceImp()
+        public TrucoUserServiceImp() : this(
+            new baseDatosTrucoEntities(),
+            new UserAuthenticationHelper(),
+            new UserSessionManager(),
+            new EmailSender(),
+            null,
+            new ProfileUpdater(new baseDatosTrucoEntities()),
+            new PasswordManager(new EmailSender()),
+            new UserMapper(),
+            new RankingService(),
+            new MatchHistoryService()
+        )
         {
-            context = new baseDatosTrucoEntities();
-            this.authenticationHelper = new UserAuthenticationHelper();
-            this.sessionManager = new UserSessionManager();
-            this.emailSender = new EmailSender();
-            this.verificationService = new VerificationService(authenticationHelper, emailSender);
-            this.profileUpdater = new ProfileUpdater(context);
-            this.passwordManager = new PasswordManager(emailSender);
-            this.userMapper = new UserMapper();
-            this.rankingService = new RankingService();
-            this.matchHistoryService = new MatchHistoryService();
+            var authHelper = new UserAuthenticationHelper();
+            var emailService = new EmailSender();
+            this.verificationService = new VerificationService(authHelper, emailService);
+        }
+
+        public TrucoUserServiceImp(
+            baseDatosTrucoEntities context,
+            IUserAuthenticationHelper authHelper,
+            IUserSessionManager sessionMgr,
+            IEmailSender emailSvc,
+            IVerificationService verifSvc,
+            IProfileUpdater profileUpd,
+            IPasswordManager passMgr,
+            IUserMapper mapper,
+            IRankingService rankingSvc,
+            IMatchHistoryService historySvc)
+        {
+            this.context = context;
+            this.authenticationHelper = authHelper;
+            this.sessionManager = sessionMgr;
+            this.emailSender = emailSvc;
+            this.verificationService = verifSvc;
+            this.profileUpdater = profileUpd;
+            this.passwordManager = passMgr;
+            this.userMapper = mapper;
+            this.rankingService = rankingSvc;
+            this.matchHistoryService = historySvc;
         }
 
         public bool Login(string username, string password, string languageCode)
