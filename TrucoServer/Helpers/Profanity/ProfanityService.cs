@@ -1,8 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using TrucoServer.Utilities;
+using System.Text.RegularExpressions;
 using TrucoServer.Data.DTOs;
+using TrucoServer.Utilities;
 
 namespace TrucoServer.Helpers.Profanity
 {
@@ -57,6 +58,33 @@ namespace TrucoServer.Helpers.Profanity
                 var tokens = text.Split(' ');
                 return tokens.Any(token => cachedBannedWords.Contains(token));
             }
+        }
+
+        public string CensorText(string text)
+        {
+            if (string.IsNullOrWhiteSpace(text))
+            {
+                return text;
+            }
+
+            string processedText = text;
+            List<string> wordsFound;
+
+            lock (lockObject)
+            {
+                wordsFound = cachedBannedWords
+                    .Where(word => processedText.IndexOf(word, StringComparison.OrdinalIgnoreCase) >= 0)
+                    .ToList();
+            }
+
+            foreach (var badWord in wordsFound)
+            {
+                string pattern = $@"\b{Regex.Escape(badWord)}\b";
+                string replacement = new string('*', badWord.Length);
+                processedText = Regex.Replace(processedText, pattern, replacement, RegexOptions.IgnoreCase);
+            }
+
+            return processedText;
         }
 
         public BannedWordList GetBannedWordsForClient()

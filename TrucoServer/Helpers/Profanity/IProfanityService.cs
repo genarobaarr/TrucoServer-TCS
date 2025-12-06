@@ -8,6 +8,8 @@ namespace TrucoServer.Helpers.Profanity
 
         bool ContainsProfanity(string text);
 
+        string CensorText(string text);
+
         BannedWordList GetBannedWordsForClient();
     }
 }

@@ -12,7 +12,7 @@
           <Property Name="banID" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
           <Property Name="userID" Type="int" Nullable="false" />
           <Property Name="reason" Type="varchar" MaxLength="50" Nullable="false" />
-          <Property Name="expiresAt" Type="date" Nullable="false" />
+          <Property Name="expiresAt" Type="datetime" Nullable="false" />
         </EntityType>
         <EntityType Name="BannedWord">
           <Key>
@@ -359,7 +359,7 @@
           <Property Name="banID" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
           <Property Name="userID" Type="Int32" Nullable="false" />
           <Property Name="reason" Type="String" MaxLength="50" FixedLength="false" Unicode="false" Nullable="false" />
-          <Property Name="expiresAt" Type="DateTime" Nullable="false" Precision="0" />
+          <Property Name="expiresAt" Type="DateTime" Nullable="false" Precision="3" />
           <NavigationProperty Name="User" Relationship="Self.FK_Ban_User" FromRole="Ban" ToRole="User" />
         </EntityType>
         <EntityType Name="BannedWord">

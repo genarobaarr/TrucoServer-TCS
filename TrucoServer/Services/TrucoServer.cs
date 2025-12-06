@@ -136,7 +136,7 @@ namespace TrucoServer.Services
             return matchService.CreateLobby(hostUsername, maxPlayers, privacy);
         }
 
-        public bool JoinMatch(string matchCode, string player)
+        public int JoinMatch(string matchCode, string player)
         {
             return matchService.JoinMatch(matchCode, player);
         }

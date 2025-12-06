@@ -62,6 +62,9 @@ namespace TrucoServer.Contracts
         [OperationContract(IsOneWay = true)]
         void NotifyFlorCall(string callerName, string betName, bool needsResponse);
 
+        [OperationContract(IsOneWay = true)]
+        void OnForcedLogout();
+
         [OperationContract]
         void Ping();
     }

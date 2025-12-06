@@ -141,4 +141,7 @@
   <data name="ExceptionTextTooManyAttempts" xml:space="preserve">
     <value>Se han detectado demasiados intentos de inicio de sesión. Si has olvidado tu contraseña, utiliza el enlace '¿Olvidaste tu contraseña?' de abajo. De lo contrario, espera un momento y vuelve a intentarlo.</value>
   </data>
+  <data name="ExceptionTextUserBanned" xml:space="preserve">
+    <value>Su cuenta está suspendida temporalmente debido a comportamiento tóxico.</value>
+  </data>
 </root>

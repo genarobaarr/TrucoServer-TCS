@@ -9,6 +9,7 @@ using TrucoServer.GameLogic;
 using TrucoServer.Helpers.Match;
 using TrucoServer.Helpers.Profanity;
 using TrucoServer.Helpers.Ranking;
+using TrucoServer.Helpers.Security;
 using TrucoServer.Utilities;
 
 namespace TrucoServer.Services
@@ -28,8 +29,7 @@ namespace TrucoServer.Services
         private readonly IMatchCodeGenerator codeGenerator;
         private readonly IMatchStarter starter;
         private readonly IProfanityServerService profanityService;
-        private readonly GamePlayerBuilder gameBuilderService;
-        private readonly ListPositionService listPositionService;
+        private readonly BanService banService;
 
         private readonly baseDatosTrucoEntities context;
 
@@ -67,6 +67,7 @@ namespace TrucoServer.Services
             this.codeGenerator = generator;
             this.starter = new MatchStarter(matchStarterDependencies);
             this.profanityService = new ProfanityServerService(profanity);
+            this.banService = new BanService(context);
 
             this.profanityService.LoadBannedWords();
         }
@@ -149,15 +150,15 @@ namespace TrucoServer.Services
             }
         }
 
-        public bool JoinMatch(string matchCode, string player)
+        public int JoinMatch(string matchCode, string player)
         {
             if (!ServerValidator.IsMatchCodeValid(matchCode) || !ServerValidator.IsUsernameValid(player))
             {
-                return false;
+                return 0;
             }
 
             bool joinSuccess = false;
-            int lobbyId = 0;
+            int maxPlayers = 0;
 
             try
             {
@@ -180,11 +181,12 @@ namespace TrucoServer.Services
 
                 if (lobby == null || lobby.status.Equals(STATUS_CLOSED, StringComparison.OrdinalIgnoreCase))
                 {
-                    return false;
+                    return 0;
                 }
                     
-                lobbyId = lobby.lobbyID;
-                
+                int lobbyId = lobby.lobbyID;
+                maxPlayers = lobby.maxPlayers;
+
                 object lobbyLock = lobbyCoordinator.GetOrCreateLobbyLock(lobbyId);
 
                 lock (lobbyLock)
@@ -197,7 +199,7 @@ namespace TrucoServer.Services
                 ServerException.HandleException(ex, nameof(JoinMatch));
             }
 
-            return joinSuccess;
+            return joinSuccess ? maxPlayers : 0;
         }
 
         public void LeaveMatch(string matchCode, string player)
@@ -447,7 +449,19 @@ namespace TrucoServer.Services
             {
                 if (profanityService.ContainsProfanity(message))
                 {
-                    return;
+                    bool shouldBan = banService.RegisterOffense(player);
+
+                    if (shouldBan)
+                    {
+                        KickAndBanPlayer(matchCode, player);
+                        return;
+                    }
+
+                    message = profanityService.CensorText(message);
+                }
+                else
+                {
+                    banService.ResetOffenses(player);
                 }
 
                 lobbyCoordinator.RemoveInactiveCallbacks(matchCode);
@@ -503,6 +517,37 @@ namespace TrucoServer.Services
             catch (Exception ex) 
             { 
                 ServerException.HandleException(ex, nameof(SwitchTeam));
+            }
+        }
+
+        private void KickAndBanPlayer(string matchCode, string username)
+        {
+            try
+            {
+                banService.BanUser(username, "Toxicity in chat (5 ofenses)");
+
+                if (lobbyCoordinator.TryGetActiveCallbackForPlayer(username, out var bannedUserCallback))
+                {
+                    try
+                    {
+                        bannedUserCallback.OnForcedLogout();
+                    }
+                    catch 
+                    { 
+                        /* Ignore if disconnected */ 
+                    }
+                }
+                if (gameRegistry.TryGetGame(matchCode, out var match))
+                {
+                    gameRegistry.AbortAndRemoveGame(matchCode, username);
+                }
+
+                LeaveMatch(matchCode, username);
+                LeaveMatchChat(matchCode, username);
+            }
+            catch (Exception ex)
+            {
+                ServerException.HandleException(ex, nameof(KickAndBanPlayer));
             }
         }
 

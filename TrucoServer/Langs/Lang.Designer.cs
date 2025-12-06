@@ -131,5 +131,14 @@ namespace TrucoServer.Langs {
                 return ResourceManager.GetString("ExceptionTextTooManyAttempts", resourceCulture);
             }
         }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a Your account is temporarily suspended due to toxic behavior..
+        /// </summary>
+        public static string ExceptionTextUserBanned {
+            get {
+                return ResourceManager.GetString("ExceptionTextUserBanned", resourceCulture);
+            }
+        }
     }
 }

@@ -7,17 +7,18 @@ using System.ServiceModel;
 using System.Threading.Tasks;
 using TrucoServer.Contracts;
 using TrucoServer.Data.DTOs;
+using TrucoServer.Helpers.Authentication;
+using TrucoServer.Helpers.Email;
+using TrucoServer.Helpers.Mapping;
+using TrucoServer.Helpers.Password;
+using TrucoServer.Helpers.Profiles;
+using TrucoServer.Helpers.Ranking;
+using TrucoServer.Helpers.Security;
+using TrucoServer.Helpers.Sessions;
+using TrucoServer.Helpers.Verification;
 using TrucoServer.Langs;
 using TrucoServer.Security;
 using TrucoServer.Utilities;
-using TrucoServer.Helpers.Authentication;
-using TrucoServer.Helpers.Sessions;
-using TrucoServer.Helpers.Email;
-using TrucoServer.Helpers.Verification;
-using TrucoServer.Helpers.Profiles;
-using TrucoServer.Helpers.Password;
-using TrucoServer.Helpers.Mapping;
-using TrucoServer.Helpers.Ranking;
 
 namespace TrucoServer.Services
 {
@@ -39,6 +40,7 @@ namespace TrucoServer.Services
 
         private static readonly IUserSessionManager sessionManagerStatic = new UserSessionManager();
         private readonly baseDatosTrucoEntities context;
+        private readonly BanService banService;
 
         public TrucoUserServiceImp() : this(
             new baseDatosTrucoEntities(),
@@ -56,30 +58,31 @@ namespace TrucoServer.Services
             var authHelper = new UserAuthenticationHelper();
             var emailService = new EmailSender();
             this.verificationService = new VerificationService(authHelper, emailService);
+            this.banService = new BanService(new baseDatosTrucoEntities());
         }
 
         public TrucoUserServiceImp(
             baseDatosTrucoEntities context,
             IUserAuthenticationHelper authHelper,
-            IUserSessionManager sessionMgr,
-            IEmailSender emailSvc,
-            IVerificationService verifSvc,
-            IProfileUpdater profileUpd,
-            IPasswordManager passMgr,
+            IUserSessionManager sessionManager,
+            IEmailSender emailService,
+            IVerificationService verificationService,
+            IProfileUpdater profileUpdater,
+            IPasswordManager passwordManager,
             IUserMapper mapper,
-            IRankingService rankingSvc,
-            IMatchHistoryService historySvc)
+            IRankingService rankingService,
+            IMatchHistoryService historyService)
         {
             this.context = context;
             this.authenticationHelper = authHelper;
-            this.sessionManager = sessionMgr;
-            this.emailSender = emailSvc;
-            this.verificationService = verifSvc;
-            this.profileUpdater = profileUpd;
-            this.passwordManager = passMgr;
+            this.sessionManager = sessionManager;
+            this.emailSender = emailService;
+            this.verificationService = verificationService;
+            this.profileUpdater = profileUpdater;
+            this.passwordManager = passwordManager;
             this.userMapper = mapper;
-            this.rankingService = rankingSvc;
-            this.matchHistoryService = historySvc;
+            this.rankingService = rankingService;
+            this.matchHistoryService = historyService;
         }
 
         public bool Login(string username, string password, string languageCode)
@@ -96,10 +99,11 @@ namespace TrucoServer.Services
             {
                 LanguageManager.SetLanguage(languageCode);
 
+                banService.ValidateBanStatus(username);
+
                 authenticationHelper.ValidateBruteForceStatus(username);
 
                 User user = authenticationHelper.AuthenticateUser(username, password);
-
                 if (user == null)
                 {
                     return false;

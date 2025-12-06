@@ -11,7 +11,7 @@ namespace TrucoServer.Contracts
         string CreateLobby(string hostUsername, int maxPlayers, string privacy);
 
         [OperationContract]
-        bool JoinMatch(string matchCode, string player);
+        int JoinMatch(string matchCode, string player);
 
         [OperationContract(IsOneWay = true)]
         void LeaveMatch(string matchCode, string player);
