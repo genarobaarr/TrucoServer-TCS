@@ -13,123 +13,73 @@ namespace TrucoServer.Tests.HelpersTests.ProfanityTests
     public class ProfanityServiceTests
     {
         private Mock<IBannedWordRepository> mockRepo;
-        private ProfanityServerService service;
 
         [TestInitialize]
         public void Setup()
         {
             mockRepo = new Mock<IBannedWordRepository>();
-            service = new ProfanityServerService(mockRepo.Object);
         }
 
         [TestMethod]
-        [ExpectedException(typeof(ArgumentNullException))]
-        public void TestConstructorNullRepositoryShouldThrowException()
+        public void TestConstructorThrowsArgumentNullExceptionWhenRepoIsNull()
         {
-            new ProfanityServerService(null);
+            IBannedWordRepository nullRepo = null;
+            Assert.ThrowsException<ArgumentNullException>(() => new ProfanityServerService(nullRepo));
         }
 
         [TestMethod]
-        public void TestLoadBannedWordsValidSourceShouldPopulateCache()
+        public void TestLoadBannedWordsTrimsAndIgnoresEmptyStringsFromRepo()
         {
-            var words = new List<string> 
-            { 
-                "badword1", 
-                "badword2" 
-            };
-
-            mockRepo.Setup(r => r.GetAllWords()).Returns(words);
-            service.LoadBannedWords();
-            var result = service.GetBannedWordsForClient();
-
-            Assert.IsTrue(result.BannedWords.Contains("badword1"));
-        }
-
-        [TestMethod]
-        public void TestLoadBannedWordsWithWhitespaceShouldContainTrimmed()
-        {
-            var words = new List<string> 
-            { 
-                "  trimmed  ", 
-                "", 
-                "   ", 
-                "valid" 
-            };
-            
-            mockRepo.Setup(r => r.GetAllWords()).Returns(words);
-            service.LoadBannedWords();
-            var result = service.GetBannedWordsForClient();
-
-            Assert.IsTrue(result.BannedWords.Contains("trimmed"));
-        }
-
-        [TestMethod]
-        public void TestLoadBannedWordsWithWhitespaceShouldContainValid()
-        {
-            var words = new List<string>
+            var dirtyList = new List<string> 
             {
-                "  trimmed  ",
+                "  badword  ",
                 "",
-                "   ",
-                "valid"
+                null,
+                "cleanword" 
             };
 
-            mockRepo.Setup(r => r.GetAllWords()).Returns(words);
+            mockRepo.Setup(r => r.GetAllWords()).Returns(dirtyList);
+            var service = new ProfanityServerService(mockRepo.Object);
+
             service.LoadBannedWords();
             var result = service.GetBannedWordsForClient();
 
-            Assert.IsTrue(result.BannedWords.Contains("valid"));
+            Assert.AreEqual(2, result.BannedWords.Count);
         }
 
         [TestMethod]
-        public void TestContainsProfanityExactMatchShouldReturnTrue()
+        public void TestContainsProfanityReturnsTrueForCaseInsensitiveMatch()
         {
-            mockRepo.Setup(r => r.GetAllWords()).Returns(new List<string> { "bad" });
+            mockRepo.Setup(r => r.GetAllWords()).Returns(new List<string> 
+            { 
+                "badword" 
+            });
+
+            var service = new ProfanityServerService(mockRepo.Object);
             service.LoadBannedWords();
-            bool result = service.ContainsProfanity("This is bad");
+
+            bool result = service.ContainsProfanity("This contains BaDwOrD inside");
             Assert.IsTrue(result);
         }
 
         [TestMethod]
-        public void TestContainsProfanityCaseInsensitiveShouldReturnTrue()
-        {
-            mockRepo.Setup(r => r.GetAllWords()).Returns(new List<string> 
-            { 
-                "bad" 
-            });
-
-            service.LoadBannedWords();
-            bool result = service.ContainsProfanity("This is BAD");
-            Assert.IsTrue(result);
-        }
-
-        [TestMethod]
-        public void TestContainsProfanityCleanTextShouldReturnFalse()
-        {
-            mockRepo.Setup(r => r.GetAllWords()).Returns(new List<string> 
-            { 
-                "bad" 
-            });
-
-            service.LoadBannedWords();
-            bool result = service.ContainsProfanity("This is good");
-            Assert.IsFalse(result);
-        }
-
-        [TestMethod]
-        public void TestContainsProfanityEmptyCacheShouldReturnFalse()
+        public void TestContainsProfanityReturnsFalseIfCacheIsEmpty()
         {
             mockRepo.Setup(r => r.GetAllWords()).Returns(new List<string>());
+            var service = new ProfanityServerService(mockRepo.Object);
             service.LoadBannedWords();
-            bool result = service.ContainsProfanity("bad");
+            bool result = service.ContainsProfanity("badword");
             Assert.IsFalse(result);
         }
 
         [TestMethod]
-        public void TestContainsProfanityNullInputShouldReturnFalse()
+        public void TestLoadBannedWordsHandlesRepositoryExceptionGracefully()
         {
-            bool result = service.ContainsProfanity(null);
-            Assert.IsFalse(result);
+            mockRepo.Setup(r => r.GetAllWords()).Throws(new Exception("DB Down"));
+            var service = new ProfanityServerService(mockRepo.Object);
+            service.LoadBannedWords();
+            var result = service.GetBannedWordsForClient();
+            Assert.AreEqual(0, result.BannedWords.Count);
         }
     }
 }

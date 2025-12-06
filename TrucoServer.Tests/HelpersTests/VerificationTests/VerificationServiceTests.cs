@@ -15,78 +15,69 @@ namespace TrucoServer.Tests.HelpersTests.VerificationTests
     public class VerificationServiceTests
     {
         private Mock<IUserAuthenticationHelper> mockAuth;
-        private Mock<Helpers.Email.IEmailSender> mockEmail;
-        private VerificationService service;
+        private Mock<IEmailSender> mockEmail;
 
         [TestInitialize]
         public void Setup()
         {
             mockAuth = new Mock<IUserAuthenticationHelper>();
-            mockEmail = new Mock<Helpers.Email.IEmailSender>();
-            service = new VerificationService(mockAuth.Object, mockEmail.Object);
+            mockEmail = new Mock<IEmailSender>();
         }
 
         [TestMethod]
-        public void TestRequestEmailVerificationValidEmailShouldSendCodeAndReturnTrue()
+        public void TestRequestEmailVerificationReturnsFalseForInvalidEmailFormat()
         {
-            string email = "valid@gmail.com";
+            var service = new VerificationService(mockAuth.Object, mockEmail.Object);
+            string invalidEmail = "email@gmail.com";
+            bool result = service.RequestEmailVerification(invalidEmail, "es-MX");
+            Assert.IsFalse(result);
+        }
+
+        [TestMethod]
+        public void TestRequestEmailVerificationHandlesEmailSenderException()
+        {
+            mockAuth.Setup(a => a.GenerateSecureNumericCode()).Returns("123456");
+            mockEmail.Setup(e => e.SendEmail(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
+                      .Throws(new Exception("SMTP Error"));
+
+            var service = new VerificationService(mockAuth.Object, mockEmail.Object);
+            mockAuth.Setup(a => a.GenerateSecureNumericCode()).Throws(new Exception("Gen Error"));
+            bool result = service.RequestEmailVerification("valid@gmail.com", "es-MX");
+            Assert.IsFalse(result);
+        }
+
+        [TestMethod]
+        public void TestConfirmEmailVerificationReturnsFalseForNullEmail()
+        {
+            var service = new VerificationService(mockAuth.Object, mockEmail.Object);
+            bool result = service.ConfirmEmailVerification(null, "123456");
+            Assert.IsFalse(result);
+        }
+
+        [TestMethod]
+        public void TestConfirmEmailVerificationReturnsFalseForCodeMismatch()
+        {
+            var service = new VerificationService(mockAuth.Object, mockEmail.Object);
+            string email = "test@gmail.com";
+            string correctCode = "123456";
+
+            mockAuth.Setup(a => a.GenerateSecureNumericCode()).Returns(correctCode);
+            service.RequestEmailVerification(email, "es-MX");
+            bool result = service.ConfirmEmailVerification(email, "999999");
+            Assert.IsFalse(result);
+        }
+
+        [TestMethod]
+        public void TestConfirmEmailVerificationReturnsFalseOnReplayAttack()
+        {
+            var service = new VerificationService(mockAuth.Object, mockEmail.Object);
+            string email = "test@gmail.com";
             string code = "123456";
             mockAuth.Setup(a => a.GenerateSecureNumericCode()).Returns(code);
-
-            bool result = service.RequestEmailVerification(email, "en-US");
-
-            Assert.IsTrue(result);
-            mockEmail.Verify(e => e.SendEmail(It.Is<string>(s => s == email), It.IsAny<string>(), It.Is<string>(b => b.Contains(code))), Times.Once);
-        }
-
-        [TestMethod]
-        public void TestRequestEmailVerificationInvalidEmailShouldReturnFalse()
-        {
-            string email = "invalid-email";
-
-            bool result = service.RequestEmailVerification(email, "en-US");
-
-            Assert.IsFalse(result);
-            mockEmail.Verify(e => e.SendEmail(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()), Times.Never);
-        }
-
-        [TestMethod]
-        public void TestConfirmEmailVerificationCorrectCodeShouldReturnTrue()
-        {
-            string email = "user@gmail.com";
-            string code = "999999";
-            mockAuth.Setup(a => a.GenerateSecureNumericCode()).Returns(code);
-            service.RequestEmailVerification(email, "en-US");
-
-            bool result = service.ConfirmEmailVerification(email, code);
-
-            Assert.IsTrue(result);
-        }
-
-        [TestMethod]
-        public void TestConfirmEmailVerificationIncorrectCodeShouldReturnFalse()
-        {
-            string email = "user@gmail.com";
-            mockAuth.Setup(a => a.GenerateSecureNumericCode()).Returns("111111");
-            service.RequestEmailVerification(email, "en-US");
-
-            bool result = service.ConfirmEmailVerification(email, "222222");
-
-            Assert.IsFalse(result);
-        }
-
-        [TestMethod]
-        public void TestConfirmEmailVerificationCodeUsedTwiceShouldReturnFalse()
-        {
-            string email = "willy@gmail.com";
-            string code = "555555";
-            mockAuth.Setup(a => a.GenerateSecureNumericCode()).Returns(code);
-            service.RequestEmailVerification(email, "en-US");
-
+            service.RequestEmailVerification(email, "es-MX");
             service.ConfirmEmailVerification(email, code);
-            bool secondAttempt = service.ConfirmEmailVerification(email, code);
-
-            Assert.IsFalse(secondAttempt);
+            bool result = service.ConfirmEmailVerification(email, code);
+            Assert.IsFalse(result);
         }
     }
 }

@@ -15,7 +15,35 @@ namespace TrucoServer.Tests.HelpersTests.AuthenticationTests
     [TestClass]
     public class UserAuthenticationHelperTests
     {
-        
+        [TestMethod]
+        public void TestGenerateSecureNumericCodeReturnsStringOfLengthSix()
+        {
+            var helper = new UserAuthenticationHelper();
+            string code = helper.GenerateSecureNumericCode();
+            Assert.AreEqual(6, code.Length);
+        }
+
+        [TestMethod]
+        public void TestGenerateSecureNumericCodeReturnsDigitsOnly()
+        {
+            var helper = new UserAuthenticationHelper();
+            string code = helper.GenerateSecureNumericCode();
+            Assert.IsTrue(int.TryParse(code, out _));
+        }
+
+        [TestMethod]
+        public void TestGenerateSecureNumericCodeIsRandomEnough()
+        {
+            var helper = new UserAuthenticationHelper();
+            var codes = new HashSet<string>();
+
+            for (int i = 0; i < 100; i++)
+            {
+                codes.Add(helper.GenerateSecureNumericCode());
+            }
+
+            Assert.IsTrue(codes.Count > 90);
+        }
     }
 }
 
