@@ -1,21 +1,22 @@
 ﻿using System;
-using System.Configuration;
 using System.Net;
 using System.Net.Mail;
 using System.Threading.Tasks;
+using TrucoServer.Data.DTOs;
 using TrucoServer.Utilities;
+using TrucoServer.Langs;
 
 namespace TrucoServer.Helpers.Email
 {
     public class EmailSender : IEmailSender
     {
-        public void SendEmail(string toEmail, string emailSubject, string emailBody)
+        public void SendEmail(EmailFormatOptions emailOptions)
         {
             try
             {
                 var settings = ConfigurationReader.EmailSettings;
                 var fromAddress = new MailAddress(settings.FromAddress, settings.FromDisplayName);
-                var toAddress = new MailAddress(toEmail);
+                var toAddress = new MailAddress(emailOptions.ToEmail);
 
                 using (var smtp = new SmtpClient
                 {
@@ -28,8 +29,8 @@ namespace TrucoServer.Helpers.Email
                 })
                 using (var message = new MailMessage(fromAddress, toAddress)
                 {
-                    Subject = emailSubject,
-                    Body = emailBody
+                    Subject = emailOptions.EmailSubject,
+                    Body = emailOptions.EmailBody
                 })
                 {
                     smtp.Send(message);
@@ -47,9 +48,39 @@ namespace TrucoServer.Helpers.Email
             {
                 try
                 {
-                    SendEmail(user.email, Langs.Lang.EmailLoginNotificationSubject,
-                        string.Format(Langs.Lang.EmailLoginNotificactionBody, user.username, DateTime.Now)
-                        .Replace("\\n", Environment.NewLine));
+                    var emailOptions = new EmailFormatOptions
+                    {
+                        ToEmail = user.email,
+                        EmailSubject = Lang.EmailLoginNotificationSubject,
+                        EmailBody = string.Format(Lang.EmailLoginNotificactionBody, user.username, DateTime.Now)
+                            .Replace("\\n", Environment.NewLine)
+                    };
+
+                    SendEmail(emailOptions);
+                }
+                catch (Exception ex)
+                {
+                    ServerException.HandleException(ex, nameof(SendLoginEmailAsync));
+                }
+            });
+        }
+
+        public void SendInvitationEmailAsync(InviteFriendData friendEmailData)
+        {
+            Task.Run(() =>
+            {
+                try
+                {
+                    var emailOptions = new EmailFormatOptions
+                    {
+                        ToEmail = friendEmailData.FriendUser.email,
+                        EmailSubject = Lang.EmailInvitationSubject,
+                        EmailBody = string.Format(Lang.EmailInvitationBody, friendEmailData.FriendUser.username,
+                            friendEmailData.SenderUser.username, friendEmailData.MatchCode)
+                            .Replace("\\n", Environment.NewLine)
+                    };
+
+                    SendEmail(emailOptions);
                 }
                 catch (Exception ex)
                 {
@@ -60,8 +91,15 @@ namespace TrucoServer.Helpers.Email
 
         public void NotifyPasswordChange(User user)
         {
-            Task.Run(() => SendEmail(user.email, Langs.Lang.EmailPasswordNotificationSubject,
-                string.Format(Langs.Lang.EmailPasswordNotificationBody, user.username, DateTime.Now).Replace("\\n", Environment.NewLine)));
+            var emailOptions = new EmailFormatOptions
+            {
+                ToEmail = user.email,
+                EmailSubject = Lang.EmailPasswordNotificationSubject,
+                EmailBody = string.Format(Lang.EmailPasswordNotificationBody, user.username, DateTime.Now)
+                    .Replace("\\n", Environment.NewLine)
+            };
+
+            Task.Run(() => SendEmail(emailOptions));
         }
     }
 }

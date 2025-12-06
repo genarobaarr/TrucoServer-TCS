@@ -11,7 +11,6 @@ namespace TrucoServer.Helpers.Match
         bool IsPlayerInLobby(int lobbyId, int userId);
         TeamCountsResult GetTeamCounts(int lobbyId);
         void AddMember(LobbyMemberDetails memberDetails);
-        void CreatePrivateInvitation(User host, string matchCode);
         Lobby ResolveLobbyForJoin(string matchCode);
         LobbyLeaveResult ResolveLobbyForLeave(LobbyLeaveCriteria criteria);
         Lobby FindLobbyByMatchCode(string matchCode, bool onlyOpen = true);

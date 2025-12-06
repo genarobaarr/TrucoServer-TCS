@@ -216,6 +216,11 @@ namespace TrucoServer.Services
             matchService.SwitchTeam(matchCode, username);
         }
 
+        public bool InviteFriend(InviteFriendOptions inviteContext)
+        {
+            return matchService.InviteFriend(inviteContext);
+        }
+
         public List<PlayerInfo> GetLobbyPlayers(string matchCode)
         {
             return matchService.GetLobbyPlayers(matchCode);

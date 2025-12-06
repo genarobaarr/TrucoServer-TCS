@@ -34,6 +34,12 @@ namespace TrucoServer.Contracts
         [OperationContract]
         void SwitchTeam(string matchCode, string username);
 
+        [OperationContract]
+        BannedWordList GetBannedWords();
+
+        [OperationContract]
+        bool InviteFriend(InviteFriendOptions inviteContext);
+
         [OperationContract(IsOneWay = true)]
         void StartMatch(string matchCode);
 
@@ -60,8 +66,5 @@ namespace TrucoServer.Contracts
 
         [OperationContract(IsOneWay = true)]
         void RespondToFlor(string matchCode, string response);
-
-        [OperationContract]
-        BannedWordList GetBannedWords();
     }
 }

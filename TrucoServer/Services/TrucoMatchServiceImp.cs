@@ -6,11 +6,13 @@ using System.Threading.Tasks;
 using TrucoServer.Contracts;
 using TrucoServer.Data.DTOs;
 using TrucoServer.GameLogic;
+using TrucoServer.Helpers.Email;
 using TrucoServer.Helpers.Match;
 using TrucoServer.Helpers.Profanity;
 using TrucoServer.Helpers.Ranking;
 using TrucoServer.Helpers.Security;
 using TrucoServer.Utilities;
+using TrucoServer.Langs;
 
 namespace TrucoServer.Services
 {
@@ -20,10 +22,13 @@ namespace TrucoServer.Services
         private const string STATUS_PUBLIC = "Public";
         private const string STATUS_PRIVATE = "Private";
         private const string STATUS_CLOSED = "Closed";
+        private const string STATUS_PENDING = "Pending";
+        private const string STATUS_EXPIRED = "Expired";
         private const string GUEST_PREFIX = "Guest_";
 
         private readonly IGameRegistry gameRegistry;
         private readonly IJoinService joinService;
+        private readonly IEmailSender emailSender;
         private readonly ILobbyCoordinator lobbyCoordinator;
         private readonly ILobbyRepository lobbyRepository;
         private readonly IMatchCodeGenerator codeGenerator;
@@ -39,12 +44,10 @@ namespace TrucoServer.Services
             var coordinator = new LobbyCoordinator(context);
             var registry = new GameRegistry();
             var repository = new LobbyRepository(context);
-            var generator = new MatchCodeGenerator();
-            var profanity = new BannedWordRepository();
+            var bannedWordRepository = new BannedWordRepository();
             var statsService = new UserStatsService(context);
             var gameManager = new TrucoGameManager(context, statsService);
             var shuffler = new DefaultDeckShuffler();
-            var join = new JoinService(context, coordinator, repository);
             var participantBuilder = new GamePlayerBuilder(context, coordinator);
             var positionService = new ListPositionService();
 
@@ -61,12 +64,13 @@ namespace TrucoServer.Services
             };
 
             this.gameRegistry = registry;
-            this.joinService = join;
+            this.joinService = new JoinService(context, coordinator, repository);
+            this.emailSender = new EmailSender();
             this.lobbyCoordinator = coordinator;
             this.lobbyRepository = repository;
-            this.codeGenerator = generator;
+            this.codeGenerator = new MatchCodeGenerator();
             this.starter = new MatchStarter(matchStarterDependencies);
-            this.profanityService = new ProfanityServerService(profanity);
+            this.profanityService = new ProfanityServerService(bannedWordRepository);
             this.banService = new BanService(context);
 
             this.profanityService.LoadBannedWords();
@@ -80,7 +84,8 @@ namespace TrucoServer.Services
             ILobbyRepository lobbyRepository,
             IMatchCodeGenerator codeGenerator,
             IMatchStarter starter,
-            IProfanityServerService profanityService)
+            IProfanityServerService profanityService,
+            IEmailSender emailSender)
         {
             this.context = context;
             this.gameRegistry = gameRegistry;
@@ -90,6 +95,7 @@ namespace TrucoServer.Services
             this.codeGenerator = codeGenerator;
             this.starter = starter;
             this.profanityService = profanityService;
+            this.emailSender = emailSender;
         }
 
         public string CreateLobby(string hostUsername, int maxPlayers, string privacy)
@@ -135,12 +141,6 @@ namespace TrucoServer.Services
                 lobbyCoordinator.RegisterLobbyMapping(matchCode, lobby);
                 lobbyCoordinator.GetOrCreateLobbyLock(lobby.lobbyID);
 
-                if (lobby.status.Equals(STATUS_PRIVATE, StringComparison.OrdinalIgnoreCase))
-                {
-                    lobbyRepository.CreatePrivateInvitation(host, matchCode);
-                    context.SaveChanges();
-                }
-
                 return matchCode;
             }
             catch (Exception ex)
@@ -157,49 +157,91 @@ namespace TrucoServer.Services
                 return 0;
             }
 
-            bool joinSuccess = false;
-            int maxPlayers = 0;
-
             try
             {
-                Lobby lobby = null;
-                   
-                if (lobbyCoordinator.TryGetLobbyIdFromCode(matchCode, out int id))
-                {
-                    lobby = context.Lobby.FirstOrDefault(l => l.lobbyID == id);
-                }
-
-                if (lobby == null)
-                {
-                    lobby = lobbyRepository.ResolveLobbyForJoin(matchCode);
-
-                    if (lobby != null && !lobby.status.Equals("Closed", StringComparison.OrdinalIgnoreCase))
-                    {
-                        lobbyCoordinator.RegisterLobbyMapping(matchCode, lobby);
-                    }
-                }
+                Lobby lobby = ResolveLobby(matchCode);
 
                 if (lobby == null || lobby.status.Equals(STATUS_CLOSED, StringComparison.OrdinalIgnoreCase))
                 {
                     return 0;
                 }
-                    
-                int lobbyId = lobby.lobbyID;
-                maxPlayers = lobby.maxPlayers;
 
+                Invitation validInvitation = null;
+
+                if (lobby.status.Equals(STATUS_PRIVATE, StringComparison.OrdinalIgnoreCase))
+                {
+                    if (player.StartsWith(GUEST_PREFIX))
+                    {
+                        return 0;
+                    }
+
+                    validInvitation = ValidatePrivateMatchAccess(matchCode, player);
+                    if (validInvitation == null)
+                    {
+                        return 0;
+                    }
+                }
+
+                bool joinSuccess = false;
+                int lobbyId = lobby.lobbyID;
+                int maxPlayers = lobby.maxPlayers;
                 object lobbyLock = lobbyCoordinator.GetOrCreateLobbyLock(lobbyId);
 
                 lock (lobbyLock)
                 {
                     joinSuccess = joinService.ProcessSafeJoin(lobbyId, matchCode, player);
                 }
+
+                if (joinSuccess && validInvitation != null)
+                {
+                    ExpireInvitation(validInvitation);
+                }
+
+                return joinSuccess ? maxPlayers : 0;
             }
             catch (Exception ex)
             {
                 ServerException.HandleException(ex, nameof(JoinMatch));
+                return 0;
+            }
+        }
+
+        private Invitation ValidatePrivateMatchAccess(string matchCode, string username)
+        {
+            var user = context.User.FirstOrDefault(u => u.username == username);
+            if (user == null) return null;
+
+            int numericCode = codeGenerator.GenerateNumericCodeFromString(matchCode);
+
+            var invitation = context.Invitation.FirstOrDefault(i =>
+                i.receiverEmail == user.email &&
+                i.code == numericCode &&
+                i.status == STATUS_PENDING);
+
+            if (invitation == null)
+            {
+                return null;
             }
 
-            return joinSuccess ? maxPlayers : 0;
+            if (invitation.expiresAt <= DateTime.Now)
+            {
+                return null;
+            }
+
+            return invitation;
+        }
+
+        private void ExpireInvitation(Invitation invitation)
+        {
+            try
+            {
+                invitation.status = STATUS_EXPIRED;
+                context.SaveChanges();
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError(ex, nameof(ExpireInvitation));
+            }
         }
 
         public void LeaveMatch(string matchCode, string player)
@@ -520,6 +562,103 @@ namespace TrucoServer.Services
             }
         }
 
+        public bool InviteFriend(InviteFriendOptions inviteContext)
+        {
+            if (!ServerValidator.IsMatchCodeValid(inviteContext.MatchCode) || 
+                !ServerValidator.IsUsernameValid(inviteContext.SenderUsername) || 
+                !ServerValidator.IsUsernameValid(inviteContext.FriendUsername))
+            {
+                return false;
+            }
+
+            try
+            {
+                if (!TryGetUsersForInvitation(inviteContext.SenderUsername, inviteContext.FriendUsername, out User senderUser, out User friendUser))
+                {
+                    return false;
+                }
+
+                if (IsFriendAlreadyInLobby(inviteContext.MatchCode, friendUser.userID))
+                {
+                    return false;
+                }
+
+                CreateOrUpdateInvitationRecord(senderUser.userID, friendUser.email, inviteContext.MatchCode);
+
+                var emailOptions = new InviteFriendData
+                {
+                    MatchCode = inviteContext.MatchCode,
+                    SenderUser = senderUser,
+                    FriendUser = friendUser
+                };
+
+                emailSender.SendInvitationEmailAsync(emailOptions);
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                ServerException.HandleException(ex, nameof(InviteFriend));
+                return false;
+            }
+        }
+
+        private bool TryGetUsersForInvitation(string senderName, string friendName, out User sender, out User friend)
+        {
+            sender = null;
+            friend = null;
+
+            var senderUser = context.User.FirstOrDefault(u => u.username == senderName);
+            var friendUser = context.User.FirstOrDefault(u => u.username == friendName);
+
+            if (senderUser != null && friendUser != null && !string.IsNullOrEmpty(friendUser.email))
+            {
+                sender = senderUser;
+                friend = friendUser;
+                return true;
+            }
+            return false;
+        }
+
+        private bool IsFriendAlreadyInLobby(string matchCode, int friendUserId)
+        {
+            if (lobbyCoordinator.TryGetLobbyIdFromCode(matchCode, out int lobbyId))
+            {
+                return context.LobbyMember.Any(lm => lm.lobbyID == lobbyId && lm.userID == friendUserId);
+            }
+            return false;
+        }
+
+        private void CreateOrUpdateInvitationRecord(int senderId, string friendEmail, string matchCode)
+        {
+            int numericCode = codeGenerator.GenerateNumericCodeFromString(matchCode);
+
+            var existingInv = context.Invitation.FirstOrDefault(i =>
+                i.senderID == senderId &&
+                i.receiverEmail == friendEmail &&
+                i.code == numericCode &&
+                i.status == STATUS_PENDING);
+
+            if (existingInv == null)
+            {
+                var invitation = new Invitation
+                {
+                    senderID = senderId,
+                    receiverEmail = friendEmail,
+                    code = numericCode,
+                    status = STATUS_PENDING,
+                    expiresAt = DateTime.Now.AddMinutes(30)
+                };
+                context.Invitation.Add(invitation);
+            }
+            else
+            {
+                existingInv.expiresAt = DateTime.Now.AddMinutes(30);
+            }
+
+            context.SaveChanges();
+        }
+
         private void KickAndBanPlayer(string matchCode, string username)
         {
             try
@@ -549,6 +688,28 @@ namespace TrucoServer.Services
             {
                 ServerException.HandleException(ex, nameof(KickAndBanPlayer));
             }
+        }
+
+        private Lobby ResolveLobby(string matchCode)
+        {
+            Lobby lobby = null;
+
+            if (lobbyCoordinator.TryGetLobbyIdFromCode(matchCode, out int id))
+            {
+                lobby = context.Lobby.FirstOrDefault(l => l.lobbyID == id);
+            }
+
+            if (lobby == null)
+            {
+                lobby = lobbyRepository.ResolveLobbyForJoin(matchCode);
+
+                if (lobby != null && !lobby.status.Equals(STATUS_CLOSED, StringComparison.OrdinalIgnoreCase))
+                {
+                    lobbyCoordinator.RegisterLobbyMapping(matchCode, lobby);
+                }
+            }
+
+            return lobby;
         }
 
         public BannedWordList GetBannedWords()

@@ -1,9 +1,12 @@
-﻿namespace TrucoServer.Helpers.Email
+﻿using TrucoServer.Data.DTOs;
+
+namespace TrucoServer.Helpers.Email
 {
     public interface IEmailSender
     {
-        void SendEmail(string toEmail, string emailSubject, string emailBody);
+        void SendEmail(EmailFormatOptions emailOptions);
         void SendLoginEmailAsync(User user);
+        void SendInvitationEmailAsync(InviteFriendData friendEmailData);
         void NotifyPasswordChange(User user);
     }
 }

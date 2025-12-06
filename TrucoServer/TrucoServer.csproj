@@ -75,11 +75,14 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Data\DTOs\BannedWordList.cs" />
+    <Compile Include="Data\DTOs\EmailFormatOptions.cs" />
     <Compile Include="Data\DTOs\FriendRequest.cs" />
     <Compile Include="Data\DTOs\FriendshipCommitOptions.cs" />
     <Compile Include="Data\DTOs\GameInitializationOptions.cs" />
     <Compile Include="Data\DTOs\GuestCreationContext.cs" />
     <Compile Include="Data\DTOs\GuestJoinOptions.cs" />
+    <Compile Include="Data\DTOs\InviteFriendData.cs" />
+    <Compile Include="Data\DTOs\InviteFriendOptions.cs" />
     <Compile Include="Data\DTOs\LobbyCreationOptions.cs" />
     <Compile Include="Data\DTOs\LobbyLeaveCriteria.cs" />
     <Compile Include="Data\DTOs\LobbyLeaveResult.cs" />

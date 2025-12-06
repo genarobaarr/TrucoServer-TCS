@@ -61,6 +61,24 @@ namespace TrucoServer.Langs {
         }
         
         /// <summary>
+        ///   Busca una cadena traducida similar a Hello {0}!\n\n{1} has invited you to play a match.\nJoin using the code: {2}\n\nSee you at the table!.
+        /// </summary>
+        public static string EmailInvitationBody {
+            get {
+                return ResourceManager.GetString("EmailInvitationBody", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a Invitation code - Truco Argentino.
+        /// </summary>
+        public static string EmailInvitationSubject {
+            get {
+                return ResourceManager.GetString("EmailInvitationSubject", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Busca una cadena traducida similar a Hello {0},\n\nA recent login was detected on your Truco Argentino account.\nLogin time: {1} (Server time).\n\nIf it was you, you can ignore this message.\nIf not, please change your password immediately..
         /// </summary>
         public static string EmailLoginNotificactionBody {

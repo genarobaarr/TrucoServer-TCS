@@ -100,37 +100,6 @@ namespace TrucoServer.Helpers.Match
             }
         }
 
-        public void CreatePrivateInvitation(User host, string matchCode)
-        {
-            try
-            {
-                int numericCode = new MatchCodeGenerator().GenerateNumericCodeFromString(matchCode);
-                var previousInvitations = context.Invitation
-                    .Where(i => i.senderID == host.userID && i.status == STATUS_PENDING)
-                    .ToList();
-
-                foreach (var inv in previousInvitations)
-                {
-                    inv.status = STATUS_EXPIRED;
-                    inv.expiresAt = DateTime.Now;
-                }
-
-                context.Invitation.Add(new Invitation
-                {
-                    senderID = host.userID,
-                    receiverEmail = null,
-                    code = numericCode,
-                    status = STATUS_PENDING,
-                    expiresAt = DateTime.Now.AddHours(2)
-                });
-            }
-            catch (Exception ex)
-            {
-                ServerException.HandleException(ex,nameof(CreatePrivateInvitation));
-                throw;
-            }
-        }
-
         public Lobby ResolveLobbyForJoin(string matchCode)
         {
             try

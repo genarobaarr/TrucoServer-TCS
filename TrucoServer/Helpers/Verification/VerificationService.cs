@@ -2,6 +2,7 @@
 using System.Collections.Concurrent;
 using System.Net.Mail;
 using System.Threading.Tasks;
+using TrucoServer.Data.DTOs;
 using TrucoServer.Helpers.Authentication;
 using TrucoServer.Helpers.Email;
 using TrucoServer.Utilities;
@@ -34,8 +35,14 @@ namespace TrucoServer.Helpers.Verification
 
                 Langs.LanguageManager.SetLanguage(languageCode);
 
-                Task.Run(() => emailSender.SendEmail(email, Langs.Lang.EmailVerificationSubject,
-                    string.Format(Langs.Lang.EmailVerificationBody, code).Replace("\\n", Environment.NewLine)));
+                var emailOptions = new EmailFormatOptions
+                {
+                    ToEmail = email,
+                    EmailSubject = Langs.Lang.EmailVerificationSubject,
+                    EmailBody = string.Format(Langs.Lang.EmailVerificationBody, code).Replace("\\n", Environment.NewLine)
+                };
+
+                Task.Run(() => emailSender.SendEmail(emailOptions));
 
                 return true;
             }

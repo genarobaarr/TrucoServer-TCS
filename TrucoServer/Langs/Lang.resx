@@ -144,4 +144,10 @@
   <data name="ExceptionTextUserBanned" xml:space="preserve">
     <value>Your account is temporarily suspended due to toxic behavior.</value>
   </data>
+  <data name="EmailInvitationSubject" xml:space="preserve">
+    <value>Invitation code - Truco Argentino</value>
+  </data>
+  <data name="EmailInvitationBody" xml:space="preserve">
+    <value>Hello {0}!\n\n{1} has invited you to play a match.\nJoin using the code: {2}\n\nSee you at the table!</value>
+  </data>
 </root>
