@@ -25,6 +25,13 @@ namespace TrucoServer.Services
             this.notificationService = new FriendNotifier();
         }
 
+        public TrucoFriendServiceImp(baseDatosTrucoEntities context, IFriendRepository friendshipRepository, IFriendNotifier notificationService)
+        {
+            this.context = context;
+            this.friendshipRepository = friendshipRepository;
+            this.notificationService = notificationService;
+        }
+
         public bool SendFriendRequest(string fromUser, string toUser)
         {
             if (!ServerValidator.IsUsernameValid(fromUser) ||
