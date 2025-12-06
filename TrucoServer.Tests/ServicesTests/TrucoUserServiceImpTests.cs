@@ -18,7 +18,7 @@ using TrucoServer.Helpers.Sessions;
 using TrucoServer.Helpers.Verification;
 using TrucoServer.Services;
 
-namespace TrucoServer.Tests.Services
+namespace TrucoServer.Tests.ServicesTests
 {
     [TestClass]
     public class TrucoUserServiceImpTests

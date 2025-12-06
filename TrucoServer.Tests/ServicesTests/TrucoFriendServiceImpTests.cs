@@ -230,7 +230,7 @@ namespace TrucoServer.Tests.ServicesTests
             mockUserSet.As<IQueryable<User>>().Setup(m => m.Expression).Returns(data.Expression);
             mockUserSet.As<IQueryable<User>>().Setup(m => m.ElementType).Returns(data.ElementType);
             mockUserSet.As<IQueryable<User>>().Setup(m => m.GetEnumerator()).Returns(data.GetEnumerator());
-            var result = service.GetFriends("Ghost");
+            var result = service.GetFriends("Test");
             Assert.AreEqual(0, result.Count);
         }
 
@@ -283,7 +283,7 @@ namespace TrucoServer.Tests.ServicesTests
             mockUserSet.As<IQueryable<User>>().Setup(m => m.Expression).Returns(data.Expression);
             mockUserSet.As<IQueryable<User>>().Setup(m => m.ElementType).Returns(data.ElementType);
             mockUserSet.As<IQueryable<User>>().Setup(m => m.GetEnumerator()).Returns(data.GetEnumerator());
-            var result = service.GetPendingFriendRequests("Ghost");
+            var result = service.GetPendingFriendRequests("Test");
             Assert.AreEqual(0, result.Count);
         }
 
