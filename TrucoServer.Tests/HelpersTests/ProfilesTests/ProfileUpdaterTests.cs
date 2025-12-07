@@ -15,18 +15,24 @@ namespace TrucoServer.Tests.HelpersTests.ProfilesTests
     public class ProfileUpdaterTests
     {
         private Mock<baseDatosTrucoEntities> mockContext;
-        private Mock<DbSet<User>> mockUserSet;
-        private Mock<DbSet<UserProfile>> mockProfileSet;
 
         [TestInitialize]
         public void Setup()
         {
             mockContext = new Mock<baseDatosTrucoEntities>();
-            mockUserSet = new Mock<DbSet<User>>();
-            mockProfileSet = new Mock<DbSet<UserProfile>>();
+        }
 
-            mockContext.Setup(c => c.User).Returns(mockUserSet.Object);
-            mockContext.Setup(c => c.UserProfile).Returns(mockProfileSet.Object);
+        private static Mock<DbSet<T>> GetMockDbSet<T>(List<T> sourceList) where T : class
+        {
+            var queryable = sourceList.AsQueryable();
+            var mockSet = new Mock<DbSet<T>>();
+            mockSet.As<IQueryable<T>>().Setup(m => m.Provider).Returns(queryable.Provider);
+            mockSet.As<IQueryable<T>>().Setup(m => m.Expression).Returns(queryable.Expression);
+            mockSet.As<IQueryable<T>>().Setup(m => m.ElementType).Returns(queryable.ElementType);
+            mockSet.As<IQueryable<T>>().Setup(m => m.GetEnumerator()).Returns(() => queryable.GetEnumerator());
+            mockSet.Setup(d => d.Add(It.IsAny<T>())).Callback<T>((s) => sourceList.Add(s));
+
+            return mockSet;
         }
 
         [TestMethod]
@@ -54,36 +60,35 @@ namespace TrucoServer.Tests.HelpersTests.ProfilesTests
         [TestMethod]
         public void TestTryUpdateUsernameReturnsFalseIfUsernameTakenByAnother()
         {
-            var updater = new ProfileUpdater(mockContext.Object);
-           
-            var currentUser = new User 
-            { userID = 1, 
-                username = "Me", 
+            var currentUser = new User
+            {
+                userID = 1,
+                username = "Me",
                 nameChangeCount = 0
             };
 
-            var otherUser = new User 
-            { 
-                userID = 2, 
+            var otherUser = new User
+            {
+                userID = 2,
                 username = "TakenName"
             };
 
-            var updateContext = new UsernameUpdateContext 
-            { 
+            var userList = new List<User>
+            {
+                otherUser 
+            }; 
+
+            var mockUserSet = GetMockDbSet(userList);
+            mockContext.Setup(c => c.User).Returns(mockUserSet.Object);
+            var updater = new ProfileUpdater(mockContext.Object);
+
+            var updateContext = new UsernameUpdateContext
+            {
                 User = currentUser,
-                NewUsername = "TakenName", 
-                MaxNameChanges = 5 
+                NewUsername = "TakenName",
+                MaxNameChanges = 5
             };
 
-            var data = new List<User> 
-            { 
-                otherUser 
-            }.AsQueryable();
-
-            mockUserSet.As<IQueryable<User>>().Setup(m => m.Provider).Returns(data.Provider);
-            mockUserSet.As<IQueryable<User>>().Setup(m => m.Expression).Returns(data.Expression);
-            mockUserSet.As<IQueryable<User>>().Setup(m => m.ElementType).Returns(data.ElementType);
-            mockUserSet.As<IQueryable<User>>().Setup(m => m.GetEnumerator()).Returns(data.GetEnumerator());
             bool result = updater.TryUpdateUsername(updateContext);
             Assert.IsFalse(result);
         }
@@ -105,11 +110,14 @@ namespace TrucoServer.Tests.HelpersTests.ProfilesTests
         [TestMethod]
         public void TestUpdateProfileDetailsCreatesProfileIfMissing()
         {
+            var profileList = new List<UserProfile>();
+            var mockProfileSet = GetMockDbSet(profileList);
+            mockContext.Setup(c => c.UserProfile).Returns(mockProfileSet.Object);
             var updater = new ProfileUpdater(mockContext.Object);
 
-            var user = new User 
+            var user = new User
             {
-                userID = 10, 
+                userID = 10,
                 UserProfile = null
             };
 
@@ -127,12 +135,10 @@ namespace TrucoServer.Tests.HelpersTests.ProfilesTests
         [TestMethod]
         public void TestProcessAvatarUpdateReturnsFalseIfUserNotFound()
         {
+            var userList = new List<User>();
+            var mockUserSet = GetMockDbSet(userList);
+            mockContext.Setup(c => c.User).Returns(mockUserSet.Object);
             var updater = new ProfileUpdater(mockContext.Object);
-            var data = new List<User>().AsQueryable(); 
-            mockUserSet.As<IQueryable<User>>().Setup(m => m.Provider).Returns(data.Provider);
-            mockUserSet.As<IQueryable<User>>().Setup(m => m.Expression).Returns(data.Expression);
-            mockUserSet.As<IQueryable<User>>().Setup(m => m.ElementType).Returns(data.ElementType);
-            mockUserSet.As<IQueryable<User>>().Setup(m => m.GetEnumerator()).Returns(data.GetEnumerator());
             bool result = updater.ProcessAvatarUpdate("TestUser", "avatar_aaa_default");
             Assert.IsFalse(result);
         }

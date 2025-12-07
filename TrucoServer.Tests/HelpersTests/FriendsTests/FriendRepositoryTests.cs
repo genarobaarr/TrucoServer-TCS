@@ -15,18 +15,27 @@ namespace TrucoServer.Tests.HelpersTests.FriendsTests
     public class FriendRepositoryTests
     {
         private Mock<baseDatosTrucoEntities> mockContext;
-        private Mock<DbSet<Friendship>> mockFriendshipSet;
-        private Mock<DbSet<User>> mockUserSet;
 
         [TestInitialize]
         public void Setup()
         {
             mockContext = new Mock<baseDatosTrucoEntities>();
-            mockFriendshipSet = new Mock<DbSet<Friendship>>();
-            mockUserSet = new Mock<DbSet<User>>();
+        }
 
-            mockContext.Setup(c => c.Friendship).Returns(mockFriendshipSet.Object);
-            mockContext.Setup(c => c.User).Returns(mockUserSet.Object);
+        private static Mock<DbSet<T>> GetMockDbSet<T>(List<T> sourceList) where T : class
+        {
+            var queryable = sourceList.AsQueryable();
+            var mockSet = new Mock<DbSet<T>>();
+
+            mockSet.As<IQueryable<T>>().Setup(m => m.Provider).Returns(queryable.Provider);
+            mockSet.As<IQueryable<T>>().Setup(m => m.Expression).Returns(queryable.Expression);
+            mockSet.As<IQueryable<T>>().Setup(m => m.ElementType).Returns(queryable.ElementType);
+            mockSet.As<IQueryable<T>>().Setup(m => m.GetEnumerator()).Returns(() => queryable.GetEnumerator());
+
+            mockSet.Setup(d => d.Add(It.IsAny<T>())).Callback<T>((s) => sourceList.Add(s));
+            mockSet.Setup(d => d.Remove(It.IsAny<T>())).Callback<T>((s) => sourceList.Remove(s));
+
+            return mockSet;
         }
 
         [TestMethod]
@@ -46,21 +55,18 @@ namespace TrucoServer.Tests.HelpersTests.FriendsTests
         [TestMethod]
         public void TestCheckFriendshipExistsReturnsTrueForReciprocal()
         {
-            var repo = new FriendRepository(mockContext.Object);
-
-            var friendships = new List<Friendship>
+            var friendshipList = new List<Friendship>
             {
-                new Friendship 
+                new Friendship
                 {
                     userID = 2,
                     friendID = 1
-                } 
-            }.AsQueryable();
+                }
+            };
 
-            mockFriendshipSet.As<IQueryable<Friendship>>().Setup(m => m.Provider).Returns(friendships.Provider);
-            mockFriendshipSet.As<IQueryable<Friendship>>().Setup(m => m.Expression).Returns(friendships.Expression);
-            mockFriendshipSet.As<IQueryable<Friendship>>().Setup(m => m.ElementType).Returns(friendships.ElementType);
-            mockFriendshipSet.As<IQueryable<Friendship>>().Setup(m => m.GetEnumerator()).Returns(friendships.GetEnumerator());
+            var mockFriendshipSet = GetMockDbSet(friendshipList);
+            mockContext.Setup(c => c.Friendship).Returns(mockFriendshipSet.Object);
+            var repo = new FriendRepository(mockContext.Object);
             bool exists = repo.CheckFriendshipExists(1, 2);
             Assert.IsTrue(exists);
         }
@@ -81,13 +87,10 @@ namespace TrucoServer.Tests.HelpersTests.FriendsTests
         [TestMethod]
         public void TestDeleteFriendshipsReturnsFalseIfNoneFound()
         {
+            var emptyList = new List<Friendship>();
+            var mockFriendshipSet = GetMockDbSet(emptyList);
+            mockContext.Setup(c => c.Friendship).Returns(mockFriendshipSet.Object);
             var repo = new FriendRepository(mockContext.Object);
-            var empty = new List<Friendship>().AsQueryable();
-
-            mockFriendshipSet.As<IQueryable<Friendship>>().Setup(m => m.Provider).Returns(empty.Provider);
-            mockFriendshipSet.As<IQueryable<Friendship>>().Setup(m => m.Expression).Returns(empty.Expression);
-            mockFriendshipSet.As<IQueryable<Friendship>>().Setup(m => m.ElementType).Returns(empty.ElementType);
-            mockFriendshipSet.As<IQueryable<Friendship>>().Setup(m => m.GetEnumerator()).Returns(empty.GetEnumerator());
             bool result = repo.DeleteFriendships(1, 2);
             Assert.IsFalse(result);
         }

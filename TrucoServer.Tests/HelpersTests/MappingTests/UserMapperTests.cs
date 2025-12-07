@@ -42,7 +42,7 @@ namespace TrucoServer.Tests.HelpersTests.MappingTests
                 }
             };
 
-            Assert.ThrowsException<JsonSerializationException>(() => mapper.MapUserToProfileData(user));
+            Assert.ThrowsException<JsonReaderException>(() => mapper.MapUserToProfileData(user));
         }
 
         [TestMethod]

@@ -59,8 +59,7 @@ namespace TrucoServer.Tests.UtilitiesTests
         public void TestIsBlockedReturnsFalseForNullIdentifier()
         {
             string user = null;
-            bool result = BruteForceProtector.IsBlocked(user);
-            Assert.IsFalse(result);
+            Assert.ThrowsException<ArgumentNullException>(() => BruteForceProtector.IsBlocked(user));
         }
     }
 }

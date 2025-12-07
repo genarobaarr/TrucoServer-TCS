@@ -30,7 +30,7 @@ namespace TrucoServer.Tests.HelpersTests.VerificationTests
         public void TestRequestEmailVerificationReturnsFalseForInvalidEmailFormat()
         {
             var service = new VerificationService(mockAuth.Object, mockEmail.Object);
-            string invalidEmail = "email@gmail.com";
+            string invalidEmail = "esto_no_es_un_email";
             bool result = service.RequestEmailVerification(invalidEmail, "es-MX");
             Assert.IsFalse(result);
         }

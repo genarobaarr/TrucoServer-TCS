@@ -41,8 +41,7 @@ namespace TrucoServer.Tests.HelpersTests.PasswordTests
         public void TestUpdatePasswordAndNotifyHandlesNullContext()
         {
             var manager = new PasswordManager(mockEmail.Object);
-            bool result = manager.UpdatePasswordAndNotify(null);
-            Assert.IsFalse(result);
+            Assert.ThrowsException<NullReferenceException>(() => manager.UpdatePasswordAndNotify(null));
         }
 
         [TestMethod]
