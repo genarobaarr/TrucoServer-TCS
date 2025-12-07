@@ -67,7 +67,7 @@ namespace TrucoServer.Tests.GameLogic
                 new Match 
                 { 
                     matchID = existingId, 
-                    lobbyID = 1, 
+                    lobbyID = 99, 
                     status = "InProgress" 
                 }
             }.AsQueryable();
@@ -76,7 +76,7 @@ namespace TrucoServer.Tests.GameLogic
             mockMatchSet.As<IQueryable<Match>>().Setup(m => m.Expression).Returns(data.Expression);
             mockMatchSet.As<IQueryable<Match>>().Setup(m => m.ElementType).Returns(data.ElementType);
             mockMatchSet.As<IQueryable<Match>>().Setup(m => m.GetEnumerator()).Returns(data.GetEnumerator());
-            int result = manager.SaveMatchToDatabase("CODE", 1, null);
+            int result = manager.SaveMatchToDatabase("CODE", 99, null);
             Assert.AreEqual(existingId, result);
         }
 

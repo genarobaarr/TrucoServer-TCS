@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using TrucoServer.Helpers.Email;
+using TrucoServer.Data.DTOs;
 
 namespace TrucoServer.Tests.HelpersTests.EmailTests
 {
@@ -18,7 +19,14 @@ namespace TrucoServer.Tests.HelpersTests.EmailTests
 
             try
             {
-                sender.SendEmail("test@gmail.com", "Subj", "Body");
+                var options = new EmailFormatOptions
+                {
+                    ToEmail = "test@gmail.com",
+                    EmailSubject = "Subj",
+                    EmailBody = "Body"
+                };
+
+                sender.SendEmail(options);
             }
             catch
             {
@@ -62,7 +70,7 @@ namespace TrucoServer.Tests.HelpersTests.EmailTests
         public void TestSendEmailHandlesNullArguments()
         {
             var sender = new EmailSender();
-            sender.SendEmail(null, null, null);
+            sender.SendEmail(null);
             Assert.IsTrue(true);
         }
 

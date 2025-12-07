@@ -10,6 +10,7 @@ using TrucoServer.GameLogic;
 using TrucoServer.Helpers.Match;
 using TrucoServer.Helpers.Profanity;
 using TrucoServer.Services;
+using TrucoServer.Helpers.Email;
 
 namespace TrucoServer.Tests.ServicesTests
 {
@@ -27,7 +28,7 @@ namespace TrucoServer.Tests.ServicesTests
         private Mock<DbSet<User>> mockUserSet;
         private Mock<DbSet<Lobby>> mockLobbySet;
         private Mock<DbSet<LobbyMember>> mockMemberSet;
-
+        private Mock<IEmailSender> mockEmail;
         private TrucoMatchServiceImp service;
 
         [TestInitialize]
@@ -41,7 +42,7 @@ namespace TrucoServer.Tests.ServicesTests
             mockGenerator = new Mock<IMatchCodeGenerator>();
             mockStarter = new Mock<IMatchStarter>();
             mockProfanity = new Mock<IProfanityServerService>();
-
+            mockEmail = new Mock<IEmailSender>();
             mockUserSet = new Mock<DbSet<User>>();
             mockLobbySet = new Mock<DbSet<Lobby>>();
             mockMemberSet = new Mock<DbSet<LobbyMember>>();
@@ -53,7 +54,7 @@ namespace TrucoServer.Tests.ServicesTests
             service = new TrucoMatchServiceImp(
                 mockContext.Object, mockRegistry.Object, mockJoin.Object,
                 mockCoordinator.Object, mockRepo.Object, mockGenerator.Object,
-                mockStarter.Object, mockProfanity.Object
+                mockStarter.Object, mockProfanity.Object, mockEmail.Object
             );
         }
 
@@ -113,8 +114,7 @@ namespace TrucoServer.Tests.ServicesTests
         public void TestJoinMatchReturnsFalseForInvalidCode()
         {
             var result = service.JoinMatch(null, "Player");
-
-            Assert.IsFalse(result);
+            Assert.AreEqual(0, result);
         }
 
         [TestMethod]
@@ -139,19 +139,21 @@ namespace TrucoServer.Tests.ServicesTests
             mockLobbySet.As<IQueryable<Lobby>>().Setup(m => m.GetEnumerator()).Returns(data.GetEnumerator());
 
             var result = service.JoinMatch("CODE", "Player");
-            Assert.IsFalse(result);
+            Assert.AreEqual(0, result);
         }
 
         [TestMethod]
         public void TestJoinMatchReturnsTrueOnSuccess()
         {
             int lobbyId = 10;
+            int maxPlayers = 4;
             mockCoordinator.Setup(c => c.TryGetLobbyIdFromCode("CODE", out lobbyId)).Returns(true);
-            
-            var lobby = new Lobby 
+
+            var lobby = new Lobby
             {
-                lobbyID = 10, 
-                status = "Public"
+                lobbyID = 10,
+                status = "Public",
+                maxPlayers = maxPlayers
             };
 
             var data = new List<Lobby>
@@ -168,7 +170,7 @@ namespace TrucoServer.Tests.ServicesTests
             mockJoin.Setup(j => j.ProcessSafeJoin(10, "CODE", "Player")).Returns(true);
 
             var result = service.JoinMatch("CODE", "Player");
-            Assert.IsTrue(result);
+            Assert.AreEqual(maxPlayers, result);
         }
 
         [TestMethod]

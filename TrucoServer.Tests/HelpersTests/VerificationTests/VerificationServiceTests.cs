@@ -9,6 +9,7 @@ using IEmailSender = TrucoServer.Helpers.Email.IEmailSender;
 using System.Threading.Tasks;
 using TrucoServer.Helpers.Authentication;
 using TrucoServer.Helpers.Verification;
+using TrucoServer.Data.DTOs;
 
 namespace TrucoServer.Tests.HelpersTests.VerificationTests
 {
@@ -38,7 +39,7 @@ namespace TrucoServer.Tests.HelpersTests.VerificationTests
         public void TestRequestEmailVerificationHandlesEmailSenderException()
         {
             mockAuth.Setup(a => a.GenerateSecureNumericCode()).Returns("123456");
-            mockEmail.Setup(e => e.SendEmail(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
+            mockEmail.Setup(e => e.SendEmail(It.IsAny<EmailFormatOptions>()))
                       .Throws(new Exception("SMTP Error"));
 
             var service = new VerificationService(mockAuth.Object, mockEmail.Object);
