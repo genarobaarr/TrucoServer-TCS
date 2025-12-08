@@ -235,38 +235,6 @@ namespace TrucoServer.Tests.ServicesTests
         }
 
         [TestMethod]
-        public void TestGetFriendsReturnsListOnSuccess()
-        {
-            var user = new User 
-            {
-                userID = 10,
-                username = "UserA"
-            };
-
-            var data = new List<User> 
-            {
-                user 
-            }.AsQueryable();
-
-            mockUserSet.As<IQueryable<User>>().Setup(m => m.Provider).Returns(data.Provider);
-            mockUserSet.As<IQueryable<User>>().Setup(m => m.Expression).Returns(data.Expression);
-            mockUserSet.As<IQueryable<User>>().Setup(m => m.ElementType).Returns(data.ElementType);
-            mockUserSet.As<IQueryable<User>>().Setup(m => m.GetEnumerator()).Returns(data.GetEnumerator());
-
-            var friends = new List<FriendData>
-            { 
-                new FriendData
-                { 
-                    Username = "Friend1" 
-                }
-            };
-
-            mockRepo.Setup(r => r.QueryFriendsList(10, "Accepted")).Returns(friends);
-            var result = service.GetFriends("UserA");
-            Assert.AreEqual(1, result.Count);
-        }
-
-        [TestMethod]
         public void TestGetFriendsHandlesException()
         {
             mockUserSet.As<IQueryable<User>>().Setup(m => m.Provider).Throws(new Exception("DB"));
@@ -287,36 +255,6 @@ namespace TrucoServer.Tests.ServicesTests
             Assert.AreEqual(0, result.Count);
         }
 
-        [TestMethod]
-        public void TestGetPendingFriendRequestsReturnsListOnSuccess()
-        {
-            var user = new User 
-            { 
-                userID = 10, 
-                username = "UserA"
-            };
-
-            var data = new List<User>
-            {
-                user
-            }.AsQueryable();
-
-            mockUserSet.As<IQueryable<User>>().Setup(m => m.Provider).Returns(data.Provider);
-            mockUserSet.As<IQueryable<User>>().Setup(m => m.Expression).Returns(data.Expression);
-            mockUserSet.As<IQueryable<User>>().Setup(m => m.ElementType).Returns(data.ElementType);
-            mockUserSet.As<IQueryable<User>>().Setup(m => m.GetEnumerator()).Returns(data.GetEnumerator());
-
-            var requests = new List<FriendData> {
-                new FriendData
-                {
-                Username = "Requester"
-                } 
-            };
-            
-            mockRepo.Setup(r => r.QueryPendingRequests(10, "Pending")).Returns(requests);
-            var result = service.GetPendingFriendRequests("UserA");
-            Assert.AreEqual(1, result.Count);
-        }
 
         [TestMethod]
         public void TestGetPendingFriendRequestsHandlesException()

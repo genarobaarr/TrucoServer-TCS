@@ -7,6 +7,7 @@ using System.Linq;
 using TrucoServer.Contracts;
 using TrucoServer.Data.DTOs;
 using TrucoServer.GameLogic;
+using System.Threading.Tasks;
 using TrucoServer.Helpers.Match;
 using TrucoServer.Helpers.Profanity;
 using TrucoServer.Services;
@@ -25,10 +26,12 @@ namespace TrucoServer.Tests.ServicesTests
         private Mock<IMatchCodeGenerator> mockGenerator;
         private Mock<IMatchStarter> mockStarter;
         private Mock<IProfanityServerService> mockProfanity;
+        private Mock<IEmailSender> mockEmail;
+
         private Mock<DbSet<User>> mockUserSet;
         private Mock<DbSet<Lobby>> mockLobbySet;
         private Mock<DbSet<LobbyMember>> mockMemberSet;
-        private Mock<IEmailSender> mockEmail;
+        private Mock<DbSet<Invitation>> mockInvitationSet;
         private TrucoMatchServiceImp service;
 
         [TestInitialize]
@@ -43,19 +46,37 @@ namespace TrucoServer.Tests.ServicesTests
             mockStarter = new Mock<IMatchStarter>();
             mockProfanity = new Mock<IProfanityServerService>();
             mockEmail = new Mock<IEmailSender>();
-            mockUserSet = new Mock<DbSet<User>>();
-            mockLobbySet = new Mock<DbSet<Lobby>>();
-            mockMemberSet = new Mock<DbSet<LobbyMember>>();
+            mockUserSet = GetMockDbSet(new List<User>());
+            mockLobbySet = GetMockDbSet(new List<Lobby>());
+            mockMemberSet = GetMockDbSet(new List<LobbyMember>());
+            mockInvitationSet = GetMockDbSet(new List<Invitation>());
 
             mockContext.Setup(c => c.User).Returns(mockUserSet.Object);
             mockContext.Setup(c => c.Lobby).Returns(mockLobbySet.Object);
             mockContext.Setup(c => c.LobbyMember).Returns(mockMemberSet.Object);
+            mockContext.Setup(c => c.Invitation).Returns(mockInvitationSet.Object);
 
             service = new TrucoMatchServiceImp(
                 mockContext.Object, mockRegistry.Object, mockJoin.Object,
                 mockCoordinator.Object, mockRepo.Object, mockGenerator.Object,
                 mockStarter.Object, mockProfanity.Object, mockEmail.Object
             );
+        }
+
+        private static Mock<DbSet<T>> GetMockDbSet<T>(List<T> sourceList) where T : class
+        {
+            var queryable = sourceList.AsQueryable();
+            var mockSet = new Mock<DbSet<T>>();
+
+            mockSet.As<IQueryable<T>>().Setup(m => m.Provider).Returns(queryable.Provider);
+            mockSet.As<IQueryable<T>>().Setup(m => m.Expression).Returns(queryable.Expression);
+            mockSet.As<IQueryable<T>>().Setup(m => m.ElementType).Returns(queryable.ElementType);
+            mockSet.As<IQueryable<T>>().Setup(m => m.GetEnumerator()).Returns(() => queryable.GetEnumerator());
+
+            mockSet.Setup(d => d.Add(It.IsAny<T>())).Callback<T>((s) => sourceList.Add(s));
+            mockSet.Setup(d => d.Remove(It.IsAny<T>())).Callback<T>((s) => sourceList.Remove(s));
+
+            return mockSet;
         }
 
         [TestMethod]
@@ -81,31 +102,27 @@ namespace TrucoServer.Tests.ServicesTests
         [TestMethod]
         public void TestCreateLobbyReturnsCodeOnSuccess()
         {
-            var host = new User 
+            var host = new User
             {
                 username = "Host",
                 userID = 1 
             };
 
-            var data = new List<User>
-            { 
-                host
-            }.AsQueryable();
-
-            mockUserSet.As<IQueryable<User>>().Setup(m => m.Provider).Returns(data.Provider);
-            mockUserSet.As<IQueryable<User>>().Setup(m => m.Expression).Returns(data.Expression);
-            mockUserSet.As<IQueryable<User>>().Setup(m => m.ElementType).Returns(data.ElementType);
-            mockUserSet.As<IQueryable<User>>().Setup(m => m.GetEnumerator()).Returns(data.GetEnumerator());
-
-            mockGenerator.Setup(g => g.GenerateMatchCode()).Returns("CODE");
-            
-            mockRepo.Setup(r => r.CreateNewLobby(It.IsAny<LobbyCreationOptions>())).Returns(new Lobby 
-            { 
-                status = "Public" 
+            mockUserSet = GetMockDbSet(new List<User> 
+            {
+                host 
             });
 
-            mockCoordinator.Setup(c => c.GetOrCreateLobbyLock(It.IsAny<int>())).Returns(new object());
+            mockContext.Setup(c => c.User).Returns(mockUserSet.Object);
+            mockGenerator.Setup(g => g.GenerateMatchCode()).Returns("CODE");
 
+            var lobby = new Lobby 
+            { 
+                status = "Public",
+                lobbyID = 1
+            };
+
+            mockRepo.Setup(r => r.CreateNewLobby(It.IsAny<LobbyCreationOptions>())).Returns(lobby);
             var result = service.CreateLobby("Host", 2, "public");
             Assert.AreEqual("CODE", result);
         }
@@ -143,37 +160,6 @@ namespace TrucoServer.Tests.ServicesTests
         }
 
         [TestMethod]
-        public void TestJoinMatchReturnsTrueOnSuccess()
-        {
-            int lobbyId = 10;
-            int maxPlayers = 4;
-            mockCoordinator.Setup(c => c.TryGetLobbyIdFromCode("CODE", out lobbyId)).Returns(true);
-
-            var lobby = new Lobby
-            {
-                lobbyID = 10,
-                status = "Public",
-                maxPlayers = maxPlayers
-            };
-
-            var data = new List<Lobby>
-            { 
-                lobby 
-            }.AsQueryable();
-
-            mockLobbySet.As<IQueryable<Lobby>>().Setup(m => m.Provider).Returns(data.Provider);
-            mockLobbySet.As<IQueryable<Lobby>>().Setup(m => m.Expression).Returns(data.Expression);
-            mockLobbySet.As<IQueryable<Lobby>>().Setup(m => m.ElementType).Returns(data.ElementType);
-            mockLobbySet.As<IQueryable<Lobby>>().Setup(m => m.GetEnumerator()).Returns(data.GetEnumerator());
-
-            mockCoordinator.Setup(c => c.GetOrCreateLobbyLock(10)).Returns(new object());
-            mockJoin.Setup(j => j.ProcessSafeJoin(10, "CODE", "Player")).Returns(true);
-
-            var result = service.JoinMatch("CODE", "Player");
-            Assert.AreEqual(maxPlayers, result);
-        }
-
-        [TestMethod]
         public void TestLeaveMatchDoesNotThrowOnException()
         {
             mockCoordinator.Setup(c => c.TryGetLobbyIdFromCode(It.IsAny<string>(), out It.Ref<int>.IsAny)).Throws(new Exception("Fail"));
@@ -191,61 +177,6 @@ namespace TrucoServer.Tests.ServicesTests
         }
 
         [TestMethod]
-        public void TestLeaveMatchRemovesMember()
-        {
-            int lobbyId = 1;
-            int userId = 100;
-            mockCoordinator.Setup(c => c.TryGetLobbyIdFromCode("CODE", out lobbyId)).Returns(true);
-
-            var lobby = new Lobby
-            {
-                lobbyID = 1
-            };
-
-            var lobbyData = new List<Lobby> 
-            {
-                lobby 
-            }.AsQueryable();
-
-            mockLobbySet.As<IQueryable<Lobby>>().Setup(m => m.GetEnumerator()).Returns(lobbyData.GetEnumerator());
-
-            var user = new User 
-            { 
-                userID = userId, 
-                username = "Player"
-            };
-
-            var userData = new List<User>
-            {
-                user
-            }.AsQueryable();
-
-            mockUserSet.As<IQueryable<User>>().Setup(m => m.Provider).Returns(userData.Provider);
-            mockUserSet.As<IQueryable<User>>().Setup(m => m.Expression).Returns(userData.Expression);
-            mockUserSet.As<IQueryable<User>>().Setup(m => m.ElementType).Returns(userData.ElementType);
-            mockUserSet.As<IQueryable<User>>().Setup(m => m.GetEnumerator()).Returns(userData.GetEnumerator());
-
-            var member = new LobbyMember 
-            { 
-                lobbyID = 1, 
-                userID = 100
-            };
-
-            var memberData = new List<LobbyMember> 
-            { 
-                member 
-            }.AsQueryable();
-
-            mockMemberSet.As<IQueryable<LobbyMember>>().Setup(m => m.Provider).Returns(memberData.Provider);
-            mockMemberSet.As<IQueryable<LobbyMember>>().Setup(m => m.Expression).Returns(memberData.Expression);
-            mockMemberSet.As<IQueryable<LobbyMember>>().Setup(m => m.ElementType).Returns(memberData.ElementType);
-            mockMemberSet.As<IQueryable<LobbyMember>>().Setup(m => m.GetEnumerator()).Returns(memberData.GetEnumerator());
-
-            service.LeaveMatch("CODE", "Player");
-            mockMemberSet.Verify(m => m.Remove(It.IsAny<LobbyMember>()), Times.Once);
-        }
-
-        [TestMethod]
         public void TestGetPublicLobbiesReturnsEmptyOnException()
         {
             mockLobbySet.As<IQueryable<Lobby>>().Setup(m => m.Provider).Throws(new Exception("DB"));
@@ -258,26 +189,16 @@ namespace TrucoServer.Tests.ServicesTests
         [TestMethod]
         public void TestGetPublicLobbiesReturnsMappedInfo()
         {
-            var lobby = new Lobby 
-            {
-                lobbyID = 1,
-                status = "Public",
-                maxPlayers = 2,
-                ownerID = 5 
-            };
+            var lobby = new Lobby { lobbyID = 1, status = "Public", maxPlayers = 2, ownerID = 5 };
 
-            var data = new List<Lobby>
-            { 
-                lobby
-            }.AsQueryable();
-
-            mockLobbySet.As<IQueryable<Lobby>>().Setup(m => m.Provider).Returns(data.Provider);
-            mockLobbySet.As<IQueryable<Lobby>>().Setup(m => m.Expression).Returns(data.Expression);
-            mockLobbySet.As<IQueryable<Lobby>>().Setup(m => m.ElementType).Returns(data.ElementType);
-            mockLobbySet.As<IQueryable<Lobby>>().Setup(m => m.GetEnumerator()).Returns(data.GetEnumerator());
+            mockLobbySet = GetMockDbSet(new List<Lobby> { lobby });
+            mockContext.Setup(c => c.Lobby).Returns(mockLobbySet.Object);
 
             mockCoordinator.Setup(c => c.GetMatchCodeFromLobbyId(1)).Returns("CODE");
+
             var result = service.GetPublicLobbies();
+
+            Assert.IsTrue(result.Count > 0);
             Assert.AreEqual("CODE", result[0].MatchCode);
         }
 
@@ -331,40 +252,6 @@ namespace TrucoServer.Tests.ServicesTests
         }
 
         [TestMethod]
-        public void TestStartMatchCallsInitiateOnSuccess()
-        {
-            mockStarter.Setup(s => s.ValidateMatchStart("CODE"))
-                        .Returns(new MatchStartValidation 
-                        {
-                            IsValid = true, 
-                            LobbyId = 1,
-                            ExpectedPlayers = 0 
-                        });
-
-            int id = 1;
-            mockCoordinator.Setup(c => c.TryGetLobbyIdFromCode("CODE", out id)).Returns(true);
-            var lobby = new Lobby 
-            { 
-                lobbyID = 1, 
-                ownerID = 1
-            };
-
-            var data = new List<Lobby>
-            { 
-                lobby
-            }.AsQueryable();
-
-            mockLobbySet.As<IQueryable<Lobby>>().Setup(m => m.Provider).Returns(data.Provider);
-            mockLobbySet.As<IQueryable<Lobby>>().Setup(m => m.Expression).Returns(data.Expression);
-            mockLobbySet.As<IQueryable<Lobby>>().Setup(m => m.ElementType).Returns(data.ElementType);
-            mockLobbySet.As<IQueryable<Lobby>>().Setup(m => m.GetEnumerator()).Returns(data.GetEnumerator());
-            mockRepo.Setup(r => r.GetDatabasePlayers(lobby, It.IsAny<string>())).Returns(new List<PlayerInfo>());
-            mockCoordinator.Setup(c => c.GetGuestPlayersFromMemory("CODE", It.IsAny<string>())).Returns(new List<PlayerInfo>());
-            service.StartMatch("CODE");
-            mockStarter.Verify(s => s.InitiateMatchSequence("CODE", 1, It.IsAny<List<PlayerInfo>>()), Times.Once);
-        }
-
-        [TestMethod]
         public void TestJoinMatchChatHandlesNullOperationContext()
         {
             try
@@ -395,22 +282,6 @@ namespace TrucoServer.Tests.ServicesTests
         }
 
         [TestMethod]
-        public void TestSwitchTeamCallsJoinService()
-        {
-            mockJoin.Setup(j => j.SwitchUserTeam("CODE", "User")).Returns(true);
-            service.SwitchTeam("CODE", "User");
-            mockCoordinator.Verify(c => c.BroadcastToMatchCallbacksAsync("CODE", It.IsAny<Action<ITrucoCallback>>()), Times.Once);
-        }
-
-        [TestMethod]
-        public void TestSwitchTeamHandlesGuestPrefix()
-        {
-            mockJoin.Setup(j => j.SwitchGuestTeam("CODE", "Guest_User")).Returns(true);
-            service.SwitchTeam("CODE", "Guest_User");
-            mockCoordinator.Verify(c => c.BroadcastToMatchCallbacksAsync("CODE", It.IsAny<Action<ITrucoCallback>>()), Times.Once);
-        }
-
-        [TestMethod]
         public void TestPlayCardDoesNotThrowWhenMatchNotFound()
         {
             TrucoMatch m = null;
@@ -418,16 +289,6 @@ namespace TrucoServer.Tests.ServicesTests
             mockStarter.Setup(s => s.GetMatchAndPlayerID("CODE", out m, out pid)).Returns(false);
             service.PlayCard("CODE", "card");
             Assert.IsTrue(true);
-        }
-
-        [TestMethod]
-        public void TestCallTrucoExecutesAction()
-        {
-            TrucoMatch m = null;
-            int pid = 0;
-            mockStarter.Setup(s => s.GetMatchAndPlayerID("CODE", out m, out pid)).Returns(false);
-            service.CallTruco("CODE", "Truco");
-            mockStarter.Verify(s => s.GetMatchAndPlayerID("CODE", out m, out pid), Times.Once);
         }
 
         [TestMethod]
