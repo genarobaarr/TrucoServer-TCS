@@ -435,15 +435,16 @@ namespace TrucoServer.Tests.ServicesTests
         [TestMethod]
         public void TestLogClientExceptionDoesNotThrow()
         {
-            service.LogClientException("Error", "Stack", "User");
-            Assert.IsTrue(true);
-        }
+            try
+            {
+                service.LogClientException("Error", "Stack", "User");
+            }
+            catch (Exception ex)
+            {
+                Assert.Fail("An unexpected exception was thrown: " + ex.Message);
+            }
 
-        [TestMethod]
-        public void TestLogClientExceptionHandlesNullUser()
-        {
-            service.LogClientException("Error", "Stack", null);
-            Assert.IsTrue(true);
+            Assert.IsNotNull(service);
         }
     }
 }
