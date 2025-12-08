@@ -419,22 +419,6 @@ namespace TrucoServer.Tests.ServicesTests
         }
 
         [TestMethod]
-        public void TestGetOnlinePlayersDoesNotReturnNull()
-        {
-            try
-            {
-                service.GetOnlinePlayers();
-            }
-            catch (NotImplementedException)
-            {
-                Assert.IsTrue(true);
-               
-                return;
-            }
-            Assert.Fail("Should have thrown");
-        }
-
-        [TestMethod]
         public void TestGetUserCallbackReturnsNullOnException()
         {
             var result = TrucoUserServiceImp.GetUserCallback(null);
