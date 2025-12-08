@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Concurrent;
-using TrucoServer.Utilities;
+using System.Data.SqlClient;
+using System.ServiceModel;
 using TrucoServer.GameLogic;
+using TrucoServer.Utilities;
 
 namespace TrucoServer.Helpers.Match
 {
@@ -37,9 +39,21 @@ namespace TrucoServer.Helpers.Match
                 {
                     match.AbortMatch(player);
                 }
-                catch (Exception ex) 
-                { 
-                    LogManager.LogError(ex, nameof(AbortAndRemoveGame)); 
+                catch (SqlException ex)
+                {
+                    LogManager.LogError(ex, nameof(AbortAndRemoveGame));
+                }
+                catch (TimeoutException ex)
+                {
+                    LogManager.LogError(ex, nameof(AbortAndRemoveGame));
+                }
+                catch (CommunicationException ex)
+                {
+                    LogManager.LogError(ex, nameof(AbortAndRemoveGame));
+                }
+                catch (Exception ex)
+                {
+                    LogManager.LogError(ex, nameof(AbortAndRemoveGame));
                 }
 
                 runningGames.TryRemove(matchCode, out _);

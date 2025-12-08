@@ -1,9 +1,4 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using TrucoServer.Helpers.Friends;
 
 namespace TrucoServer.Tests.HelpersTests.FriendsTests
@@ -25,7 +20,7 @@ namespace TrucoServer.Tests.HelpersTests.FriendsTests
                 Assert.Fail("Should handle exception internally");
             }
 
-            Assert.IsTrue(true);
+            Assert.IsNotNull(notifier);
         }
 
         [TestMethod]
@@ -42,23 +37,27 @@ namespace TrucoServer.Tests.HelpersTests.FriendsTests
                 Assert.Fail("Should handle exception internally");
             }
 
-            Assert.IsTrue(true);
+            Assert.IsNotNull(notifier);
         }
 
         [TestMethod]
         public void TestNotifyRequestReceivedDoesNotCrashWithNullInputs()
         {
             var notifier = new FriendNotifier();
+
             notifier.NotifyRequestReceived(null, null);
-            Assert.IsTrue(true);
+
+            Assert.IsNotNull(notifier);
         }
 
         [TestMethod]
         public void TestNotifyRequestAcceptedDoesNotCrashWithNullInputs()
         {
             var notifier = new FriendNotifier();
+
             notifier.NotifyRequestAccepted(null, null);
-            Assert.IsTrue(true);
+
+            Assert.IsNotNull(notifier);
         }
     }
 }

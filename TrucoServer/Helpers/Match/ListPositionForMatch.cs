@@ -5,9 +5,9 @@ using TrucoServer.Data.DTOs;
 
 namespace TrucoServer.Helpers.Match
 {
-    public class ListPositionService
+    public static class ListPositionService
     {
-        public List<PlayerInformation> DetermineTurnOrder(List<PlayerInformation> players, string ownerUsername)
+        public static List<PlayerInformation> DetermineTurnOrder(List<PlayerInformation> players, string ownerUsername)
         {
             if (players == null || players.Count == 0)
             {
@@ -19,7 +19,7 @@ namespace TrucoServer.Helpers.Match
                 : OrderForTeamMatch(players, ownerUsername);
         }
 
-        private List<PlayerInformation> OrderForDuel(List<PlayerInformation> players, string ownerUsername)
+        private static List<PlayerInformation> OrderForDuel(List<PlayerInformation> players, string ownerUsername)
         {
             var owner = players.FirstOrDefault(p => p.Username.Equals(ownerUsername, StringComparison.OrdinalIgnoreCase));
             var opponent = players.FirstOrDefault(p => !p.Username.Equals(ownerUsername, StringComparison.OrdinalIgnoreCase));
@@ -32,7 +32,7 @@ namespace TrucoServer.Helpers.Match
             return new List<PlayerInformation> { owner, opponent };
         }
 
-        private List<PlayerInformation> OrderForTeamMatch(List<PlayerInformation> players, string ownerUsername)
+        private static List<PlayerInformation> OrderForTeamMatch(List<PlayerInformation> players, string ownerUsername)
         {
             var owner = players.FirstOrDefault(p => p.Username.Equals(ownerUsername, StringComparison.OrdinalIgnoreCase));
             if (owner == null)

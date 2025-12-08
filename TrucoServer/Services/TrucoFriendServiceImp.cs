@@ -1,10 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data.Entity.Infrastructure;
+using System.Data.SqlClient;
 using System.Linq;
+using System.ServiceModel;
 using TrucoServer.Contracts;
 using TrucoServer.Data.DTOs;
-using TrucoServer.Utilities;
 using TrucoServer.Helpers.Friends;
+using TrucoServer.Utilities;
 
 namespace TrucoServer.Services
 {
@@ -67,10 +70,30 @@ namespace TrucoServer.Services
                 };
 
                 friendshipRepository.RegisterFriendRequest(requestDto);
+
                 notificationService.NotifyRequestReceived(toUser, fromUser);
 
                 return true;
-                
+            }
+            catch (DbUpdateException ex)
+            {
+                ServerException.HandleException(ex, nameof(SendFriendRequest));
+                return false;
+            }
+            catch (SqlException ex)
+            {
+                ServerException.HandleException(ex, nameof(SendFriendRequest));
+                return false;
+            }
+            catch (TimeoutException ex)
+            {
+                ServerException.HandleException(ex, nameof(SendFriendRequest));
+                return true;
+            }
+            catch (CommunicationException ex)
+            {
+                ServerException.HandleException(ex, nameof(SendFriendRequest));
+                return true;
             }
             catch (Exception ex)
             {
@@ -122,10 +145,30 @@ namespace TrucoServer.Services
                 };
 
                 friendshipRepository.CommitFriendshipAcceptance(commitOptions);
+
                 notificationService.NotifyRequestAccepted(fromUser, toUser);
 
                 return true;
-                
+            }
+            catch (DbUpdateException ex)
+            {
+                ServerException.HandleException(ex, nameof(AcceptFriendRequest));
+                return false;
+            }
+            catch (SqlException ex)
+            {
+                ServerException.HandleException(ex, nameof(AcceptFriendRequest));
+                return false;
+            }
+            catch (TimeoutException ex)
+            {
+                ServerException.HandleException(ex, nameof(AcceptFriendRequest));
+                return true;
+            }
+            catch (CommunicationException ex)
+            {
+                ServerException.HandleException(ex, nameof(AcceptFriendRequest));
+                return true;
             }
             catch (Exception ex)
             {
@@ -155,7 +198,16 @@ namespace TrucoServer.Services
                 User target = lookupResult.User2;
 
                 return friendshipRepository.DeleteFriendships(requester.userID, target.userID);
-                
+            }
+            catch (DbUpdateException ex)
+            {
+                ServerException.HandleException(ex, nameof(RemoveFriendOrRequest));
+                return false;
+            }
+            catch (SqlException ex)
+            {
+                ServerException.HandleException(ex, nameof(RemoveFriendOrRequest));
+                return false;
             }
             catch (Exception ex)
             {
@@ -174,14 +226,23 @@ namespace TrucoServer.Services
             try
             {
                 var user = context.User.SingleOrDefault(u => u.username == username);
-                   
+
                 if (user == null)
                 {
                     return new List<FriendData>();
                 }
 
                 return friendshipRepository.QueryFriendsList(user.userID, STATUS_ACCEPTED);
-                
+            }
+            catch (SqlException ex)
+            {
+                ServerException.HandleException(ex, nameof(GetFriends));
+                return new List<FriendData>();
+            }
+            catch (InvalidOperationException ex)
+            {
+                ServerException.HandleException(ex, nameof(GetFriends));
+                return new List<FriendData>();
             }
             catch (Exception ex)
             {
@@ -207,7 +268,16 @@ namespace TrucoServer.Services
                 }
 
                 return friendshipRepository.QueryPendingRequests(user.userID, STATUS_PENDING);
-                
+            }
+            catch (SqlException ex)
+            {
+                ServerException.HandleException(ex, nameof(GetPendingFriendRequests));
+                return new List<FriendData>();
+            }
+            catch (InvalidOperationException ex)
+            {
+                ServerException.HandleException(ex, nameof(GetPendingFriendRequests));
+                return new List<FriendData>();
             }
             catch (Exception ex)
             {

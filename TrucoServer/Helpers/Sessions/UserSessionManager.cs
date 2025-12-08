@@ -19,12 +19,23 @@ namespace TrucoServer.Helpers.Sessions
 
         public ITrucoCallback GetUserCallback(string username)
         {
+            if (string.IsNullOrEmpty(username))
+            {
+                return null;
+            }
+
             try
             {
                 if (onlineUsers.TryGetValue(username, out ITrucoCallback callback))
                 {
-                    var communicationObject = (ICommunicationObject)callback;
-                    
+                    var communicationObject = callback as ICommunicationObject;
+
+                    if (communicationObject == null)
+                    {
+                        onlineUsers.TryRemove(username, out _);
+                        return null;
+                    }
+
                     if (communicationObject.State == CommunicationState.Opened)
                     {
                         return callback;
@@ -45,6 +56,15 @@ namespace TrucoServer.Helpers.Sessions
 
                     onlineUsers.TryRemove(username, out _);
                 }
+            }
+            catch (ArgumentNullException ex)
+            {
+                ServerException.HandleException(ex, nameof(GetUserCallback));
+            }
+            catch (ObjectDisposedException ex)
+            {
+                onlineUsers.TryRemove(username, out _);
+                ServerException.HandleException(ex, nameof(GetUserCallback));
             }
             catch (Exception ex)
             {

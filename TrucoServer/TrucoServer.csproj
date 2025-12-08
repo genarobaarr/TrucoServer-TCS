@@ -74,6 +74,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Data\DTOs\AccessMatchResult.cs" />
     <Compile Include="Data\DTOs\BannedWordList.cs" />
     <Compile Include="Data\DTOs\EmailFormatOptions.cs" />
     <Compile Include="Data\DTOs\FriendRequest.cs" />
@@ -83,6 +84,8 @@
     <Compile Include="Data\DTOs\GuestJoinOptions.cs" />
     <Compile Include="Data\DTOs\InviteFriendData.cs" />
     <Compile Include="Data\DTOs\InviteFriendOptions.cs" />
+    <Compile Include="Data\DTOs\JoinMatchContext.cs" />
+    <Compile Include="Data\DTOs\LeaveMatchContext.cs" />
     <Compile Include="Data\DTOs\LobbyCreationOptions.cs" />
     <Compile Include="Data\DTOs\LobbyLeaveCriteria.cs" />
     <Compile Include="Data\DTOs\LobbyLeaveResult.cs" />
@@ -97,6 +100,8 @@
     <Compile Include="Data\DTOs\TeamCountResult.cs" />
     <Compile Include="Data\DTOs\TeamDeterminationOptions.cs" />
     <Compile Include="Data\DTOs\TrucoMatchContext.cs" />
+    <Compile Include="Data\DTOs\TrucoMatchServiceDependencies.cs" />
+    <Compile Include="Data\DTOs\TrucoUserServiceDependencies.cs" />
     <Compile Include="Data\DTOs\UserLookupOptions.cs" />
     <Compile Include="Data\DTOs\UserLookupResult.cs" />
     <Compile Include="Data\DTOs\UsernameUpdateContext.cs" />

@@ -1,5 +1,8 @@
 ﻿using System;
 using System.Collections.Concurrent;
+using System.Data;
+using System.Data.Entity.Infrastructure;
+using System.Data.SqlClient;
 using System.Linq;
 using System.ServiceModel;
 using TrucoServer.Data.DTOs;
@@ -22,22 +25,28 @@ namespace TrucoServer.Helpers.Security
             this.context = context;
         }
 
-        public bool RegisterOffense(string username)
+        public static bool RegisterOffense(string username)
         {
             int currentCount = offenses.AddOrUpdate(username, 1, (key, oldValue) => oldValue + 1);
             return currentCount >= MAX_OFFENSES;
         }
 
-        public void ResetOffenses(string username)
+        public static void ResetOffenses(string username)
         {
             offenses.TryRemove(username, out _);
         }
 
         public void BanUser(string username, string reason)
         {
+            if (string.IsNullOrEmpty(username))
+            {
+                return;
+            }
+
             try
             {
                 var user = context.User.FirstOrDefault(u => u.username == username);
+
                 if (user == null)
                 {
                     return;
@@ -54,6 +63,18 @@ namespace TrucoServer.Helpers.Security
                 context.SaveChanges();
 
                 ResetOffenses(username);
+            }
+            catch (DbUpdateException ex)
+            {
+                LogManager.LogError(ex, nameof(BanUser));
+            }
+            catch (SqlException ex)
+            {
+                LogManager.LogError(ex, nameof(BanUser));
+            }
+            catch (InvalidOperationException ex)
+            {
+                LogManager.LogError(ex, nameof(BanUser));
             }
             catch (Exception ex)
             {
@@ -76,16 +97,43 @@ namespace TrucoServer.Helpers.Security
 
         public bool IsUserBanned(string username)
         {
+            if (string.IsNullOrWhiteSpace(username))
+            {
+                return false;
+            }
+
             try
             {
                 var user = context.User.FirstOrDefault(u => u.username == username);
+
                 if (user == null)
                 {
                     return false;
                 }
 
                 bool isBanned = context.Ban.Any(b => b.userID == user.userID && b.expiresAt > DateTime.Now);
+
                 return isBanned;
+            }
+            catch (SqlException ex)
+            { 
+                LogManager.LogError(ex, nameof(IsUserBanned));
+                return false;
+            }
+            catch (TimeoutException ex)
+            {
+                LogManager.LogError(ex, nameof(IsUserBanned));
+                return false;
+            }
+            catch (DataException ex)
+            {
+                LogManager.LogError(ex, nameof(IsUserBanned));
+                return false;
+            }
+            catch (InvalidOperationException ex)
+            {
+                LogManager.LogError(ex, nameof(IsUserBanned));
+                return false;
             }
             catch (Exception ex)
             {

@@ -1,4 +1,7 @@
 ﻿using System;
+using System.Data;
+using System.Data.Entity.Infrastructure;
+using System.Data.SqlClient;
 using System.Linq;
 using TrucoServer.Data.DTOs;
 using TrucoServer.Utilities;
@@ -61,7 +64,7 @@ namespace TrucoServer.Helpers.Match
 
             if (options.Lobby == null)
             {
-                throw new ArgumentNullException(nameof(options.Lobby));
+                throw new InvalidOperationException("Lobby cannot be null");
             }
 
             if (!options.Lobby.status.Equals(STATUS_PUBLIC, StringComparison.OrdinalIgnoreCase))
@@ -101,7 +104,7 @@ namespace TrucoServer.Helpers.Match
             {
                 return false;
             }
-            if (lobby == null || lobby.status.Equals(STATUS_CLOSED, StringComparison.OrdinalIgnoreCase))
+            if (lobby == null || string.Equals(lobby.status, STATUS_CLOSED, StringComparison.OrdinalIgnoreCase))
             {
                 return false;
             }
@@ -109,12 +112,28 @@ namespace TrucoServer.Helpers.Match
             try
             {
                 int count = context.LobbyMember.Count(lm => lm.lobbyID == lobby.lobbyID);
+
                 if (count >= lobby.maxPlayers)
                 {
                     return false;
                 }
 
                 return true;
+            }
+            catch (SqlException ex)
+            {
+                ServerException.HandleException(ex, nameof(ValidateJoinConditions));
+                return false;
+            }
+            catch (DataException ex)
+            {
+                ServerException.HandleException(ex, nameof(ValidateJoinConditions));
+                return false;
+            }
+            catch (InvalidOperationException ex)
+            {
+                ServerException.HandleException(ex, nameof(ValidateJoinConditions));
+                return false;
             }
             catch (Exception ex)
             {
@@ -125,6 +144,11 @@ namespace TrucoServer.Helpers.Match
 
         public void AddPlayerToLobby(Lobby lobby, User playerUser)
         {
+            if (lobby == null || playerUser == null)
+            {
+                throw new InvalidOperationException("Lobby or User cannot be null");
+            }
+
             try
             {
                 if (lobbyRepository.IsPlayerInLobby(lobby.lobbyID, playerUser.userID))
@@ -151,7 +175,23 @@ namespace TrucoServer.Helpers.Match
                     Role = ROLE_PLAYER,
                     Team = assignedTeam
                 };
+
                 lobbyRepository.AddMember(memberDetails);
+            }
+            catch (DbUpdateException ex)
+            {
+                ServerException.HandleException(ex, nameof(AddPlayerToLobby));
+                throw;
+            }
+            catch (SqlException ex)
+            {
+                ServerException.HandleException(ex, nameof(AddPlayerToLobby));
+                throw;
+            }
+            catch (InvalidOperationException ex)
+            {
+                ServerException.HandleException(ex, nameof(AddPlayerToLobby));
+                throw;
             }
             catch (Exception ex)
             {
@@ -235,7 +275,6 @@ namespace TrucoServer.Helpers.Match
             }
 
             return false;
-            
         }
 
         public bool CanJoinTeam(string matchCode, string targetTeam)
@@ -257,6 +296,5 @@ namespace TrucoServer.Helpers.Match
 
             return (dbCount + memCount) < (lobby.maxPlayers / 2);
         }
-        
     }
 }

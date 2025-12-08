@@ -43,6 +43,10 @@ namespace TrucoServer.GameLogic
                 cards.Clear();
                 cards.AddRange(InitializeDeck());
             }
+            catch (ArgumentNullException ex)
+            {
+                ServerException.HandleException(ex, nameof(Reset));
+            }
             catch (Exception ex)
             {
                 ServerException.HandleException(ex, nameof(Reset));
@@ -54,6 +58,10 @@ namespace TrucoServer.GameLogic
             try
             {
                 shuffler.Shuffle(cards);
+            }
+            catch (ArgumentNullException ex)
+            {
+                ServerException.HandleException(ex, nameof(Shuffle));
             }
             catch (Exception ex)
             {
@@ -75,6 +83,16 @@ namespace TrucoServer.GameLogic
                 
                 return hand;
             }
+            catch (InvalidOperationException ex)
+            {
+                ServerException.HandleException(ex, nameof(DealHand));
+                return new List<TrucoCard>();
+            }
+            catch (ArgumentOutOfRangeException ex)
+            {
+                ServerException.HandleException(ex, nameof(DealHand));
+                return new List<TrucoCard>();
+            }
             catch (Exception ex)
             {
                 ServerException.HandleException(ex, nameof(DealHand));
@@ -95,6 +113,16 @@ namespace TrucoServer.GameLogic
                 cards.RemoveAt(0);
                 
                 return card;
+            }
+            catch (InvalidOperationException ex)
+            {
+                ServerException.HandleException(ex, nameof(DrawCard));
+                return null;
+            }
+            catch (ArgumentOutOfRangeException ex)
+            {
+                ServerException.HandleException(ex, nameof(DrawCard));
+                return null;
             }
             catch (Exception ex)
             {

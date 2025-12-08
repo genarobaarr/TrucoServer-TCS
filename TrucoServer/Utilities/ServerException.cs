@@ -148,7 +148,7 @@ namespace TrucoServer.Utilities
 
         private static void HandleTimeoutException(Exception ex, string methodName)
         {
-            LogManager.LogWarn($"Operation timed out in {methodName}", methodName);
+            LogManager.LogWarn(ex.Message, $"Operation timed out in {methodName}");
         }
 
         private static void HandleIndexOutOfRangeException(Exception ex, string methodName)

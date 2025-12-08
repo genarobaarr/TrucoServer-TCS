@@ -1,10 +1,12 @@
 ﻿using System;
+using System.Data;
+using System.Data.SqlClient;
 using System.Linq;
 using System.Security.Cryptography;
 using System.ServiceModel;
+using TrucoServer.Data.DTOs;
 using TrucoServer.Security;
 using TrucoServer.Utilities;
-using TrucoServer.Data.DTOs;
 
 namespace TrucoServer.Helpers.Authentication
 {
@@ -26,6 +28,11 @@ namespace TrucoServer.Helpers.Authentication
 
         public User AuthenticateUser(string username, string password)
         {
+            if (string.IsNullOrEmpty(username) || string.IsNullOrEmpty(password))
+            {
+                return null;
+            }
+
             try
             {
                 using (var context = new baseDatosTrucoEntities())
@@ -40,6 +47,21 @@ namespace TrucoServer.Helpers.Authentication
 
                     return user;
                 }
+            }
+            catch (SqlException ex)
+            {
+                ServerException.HandleException(ex, nameof(AuthenticateUser));
+                return null;
+            }
+            catch (DataException ex)
+            {
+                ServerException.HandleException(ex, nameof(AuthenticateUser));
+                return null;
+            }
+            catch (TimeoutException ex)
+            {
+                ServerException.HandleException(ex, nameof(AuthenticateUser));
+                return null;
             }
             catch (Exception ex)
             {
@@ -63,6 +85,16 @@ namespace TrucoServer.Helpers.Authentication
 
                     return secureCode;
                 }
+            }
+            catch (CryptographicException ex)
+            {
+                ServerException.HandleException(ex, nameof(GenerateSecureNumericCode));
+                return "000000";
+            }
+            catch (OutOfMemoryException ex)
+            {
+                ServerException.HandleException(ex, nameof(GenerateSecureNumericCode));
+                return "000000";
             }
             catch (Exception ex)
             {

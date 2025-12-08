@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Data.SqlClient;
 using System.Linq;
 using TrucoServer.Data.DTOs;
@@ -43,6 +44,26 @@ namespace TrucoServer.Helpers.Ranking
                         })
                         .ToList();
                 }
+            }
+            catch (SqlException ex)
+            {
+                ServerException.HandleException(ex, nameof(GetLastMatches));
+                return new List<MatchScore>();
+            }
+            catch (DataException ex)
+            {
+                ServerException.HandleException(ex, nameof(GetLastMatches));
+                return new List<MatchScore>();
+            }
+            catch (TimeoutException ex)
+            {
+                ServerException.HandleException(ex, nameof(GetLastMatches));
+                return new List<MatchScore>();
+            }
+            catch (InvalidOperationException ex)
+            {
+                ServerException.HandleException(ex, nameof(GetLastMatches));
+                return new List<MatchScore>();
             }
             catch (Exception ex)
             {

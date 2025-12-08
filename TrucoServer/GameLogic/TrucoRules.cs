@@ -158,13 +158,23 @@ namespace TrucoServer.GameLogic
         {
             try
             {
+                if (card == null)
+                {
+                    throw new ArgumentNullException(nameof(card));
+                }
+
                 if (trucoValueMap.TryGetValue((card.CardRank, card.CardSuit), out int value))
                 {
                     return value;
                 }
 
-                LogManager.LogError(new InvalidOperationException($"Unmapped letter: {card.FileName}"), nameof(GetTrucoValue));
-                
+                LogManager.LogError(new InvalidOperationException($"Unmapped card: {card.FileName}"), nameof(GetTrucoValue));
+
+                return 0;
+            }
+            catch (ArgumentNullException ex)
+            {
+                ServerException.HandleException(ex, nameof(GetTrucoValue));
                 return 0;
             }
             catch (Exception ex)
@@ -190,7 +200,7 @@ namespace TrucoServer.GameLogic
                 {
                     return -1;
                 }
-                
+
                 return 0;
             }
             catch (Exception ex)
@@ -204,9 +214,14 @@ namespace TrucoServer.GameLogic
         {
             try
             {
+                if (hand == null)
+                {
+                    throw new ArgumentNullException(nameof(hand));
+                }
+
                 var groups = hand.GroupBy(card => card.CardSuit);
                 var bestGroup = groups.OrderByDescending(g => g.Count()).FirstOrDefault();
-                
+
                 if (bestGroup == null || bestGroup.Count() < 2)
                 {
                     if (!hand.Any())
@@ -218,9 +233,14 @@ namespace TrucoServer.GameLogic
                 else
                 {
                     var twoHighest = bestGroup.OrderByDescending(card => GetEnvidoValue(card)).Take(2).ToList();
-                    
+
                     return GetEnvidoValue(twoHighest[0]) + GetEnvidoValue(twoHighest[1]) + 20;
                 }
+            }
+            catch (ArgumentNullException ex)
+            {
+                ServerException.HandleException(ex, nameof(CalculateEnvidoScore));
+                return 0;
             }
             catch (Exception ex)
             {
@@ -257,8 +277,13 @@ namespace TrucoServer.GameLogic
                 }
 
                 int sumValues = hand.Sum(card => GetEnvidoValue(card));
-                
+
                 return sumValues + FLOR_POINTS;
+            }
+            catch (ArgumentNullException ex)
+            {
+                ServerException.HandleException(ex, nameof(CalculateFlorScore));
+                return 0;
             }
             catch (Exception ex)
             {

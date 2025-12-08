@@ -1,9 +1,5 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using TrucoServer.Utilities;
 
 namespace TrucoServer.Tests.UtilitiesTests
@@ -25,7 +21,7 @@ namespace TrucoServer.Tests.UtilitiesTests
                 Assert.Fail("LogFatal should not throw");
             }
 
-            Assert.IsTrue(true);
+            Assert.IsNotNull(ex);
         }
 
         [TestMethod]
@@ -42,7 +38,7 @@ namespace TrucoServer.Tests.UtilitiesTests
                 Assert.Fail("LogError should not throw");
             }
 
-            Assert.IsTrue(true);
+            Assert.IsNotNull(ex);
         }
 
         [TestMethod]
@@ -59,7 +55,7 @@ namespace TrucoServer.Tests.UtilitiesTests
                 Assert.Fail("LogWarn should not throw");
             }
 
-            Assert.IsTrue(true);
+            Assert.AreEqual("Warning message", msg);
         }
 
         [TestMethod]
@@ -76,7 +72,7 @@ namespace TrucoServer.Tests.UtilitiesTests
                 Assert.Fail("Should handle null message");
             }
 
-            Assert.IsTrue(true);
+            Assert.IsNull(msg);
         }
 
         [TestMethod]
@@ -93,7 +89,7 @@ namespace TrucoServer.Tests.UtilitiesTests
                 Assert.Fail("Should handle null exception");
             }
 
-            Assert.IsTrue(true);
+            Assert.IsNull(ex);
         }
     }
 }

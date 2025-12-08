@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Data.Entity.Infrastructure;
 using System.Data.Entity.Validation;
 using System.Data.SqlClient;
@@ -53,6 +54,21 @@ namespace TrucoServer.GameLogic
 
                 return match.matchID;
             }
+            catch (SqlException ex)
+            {
+                ServerException.HandleException(ex, nameof(SaveMatchToDatabase));
+                return -1;
+            }
+            catch (DataException ex)
+            {
+                ServerException.HandleException(ex, nameof(SaveMatchToDatabase));
+                return -1;
+            }
+            catch (InvalidOperationException ex)
+            {
+                ServerException.HandleException(ex, nameof(SaveMatchToDatabase));
+                return -1;
+            }
             catch (Exception ex)
             {
                 ServerException.HandleException(ex, nameof(SaveMatchToDatabase));
@@ -89,6 +105,22 @@ namespace TrucoServer.GameLogic
 
                 context.SaveChanges();
                 
+            }
+            catch (ArgumentNullException ex)
+            {
+                ServerException.HandleException(ex, nameof(SaveMatchResult));
+            }
+            catch (DbUpdateException ex)
+            {
+                ServerException.HandleException(ex, nameof(SaveMatchResult));
+            }
+            catch (SqlException ex)
+            {
+                ServerException.HandleException(ex, nameof(SaveMatchResult));
+            }
+            catch (InvalidOperationException ex)
+            {
+                ServerException.HandleException(ex, nameof(SaveMatchResult));
             }
             catch (Exception ex)
             {

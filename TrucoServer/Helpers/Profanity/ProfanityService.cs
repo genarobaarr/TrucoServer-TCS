@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data.SqlClient;
 using System.Linq;
 using System.Text.RegularExpressions;
 using TrucoServer.Data.DTOs;
@@ -11,6 +12,7 @@ namespace TrucoServer.Helpers.Profanity
     {
         private readonly IBannedWordRepository repository;
         private readonly HashSet<string> cachedBannedWords;
+        private static readonly TimeSpan regexTimeout = TimeSpan.FromSeconds(0.5);
         private readonly object lockObject = new object();
 
         public ProfanityServerService(IBannedWordRepository repository)
@@ -25,6 +27,11 @@ namespace TrucoServer.Helpers.Profanity
             {
                 var words = repository.GetAllWords();
 
+                if (words == null)
+                {
+                    return;
+                }
+
                 lock (lockObject)
                 {
                     cachedBannedWords.Clear();
@@ -34,6 +41,22 @@ namespace TrucoServer.Helpers.Profanity
                              .Select(word => word.Trim())
                     );
                 }
+            }
+            catch (SqlException ex)
+            {
+                ServerException.HandleException(ex, nameof(LoadBannedWords));
+            }
+            catch (TimeoutException ex)
+            {
+                ServerException.HandleException(ex, nameof(LoadBannedWords));
+            }
+            catch (ArgumentNullException ex)
+            {
+                ServerException.HandleException(ex, nameof(LoadBannedWords));
+            }
+            catch (OutOfMemoryException ex)
+            {
+                ServerException.HandleException(ex, nameof(LoadBannedWords));
             }
             catch (Exception ex)
             {
@@ -81,7 +104,18 @@ namespace TrucoServer.Helpers.Profanity
             {
                 string pattern = $@"\b{Regex.Escape(badWord)}\b";
                 string replacement = new string('*', badWord.Length);
-                processedText = Regex.Replace(processedText, pattern, replacement, RegexOptions.IgnoreCase);
+
+                try
+                {
+                    processedText = Regex.Replace(processedText, pattern, replacement, RegexOptions.IgnoreCase, regexTimeout);
+                }
+                catch (Exception)
+                {
+                    /*
+                     * The error is intentionally ignored in 
+                     * order to attempt to process the next word
+                     */
+                }
             }
 
             return processedText;

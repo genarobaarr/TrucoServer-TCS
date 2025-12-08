@@ -52,12 +52,12 @@ namespace TrucoServer.Helpers.Friends
             context.SaveChanges();
         }
 
-        public Friendship FindPendingFriendship(FriendRequest request)
+        public Friendship FindPendingFriendship(FriendRequest criteria)
         {
             return context.Friendship.FirstOrDefault(f =>
-                f.userID == request.RequesterId &&
-                f.friendID == request.TargetId &&
-                f.status == request.Status);
+                f.userID == criteria.RequesterId &&
+                f.friendID == criteria.TargetId &&
+                f.status == criteria.Status);
         }
 
         public void CommitFriendshipAcceptance(FriendshipCommitOptions options)
@@ -69,7 +69,7 @@ namespace TrucoServer.Helpers.Friends
 
             if (options.Request == null)
             {
-                throw new ArgumentNullException(nameof(options.Request));
+                throw new InvalidOperationException("Request cannot be null");
             }
 
             options.Request.status = options.StatusAccepted;

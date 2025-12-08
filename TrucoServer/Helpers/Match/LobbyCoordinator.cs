@@ -1,11 +1,13 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Data;
+using System.Data.SqlClient;
 using System.Linq;
+using System.ServiceModel;
 using System.Threading.Tasks;
 using TrucoServer.Data.DTOs;
 using TrucoServer.Utilities;
-using System.ServiceModel;
 
 namespace TrucoServer.Helpers.Match
 {
@@ -83,12 +85,10 @@ namespace TrucoServer.Helpers.Match
 
                 var existingCallbackIndex = matchCallbacks[matchCode].FindIndex(cb => ReferenceEquals(cb, callback));
 
-                if (existingCallbackIndex >= 0)
+                if (existingCallbackIndex >= 0 && matchCallbackToPlayer.TryGetValue(callback, out _))
                 {
-                    if (matchCallbackToPlayer.TryGetValue(callback, out var existingInfo))
-                    {
-                        return false;
-                    }
+                    return false;
+                    
                 }
 
                 PlayerInfo playerInfo = CreatePlayerInfoForChat(matchCode, player);
@@ -153,10 +153,25 @@ namespace TrucoServer.Helpers.Match
         {
             try
             {
+                if (callback == null)
+                {
+                    return null;
+                }
+
                 if (matchCallbackToPlayer.TryGetValue(callback, out PlayerInfo info))
                 {
                     return info;
                 }
+                return null;
+            }
+            catch (ArgumentNullException ex)
+            {
+                ServerException.HandleException(ex, nameof(GetPlayerInfoFromCallback));
+                return null;
+            }
+            catch (InvalidOperationException ex)
+            {
+                ServerException.HandleException(ex, nameof(GetPlayerInfoFromCallback));
                 return null;
             }
             catch (Exception ex)
@@ -197,18 +212,40 @@ namespace TrucoServer.Helpers.Match
             {
                 return;
             }
+
             try
             {
-                if (!matchCallbacks.TryGetValue(matchCode, out var callbacksList))
+                Contracts.ITrucoCallback[] snapshot = null;
+
+                lock (matchCallbacks)
+                {
+                    if (matchCallbacks.TryGetValue(matchCode, out var callbacksList))
+                    {
+                        snapshot = callbacksList.ToArray();
+                    }
+                }
+
+                if (snapshot == null)
                 {
                     return;
                 }
-                var snapshot = callbacksList.ToArray();
 
                 foreach (var cb in snapshot)
                 {
                     Task.Run(() => ProcessSingleCallbackAsync(matchCode, cb, invocation));
                 }
+            }
+            catch (ArgumentNullException ex)
+            {
+                ServerException.HandleException(ex, nameof(BroadcastToMatchCallbacksAsync));
+            }
+            catch (InvalidOperationException ex)
+            {
+                ServerException.HandleException(ex, nameof(BroadcastToMatchCallbacksAsync));
+            }
+            catch (OutOfMemoryException ex)
+            {
+                ServerException.HandleException(ex, nameof(BroadcastToMatchCallbacksAsync));
             }
             catch (Exception ex)
             {
@@ -240,15 +277,32 @@ namespace TrucoServer.Helpers.Match
                                 }
                                 catch
                                 {
-                                    /* noop */
+                                    /*
+                                     * Intentionally ignore exceptions during comm.Abort() 
+                                     * as this is a best-effort cleanup for inactive callbacks.
+                                     * If the communication object is already in a faulted 
+                                     * or closed state, Abort() may throw harmless exceptions.
+                                     * Propagating these could disrupt the entire RemoveAll 
+                                     * operation, affecting other callbacks.
+                                     * Since the callback is being removed regardless, silently 
+                                     * failing here ensures the cleanup process continues without interruption.
+                                     */
                                 }
-                                
+
                                 return true;
                             }
                             return false;
                         });
                     }
                 }
+            }
+            catch (TimeoutException ex)
+            {
+                ServerException.HandleException(ex, nameof(RemoveInactiveCallbacks));
+            }
+            catch (CommunicationException ex)
+            {
+                ServerException.HandleException(ex, nameof(RemoveInactiveCallbacks));
             }
             catch (Exception ex)
             {
@@ -277,23 +331,47 @@ namespace TrucoServer.Helpers.Match
                     }
                     catch
                     {
-                        /* noop */
+                        /*
+                         * Exceptions during comm.Abort() are intentionally ignored 
+                         * as this is a cleanup operation for an already inactive callback.
+                         * If the communication object is in a faulted or closed 
+                         * state, Abort() may throw expected exceptions that do not 
+                         * need handling. Since the callback is being removed from 
+                         * the list regardless, propagating these errors would be 
+                         * unnecessary and could disrupt the process.
+                         * This ensures robust callback management without 
+                         * interrupting the async processing flow.
+                         */
                     }
 
                     return;
                 }
                 invocation(cb);
             }
+            catch (TimeoutException ex)
+            {
+                ServerException.HandleException(ex, nameof(ProcessSingleCallbackAsync));
+                RemoveCallbackSafe(matchCode, cb);
+            }
+            catch (CommunicationException ex)
+            {
+                ServerException.HandleException(ex, nameof(ProcessSingleCallbackAsync));
+                RemoveCallbackSafe(matchCode, cb);
+            }
             catch (Exception ex)
             {
                 ServerException.HandleException(ex, nameof(ProcessSingleCallbackAsync));
+                RemoveCallbackSafe(matchCode, cb);
+            }
+        }
 
-                lock (matchCallbacks)
+        void RemoveCallbackSafe(string matchCode, Contracts.ITrucoCallback cb)
+        {
+            lock (matchCallbacks)
+            {
+                if (matchCallbacks.TryGetValue(matchCode, out var listLocal))
                 {
-                    if (matchCallbacks.TryGetValue(matchCode, out var listLocal))
-                    {
-                        listLocal.Remove(cb);
-                    }
+                    listLocal.Remove(cb);
                 }
             }
         }
@@ -318,6 +396,14 @@ namespace TrucoServer.Helpers.Match
                 {
                     cb.OnPlayerJoined(matchCode, player);
                 }
+                catch (TimeoutException ex)
+                {
+                    ServerException.HandleException(ex, nameof(NotifyPlayerJoined));
+                }
+                catch (CommunicationException ex)
+                {
+                    ServerException.HandleException(ex, nameof(NotifyPlayerJoined));
+                }
                 catch (Exception ex)
                 {
                     ServerException.HandleException(ex, nameof(NotifyPlayerJoined));
@@ -332,6 +418,14 @@ namespace TrucoServer.Helpers.Match
                 try
                 {
                     cb.OnPlayerLeft(matchCode, player);
+                }
+                catch (TimeoutException ex)
+                {
+                    ServerException.HandleException(ex, nameof(NotifyPlayerLeft));
+                }
+                catch (CommunicationException ex)
+                {
+                    ServerException.HandleException(ex, nameof(NotifyPlayerLeft));
                 }
                 catch (Exception ex)
                 {
@@ -358,8 +452,19 @@ namespace TrucoServer.Helpers.Match
                 {
                     return false;
                 }
+
                 snapshot = callbacksList.ToArray();
                 return true;
+            }
+            catch (ArgumentNullException ex)
+            {
+                ServerException.HandleException(ex, nameof(TryGetCallbacksSnapshot));
+                return false;
+            }
+            catch (InvalidOperationException ex)
+            {
+                ServerException.HandleException(ex, nameof(TryGetCallbacksSnapshot));
+                return false;
             }
             catch (Exception ex)
             {
@@ -373,10 +478,19 @@ namespace TrucoServer.Helpers.Match
             callback = null;
             try
             {
-                var candidates = matchCallbackToPlayer.Where(kvp => kvp.Value.Username == username).Select(kvp => kvp.Key).ToList();
+                if (string.IsNullOrEmpty(username))
+                {
+                    return false;
+                }
+
+                var candidates = matchCallbackToPlayer
+                    .Where(kvp => kvp.Value.Username == username)
+                    .Select(kvp => kvp.Key)
+                    .ToList();
+
                 foreach (var cb in candidates)
                 {
-                    if (((ICommunicationObject)cb).State == CommunicationState.Opened)
+                    if (cb is ICommunicationObject comm && comm.State == CommunicationState.Opened)
                     {
                         callback = cb;
                         return true;
@@ -386,6 +500,21 @@ namespace TrucoServer.Helpers.Match
                         matchCallbackToPlayer.TryRemove(cb, out _);
                     }
                 }
+                return false;
+            }
+            catch (InvalidCastException ex)
+            {
+                ServerException.HandleException(ex, nameof(TryGetActiveCallbackForPlayer));
+                return false;
+            }
+            catch (CommunicationObjectAbortedException ex)
+            {
+                ServerException.HandleException(ex, nameof(TryGetActiveCallbackForPlayer));
+                return false;
+            }
+            catch (ObjectDisposedException ex)
+            {
+                ServerException.HandleException(ex, nameof(TryGetActiveCallbackForPlayer));
                 return false;
             }
             catch (Exception ex)
@@ -427,7 +556,21 @@ namespace TrucoServer.Helpers.Match
                 {
                     return GetRegisteredPlayerInfo(lobby.lobbyID, player);
                 }
-                
+            }
+            catch (SqlException ex)
+            {
+                ServerException.HandleException(ex, nameof(CreatePlayerInfoForChat));
+                return new PlayerInfo { Username = player };
+            }
+            catch (DataException ex)
+            {
+                ServerException.HandleException(ex, nameof(CreatePlayerInfoForChat));
+                return new PlayerInfo { Username = player };
+            }
+            catch (InvalidOperationException ex)
+            {
+                ServerException.HandleException(ex, nameof(CreatePlayerInfoForChat));
+                return new PlayerInfo { Username = player };
             }
             catch (Exception ex)
             {
@@ -441,7 +584,6 @@ namespace TrucoServer.Helpers.Match
             var lobby = creationContext.Lobby;
             var matchCode = creationContext.MatchCode;
             var player = creationContext.PlayerUsername;
-
             string assignedTeam = TEAM_1;
 
             try
@@ -480,6 +622,14 @@ namespace TrucoServer.Helpers.Match
                 {
                     assignedTeam = (t1Total <= t2Total) ? TEAM_1 : TEAM_2;
                 }
+            }
+            catch (SqlException ex)
+            {
+                ServerException.HandleException(ex, nameof(CreateGuestPlayerInfo));
+            }
+            catch (InvalidOperationException ex)
+            {
+                ServerException.HandleException(ex, nameof(CreateGuestPlayerInfo));
             }
             catch (Exception ex)
             {

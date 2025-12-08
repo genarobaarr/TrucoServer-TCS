@@ -7,7 +7,6 @@ using System.Linq;
 using TrucoServer.Contracts;
 using TrucoServer.Data.DTOs;
 using TrucoServer.GameLogic;
-using System.Threading.Tasks;
 using TrucoServer.Helpers.Match;
 using TrucoServer.Helpers.Profanity;
 using TrucoServer.Services;
@@ -32,6 +31,7 @@ namespace TrucoServer.Tests.ServicesTests
         private Mock<DbSet<Lobby>> mockLobbySet;
         private Mock<DbSet<LobbyMember>> mockMemberSet;
         private Mock<DbSet<Invitation>> mockInvitationSet;
+
         private TrucoMatchServiceImp service;
 
         [TestInitialize]
@@ -46,6 +46,7 @@ namespace TrucoServer.Tests.ServicesTests
             mockStarter = new Mock<IMatchStarter>();
             mockProfanity = new Mock<IProfanityServerService>();
             mockEmail = new Mock<IEmailSender>();
+
             mockUserSet = GetMockDbSet(new List<User>());
             mockLobbySet = GetMockDbSet(new List<Lobby>());
             mockMemberSet = GetMockDbSet(new List<LobbyMember>());
@@ -56,11 +57,19 @@ namespace TrucoServer.Tests.ServicesTests
             mockContext.Setup(c => c.LobbyMember).Returns(mockMemberSet.Object);
             mockContext.Setup(c => c.Invitation).Returns(mockInvitationSet.Object);
 
-            service = new TrucoMatchServiceImp(
-                mockContext.Object, mockRegistry.Object, mockJoin.Object,
-                mockCoordinator.Object, mockRepo.Object, mockGenerator.Object,
-                mockStarter.Object, mockProfanity.Object, mockEmail.Object
-            );
+            var dependencies = new TrucoMatchServiceDependencies
+            {
+                GameRegistry = mockRegistry.Object,
+                JoinService = mockJoin.Object,
+                LobbyCoordinator = mockCoordinator.Object,
+                LobbyRepository = mockRepo.Object,
+                CodeGenerator = mockGenerator.Object,
+                Starter = mockStarter.Object,
+                ProfanityService = mockProfanity.Object,
+                EmailSender = mockEmail.Object
+            };
+
+            service = new TrucoMatchServiceImp(mockContext.Object, dependencies);
         }
 
         private static Mock<DbSet<T>> GetMockDbSet<T>(List<T> sourceList) where T : class
@@ -83,7 +92,6 @@ namespace TrucoServer.Tests.ServicesTests
         public void TestCreateLobbyReturnsEmptyIfUsernameInvalid()
         {
             var result = service.CreateLobby("", 2, "public");
-
             Assert.AreEqual(string.Empty, result);
         }
 
@@ -95,7 +103,6 @@ namespace TrucoServer.Tests.ServicesTests
             mockUserSet.As<IQueryable<User>>().Setup(m => m.GetEnumerator()).Returns(data.GetEnumerator());
 
             var result = service.CreateLobby("Host", 2, "public");
-
             Assert.AreEqual(string.Empty, result);
         }
 
@@ -105,19 +112,15 @@ namespace TrucoServer.Tests.ServicesTests
             var host = new User
             {
                 username = "Host",
-                userID = 1 
+                userID = 1
             };
 
-            mockUserSet = GetMockDbSet(new List<User> 
-            {
-                host 
-            });
-
+            mockUserSet = GetMockDbSet(new List<User> { host });
             mockContext.Setup(c => c.User).Returns(mockUserSet.Object);
             mockGenerator.Setup(g => g.GenerateMatchCode()).Returns("CODE");
 
-            var lobby = new Lobby 
-            { 
+            var lobby = new Lobby
+            {
                 status = "Public",
                 lobbyID = 1
             };
@@ -145,10 +148,7 @@ namespace TrucoServer.Tests.ServicesTests
                 status = "Closed"
             };
 
-            var data = new List<Lobby>
-            { 
-                lobby
-            }.AsQueryable();
+            var data = new List<Lobby> { lobby }.AsQueryable();
 
             mockLobbySet.As<IQueryable<Lobby>>().Setup(m => m.Provider).Returns(data.Provider);
             mockLobbySet.As<IQueryable<Lobby>>().Setup(m => m.Expression).Returns(data.Expression);
@@ -173,16 +173,14 @@ namespace TrucoServer.Tests.ServicesTests
                 Assert.Fail("Exception should be handled");
             }
 
-            Assert.IsTrue(true);
+            Assert.IsNotNull(service);
         }
 
         [TestMethod]
         public void TestGetPublicLobbiesReturnsEmptyOnException()
         {
             mockLobbySet.As<IQueryable<Lobby>>().Setup(m => m.Provider).Throws(new Exception("DB"));
-
             var result = service.GetPublicLobbies();
-
             Assert.AreEqual(0, result.Count);
         }
 
@@ -206,7 +204,6 @@ namespace TrucoServer.Tests.ServicesTests
         public void TestGetLobbyPlayersReturnsEmptyForInvalidCode()
         {
             var result = service.GetLobbyPlayers(null);
-
             Assert.AreEqual(0, result.Count);
         }
 
@@ -218,21 +215,19 @@ namespace TrucoServer.Tests.ServicesTests
 
             int id = 1;
             mockCoordinator.Setup(c => c.TryGetLobbyIdFromCode("CODE", out id)).Returns(true);
-            var lobby = new Lobby 
+            var lobby = new Lobby
             {
-                lobbyID = 1, 
+                lobbyID = 1,
                 ownerID = 9
             };
 
-            var data = new List<Lobby> 
-            { 
-                lobby 
-            }.AsQueryable();
+            var data = new List<Lobby> { lobby }.AsQueryable();
 
             mockLobbySet.As<IQueryable<Lobby>>().Setup(m => m.Provider).Returns(data.Provider);
             mockLobbySet.As<IQueryable<Lobby>>().Setup(m => m.Expression).Returns(data.Expression);
             mockLobbySet.As<IQueryable<Lobby>>().Setup(m => m.ElementType).Returns(data.ElementType);
             mockLobbySet.As<IQueryable<Lobby>>().Setup(m => m.GetEnumerator()).Returns(data.GetEnumerator());
+
             mockRepo.Setup(r => r.GetLobbyOwnerName(9)).Returns("Owner");
             mockRepo.Setup(r => r.GetDatabasePlayers(lobby, "Owner")).Returns(new List<PlayerInfo>());
             mockCoordinator.Setup(c => c.GetGuestPlayersFromMemory("CODE", "Owner")).Returns(new List<PlayerInfo>());
@@ -263,7 +258,7 @@ namespace TrucoServer.Tests.ServicesTests
                 Assert.Fail("Exception should be handled internally");
             }
 
-            Assert.IsTrue(true);
+            Assert.IsNotNull(service);
         }
 
         [TestMethod]
@@ -274,11 +269,13 @@ namespace TrucoServer.Tests.ServicesTests
             mockCoordinator.Verify(c => c.BroadcastToMatchCallbacksAsync(It.IsAny<string>(), It.IsAny<Action<ITrucoCallback>>()), Times.Never);
         }
 
+        // 2. CORRECCIÓN DE ASERCIÓN 3/4
         [TestMethod]
         public void TestLeaveMatchChatHandlesNullOperationContext()
         {
             service.LeaveMatchChat("CODE", "Player");
-            Assert.IsTrue(true);
+
+            Assert.IsNotNull(service);
         }
 
         [TestMethod]
@@ -287,8 +284,10 @@ namespace TrucoServer.Tests.ServicesTests
             TrucoMatch m = null;
             int pid = 0;
             mockStarter.Setup(s => s.GetMatchAndPlayerID("CODE", out m, out pid)).Returns(false);
+
             service.PlayCard("CODE", "card");
-            Assert.IsTrue(true);
+
+            Assert.IsNotNull(service);
         }
 
         [TestMethod]

@@ -28,14 +28,43 @@ namespace TrucoServer.Utilities
             try
             {
                 string jsonText = File.ReadAllText(filePath);
+
                 var wrapper = JsonConvert.DeserializeObject<ConfigurationFileWrapper>(jsonText);
 
-                emailSettings = wrapper.EmailSettings;
+                emailSettings = wrapper?.EmailSettings;
 
                 if (emailSettings == null)
                 {
                     throw new InvalidOperationException("The key 'EmailSettings' was not found or could not be deserialized");
                 }
+            }
+            catch (FileNotFoundException ex)
+            {
+                ServerException.HandleException(ex, nameof(LoadConfiguration));
+            }
+            catch (DirectoryNotFoundException ex)
+            {
+                ServerException.HandleException(ex, nameof(LoadConfiguration));
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                ServerException.HandleException(ex, nameof(LoadConfiguration));
+            }
+            catch (JsonSerializationException ex)
+            {
+                ServerException.HandleException(ex, nameof(LoadConfiguration));
+            }
+            catch (JsonReaderException ex)
+            {
+                ServerException.HandleException(ex, nameof(LoadConfiguration));
+            }
+            catch (InvalidOperationException ex)
+            {
+                ServerException.HandleException(ex, nameof(LoadConfiguration));
+            }
+            catch (IOException ex)
+            {
+                ServerException.HandleException(ex, nameof(LoadConfiguration));
             }
             catch (Exception ex)
             {

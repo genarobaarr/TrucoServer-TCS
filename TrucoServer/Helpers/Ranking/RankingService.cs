@@ -1,7 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
+using System.Data;
 using System.Data.SqlClient;
+using System.Linq;
 using TrucoServer.Data.DTOs;
 using TrucoServer.Utilities;
 
@@ -26,10 +27,29 @@ namespace TrucoServer.Helpers.Ranking
                         .ToList();
                 }
             }
+            catch (SqlException ex)
+            {
+                ServerException.HandleException(ex, nameof(GetGlobalRanking));
+                return new List<PlayerStats>();
+            }
+            catch (TimeoutException ex)
+            {
+                ServerException.HandleException(ex, nameof(GetGlobalRanking));
+                return new List<PlayerStats>();
+            }
+            catch (DataException ex)
+            {
+                ServerException.HandleException(ex, nameof(GetGlobalRanking));
+                return new List<PlayerStats>();
+            }
+            catch (InvalidOperationException ex)
+            {
+                ServerException.HandleException(ex, nameof(GetGlobalRanking));
+                return new List<PlayerStats>();
+            }
             catch (Exception ex)
             {
                 ServerException.HandleException(ex, nameof(GetGlobalRanking));
-                LogManager.LogError(ex, nameof(GetGlobalRanking));
                 return new List<PlayerStats>();
             }
         }

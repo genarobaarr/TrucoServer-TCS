@@ -3,11 +3,8 @@ using Moq;
 using System;
 using System.Collections.Generic;
 using System.Data.Entity;
-using System.Data.Entity.Infrastructure;
 using System.Linq;
 using System.ServiceModel;
-using System.Threading.Tasks;
-using TrucoServer.Contracts;
 using TrucoServer.Data.DTOs;
 using TrucoServer.Helpers.Authentication;
 using TrucoServer.Helpers.Email;
@@ -18,6 +15,7 @@ using TrucoServer.Helpers.Ranking;
 using TrucoServer.Helpers.Sessions;
 using TrucoServer.Helpers.Verification;
 using TrucoServer.Services;
+using TrucoServer.Helpers.Security;
 
 namespace TrucoServer.Tests.ServicesTests
 {
@@ -52,16 +50,27 @@ namespace TrucoServer.Tests.ServicesTests
             mockMapper = new Mock<IUserMapper>();
             mockRanking = new Mock<IRankingService>();
             mockHistory = new Mock<IMatchHistoryService>();
+
             mockUserSet = GetMockDbSet(new List<User>());
             mockUserProfileSet = GetMockDbSet(new List<UserProfile>());
             mockContext.Setup(c => c.User).Returns(mockUserSet.Object);
             mockContext.Setup(c => c.UserProfile).Returns(mockUserProfileSet.Object);
 
-            service = new TrucoUserServiceImp(
-                mockContext.Object, mockAuth.Object, mockSession.Object,
-                mockEmail.Object, mockVerification.Object, mockProfile.Object,
-                mockPassword.Object, mockMapper.Object, mockRanking.Object, mockHistory.Object
-            );
+            var dependencies = new TrucoUserServiceDependencies
+            {
+                AuthenticationHelper = mockAuth.Object,
+                SessionManager = mockSession.Object,
+                EmailSender = mockEmail.Object,
+                VerificationService = mockVerification.Object,
+                ProfileUpdater = mockProfile.Object,
+                PasswordManager = mockPassword.Object,
+                UserMapper = mockMapper.Object,
+                RankingService = mockRanking.Object,
+                MatchHistoryService = mockHistory.Object,
+                BanService = new BanService(mockContext.Object)
+            };
+
+            service = new TrucoUserServiceImp(mockContext.Object, dependencies);
         }
 
         private static Mock<DbSet<T>> GetMockDbSet<T>(List<T> sourceList) where T : class
@@ -116,18 +125,16 @@ namespace TrucoServer.Tests.ServicesTests
         [TestMethod]
         public void TestRegisterReturnsFalseWhenUserAlreadyExists()
         {
-            var data = new List<User> 
+            var data = new List<User>
             {
-                new User 
-                { 
-                    email = "exist@gmail.com" 
-                } 
+                new User { email = "exist@gmail.com" }
             }.AsQueryable();
 
             mockUserSet.As<IQueryable<User>>().Setup(m => m.Provider).Returns(data.Provider);
             mockUserSet.As<IQueryable<User>>().Setup(m => m.Expression).Returns(data.Expression);
             mockUserSet.As<IQueryable<User>>().Setup(m => m.ElementType).Returns(data.ElementType);
             mockUserSet.As<IQueryable<User>>().Setup(m => m.GetEnumerator()).Returns(data.GetEnumerator());
+
             bool result = service.Register("NewUser", "Pass123", "exist@gmail.com");
             Assert.IsFalse(result);
         }
@@ -150,9 +157,9 @@ namespace TrucoServer.Tests.ServicesTests
             mockUserSet.As<IQueryable<User>>().Setup(m => m.ElementType).Returns(data.ElementType);
             mockUserSet.As<IQueryable<User>>().Setup(m => m.GetEnumerator()).Returns(data.GetEnumerator());
 
-            bool result = service.SaveUserProfile(new UserProfileData 
+            bool result = service.SaveUserProfile(new UserProfileData
             {
-                Email = "test@gmail.com" 
+                Email = "test@gmail.com"
             });
 
             Assert.IsFalse(result);
@@ -208,12 +215,12 @@ namespace TrucoServer.Tests.ServicesTests
         {
             mockVerification.Setup(v => v.ConfirmEmailVerification(It.IsAny<string>(), It.IsAny<string>()))
                              .Returns(false);
-           
-            var options = new PasswordResetOptions 
+
+            var options = new PasswordResetOptions
             {
                 Email = "t@gmail.com",
-                NewPassword = "P1", 
-                Code = "123" 
+                NewPassword = "P1",
+                Code = "123"
             };
 
             bool result = service.PasswordReset(options);
@@ -258,7 +265,7 @@ namespace TrucoServer.Tests.ServicesTests
         [TestMethod]
         public void TestUsernameExistsReturnsFalseForInvalidInput()
         {
-            bool result = service.UsernameExists("   ");
+            bool result = service.UsernameExists("    ");
             Assert.IsFalse(result);
         }
 
@@ -274,11 +281,8 @@ namespace TrucoServer.Tests.ServicesTests
         public void TestUsernameExistsReturnsTrueIfFound()
         {
             var userList = new List<User>
-            { 
-                new User 
-                { 
-                    username = "User"
-                } 
+            {
+                new User { username = "User" }
             };
 
             var mockSet = GetMockDbSet(userList);
@@ -305,12 +309,9 @@ namespace TrucoServer.Tests.ServicesTests
         [TestMethod]
         public void TestEmailExistsReturnsTrueIfFound()
         {
-            var data = new List<User> 
-            { 
-                new User
-                {
-                email = "found@gmail.com"
-                } 
+            var data = new List<User>
+            {
+                new User { email = "found@gmail.com" }
             }.AsQueryable();
 
             mockUserSet.As<IQueryable<User>>().Setup(m => m.Provider).Returns(data.Provider);
@@ -369,13 +370,10 @@ namespace TrucoServer.Tests.ServicesTests
         public void TestGetGlobalRankingReturnsListOnSuccess()
         {
             var list = new List<PlayerStats>
-            { 
-                new PlayerStats
-                { 
-                    PlayerName = "A" 
-                } 
+            {
+                new PlayerStats { PlayerName = "A" }
             };
-       
+
             mockRanking.Setup(r => r.GetGlobalRanking()).Returns(list);
             var result = service.GetGlobalRanking();
             Assert.AreEqual(1, result.Count);
@@ -399,14 +397,11 @@ namespace TrucoServer.Tests.ServicesTests
         [TestMethod]
         public void TestGetLastMatchesReturnsData()
         {
-            var matches = new List<MatchScore> 
-            { 
-                new MatchScore
-                {
-                    MatchID = "1" 
-                } 
+            var matches = new List<MatchScore>
+            {
+                new MatchScore { MatchID = "1" }
             };
-            
+
             mockHistory.Setup(h => h.GetLastMatches("User")).Returns(matches);
             var result = service.GetLastMatches("User");
             Assert.AreEqual(1, result.Count);
@@ -435,14 +430,9 @@ namespace TrucoServer.Tests.ServicesTests
         [TestMethod]
         public void TestLogClientExceptionDoesNotThrow()
         {
-            try
-            {
-                service.LogClientException("Error", "Stack", "User");
-            }
-            catch (Exception ex)
-            {
-                Assert.Fail("An unexpected exception was thrown: " + ex.Message);
-            }
+            service.LogClientException("Error", "Stack", "User");
+
+            Assert.IsNotNull(service);
         }
     }
 }

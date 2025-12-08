@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data.SqlClient;
 using System.Linq;
 using System.Runtime.Remoting.Contexts;
 using System.ServiceModel;
@@ -59,7 +60,6 @@ namespace TrucoServer.GameLogic
 
         private const int CURRENT_ROUND = 0;
         private const int CURRENT_ENVIDO_POINT = 0;
-        private const int INDEX_VALUE = 0;
         private const int CURRENT_FLOR_SCORE = 0;
         private const int CURRENT_FLOR_POINT = 0;
         private const int POINTS_FLOR_DIRECT = 3;
@@ -123,10 +123,9 @@ namespace TrucoServer.GameLogic
                 this.deck = trucoMatchContext.Deck;
                 this.gameManager = trucoMatchContext.GameManager;
 
-                this.DbMatchId = gameManager.SaveMatchToDatabase(MatchCode, LobbyID, Players);
-
                 this.playerHands = Players.ToDictionary(p => p.PlayerID, p => new List<TrucoCard>());
                 this.playedCards = Players.ToDictionary(p => p.PlayerID, p => new List<TrucoCard>());
+
                 this.cardsOnTable = new Dictionary<int, TrucoCard>();
                 this.roundWinners = new string[3];
                 this.Team1Score = 0;
@@ -136,7 +135,22 @@ namespace TrucoServer.GameLogic
                 this.handStartingPlayerIndex = 0;
                 this.turnIndex = 0;
 
-                gameManager.SaveMatchToDatabase(MatchCode, LobbyID, Players);
+                this.DbMatchId = gameManager.SaveMatchToDatabase(MatchCode, LobbyID, Players);
+            }
+            catch (ArgumentNullException ex)
+            {
+                ServerException.HandleException(ex, nameof(TrucoMatch));
+                throw;
+            }
+            catch (ArgumentException ex)
+            {
+                ServerException.HandleException(ex, nameof(TrucoMatch));
+                throw;
+            }
+            catch (SqlException ex)
+            {
+                ServerException.HandleException(ex, nameof(TrucoMatch));
+                throw;
             }
             catch (Exception ex)
             {
@@ -156,10 +170,23 @@ namespace TrucoServer.GameLogic
                 CalculateInitialScores();
 
                 CurrentState = GameState.Envido;
+
                 NotifyTurnChange();
             }
-            catch (Exception ex)
+            catch (InvalidOperationException ex)
             {
+                ServerException.HandleException(ex, nameof(StartNewHand));
+            }
+            catch (TimeoutException ex)
+            {
+                ServerException.HandleException(ex, nameof(StartNewHand));
+            }
+            catch (CommunicationException ex)
+            {
+                ServerException.HandleException(ex, nameof(StartNewHand));
+            }
+            catch (Exception ex)
+            { 
                 ServerException.HandleException(ex, nameof(StartNewHand));
             }
         }
@@ -179,6 +206,26 @@ namespace TrucoServer.GameLogic
 
                 AdvanceTurn();
 
+                return true;
+            }
+            catch (ArgumentException ex)
+            {
+                ServerException.HandleException(ex, nameof(PlayCard));
+                return false;
+            }
+            catch (InvalidOperationException ex)
+            {
+                ServerException.HandleException(ex, nameof(PlayCard));
+                return false;
+            }
+            catch (TimeoutException ex)
+            {
+                ServerException.HandleException(ex, nameof(PlayCard));
+                return true;
+            }
+            catch (CommunicationException ex)
+            {
+                ServerException.HandleException(ex, nameof(PlayCard));
                 return true;
             }
             catch (Exception ex)
@@ -254,6 +301,14 @@ namespace TrucoServer.GameLogic
                     NotifyTurnChange();
                 }
             }
+            catch (TimeoutException ex)
+            {
+                ServerException.HandleException(ex, nameof(AdvanceTurn));
+            }
+            catch (CommunicationException ex)
+            {
+                ServerException.HandleException(ex, nameof(AdvanceTurn));
+            }
             catch (Exception ex)
             {
                 ServerException.HandleException(ex, nameof(AdvanceTurn));
@@ -276,6 +331,18 @@ namespace TrucoServer.GameLogic
                 {
                     NotifyTurnChange();
                 }
+            }
+            catch (InvalidOperationException ex)
+            {
+                ServerException.HandleException(ex, nameof(ResolveCurrentRound));
+            }
+            catch (TimeoutException ex)
+            {
+                ServerException.HandleException(ex, nameof(ResolveCurrentRound));
+            }
+            catch (CommunicationException ex)
+            {
+                ServerException.HandleException(ex, nameof(ResolveCurrentRound));
             }
             catch (Exception ex)
             {
@@ -315,11 +382,20 @@ namespace TrucoServer.GameLogic
                 }
 
                 CurrentState = GameState.Truco;
-
                 ApplyTrucoCallState(playerID, newBet, opponent.PlayerID);
 
                 NotifyTrucoCall(playerID, betType, opponent.PlayerID);
 
+                return true;
+            }
+            catch (TimeoutException ex)
+            {
+                ServerException.HandleException(ex, nameof(CallTruco));
+                return true;
+            }
+            catch (CommunicationException ex)
+            {
+                ServerException.HandleException(ex, nameof(CallTruco));
                 return true;
             }
             catch (Exception ex)
@@ -344,13 +420,17 @@ namespace TrucoServer.GameLogic
                 if (response == NO_QUIERO_STATUS)
                 {
                     int pointsToAward = GetPointsForBet(TrucoBetValue);
+
                     NotifyResponse(response, responder.Username, TrucoBetValue.ToString());
+
                     EndHandWithPoints(caller.Team, pointsToAward);
                 }
                 else if (response == QUIERO_STATUS)
                 {
                     TrucoBetValue = proposedBetValue;
+
                     NotifyResponse(response, responder.Username, TrucoBetValue.ToString());
+
                     ResetBetState();
                     NotifyTurnChange();
                 }
@@ -359,6 +439,18 @@ namespace TrucoServer.GameLogic
                     ResetBetState();
                     CallTruco(playerID, response);
                 }
+            }
+            catch (InvalidOperationException ex)
+            {
+                ServerException.HandleException(ex, nameof(RespondToCall));
+            }
+            catch (TimeoutException ex)
+            {
+                ServerException.HandleException(ex, nameof(RespondToCall));
+            }
+            catch (CommunicationException ex)
+            {
+                ServerException.HandleException(ex, nameof(RespondToCall));
             }
             catch (Exception ex)
             {
@@ -374,33 +466,27 @@ namespace TrucoServer.GameLogic
                 {
                     return false;
                 }
-
                 if (waitingForEnvidoResponseId.HasValue)
                 {
                     return false;
                 }
-
                 if (CurrentState != GameState.Envido)
                 {
                     return false;
                 }
 
                 var caller = Players.FirstOrDefault(p => p.PlayerID == playerID);
-
                 if (caller == null)
                 {
                     return false;
                 }
 
-                EnvidoBet newBet;
-
-                if (!Enum.TryParse(betType, out newBet))
+                if (!Enum.TryParse(betType, out EnvidoBet newBet))
                 {
                     return false;
                 }
 
                 var opponent = GetOpponentToRespond(caller);
-
                 if (opponent == null)
                 {
                     return false;
@@ -421,6 +507,16 @@ namespace TrucoServer.GameLogic
 
                 NotifyEnvidoCall(playerID, betType, opponent.PlayerID);
 
+                return true;
+            }
+            catch (TimeoutException ex)
+            {
+                ServerException.HandleException(ex, nameof(CallEnvido));
+                return true;
+            }
+            catch (CommunicationException ex)
+            {
+                ServerException.HandleException(ex, nameof(CallEnvido));
                 return true;
             }
             catch (Exception ex)
@@ -455,6 +551,18 @@ namespace TrucoServer.GameLogic
                     HandleEnvidoRaise(playerID, response);
                 }
             }
+            catch (InvalidOperationException ex)
+            {
+                ServerException.HandleException(ex, nameof(RespondToEnvido));
+            }
+            catch (TimeoutException ex)
+            {
+                ServerException.HandleException(ex, nameof(RespondToEnvido));
+            }
+            catch (CommunicationException ex)
+            {
+                ServerException.HandleException(ex, nameof(RespondToEnvido));
+            }
             catch (Exception ex)
             {
                 ServerException.HandleException(ex, nameof(RespondToEnvido));
@@ -472,6 +580,7 @@ namespace TrucoServer.GameLogic
                 {
                     int playerIndex = (handStartingPlayerIndex + i) % Players.Count;
                     var player = Players[playerIndex];
+
                     int score = playerEnvidoScores[player.PlayerID];
 
                     if (score > highestScore)
@@ -498,10 +607,23 @@ namespace TrucoServer.GameLogic
                     }
 
                     NotifyAll(cb => cb.NotifyEnvidoResult(envidoWinner.Username, highestScore, pointsToNotify));
+
                     AwardEnvidoPoints(envidoWinner.Team, pointsToAward);
                 }
 
                 ResetEnvidoState();
+            }
+            catch (KeyNotFoundException ex)
+            {
+                ServerException.HandleException(ex, nameof(ResolveEnvido));
+            }
+            catch (TimeoutException ex)
+            {
+                ServerException.HandleException(ex, nameof(ResolveEnvido));
+            }
+            catch (CommunicationException ex)
+            {
+                ServerException.HandleException(ex, nameof(ResolveEnvido));
             }
             catch (Exception ex)
             {
@@ -537,6 +659,21 @@ namespace TrucoServer.GameLogic
 
                 return true;
             }
+            catch (KeyNotFoundException ex)
+            {
+                ServerException.HandleException(ex, nameof(CallFlor));
+                return false;
+            }
+            catch (TimeoutException ex)
+            {
+                ServerException.HandleException(ex, nameof(CallFlor));
+                return true;
+            }
+            catch (CommunicationException ex)
+            {
+                ServerException.HandleException(ex, nameof(CallFlor));
+                return true;
+            }
             catch (Exception ex)
             {
                 ServerException.HandleException(ex, nameof(CallFlor));
@@ -555,7 +692,6 @@ namespace TrucoServer.GameLogic
 
                 var responder = Players.First(p => p.PlayerID == playerID);
 
-
                 if (response == CONTRA_FLOR_BET)
                 {
                     FlorBetValue = FlorBet.ContraFlor;
@@ -566,11 +702,24 @@ namespace TrucoServer.GameLogic
                 else if (response == NO_QUIERO_STATUS)
                 {
                     var caller = Players.First(p => p.PlayerID == florBettorId.Value);
+
                     AwardFlorPoints(caller.Team, POINTS_FLOR_DIRECT);
                     ResetFlorState();
                     CurrentState = GameState.Truco;
                     NotifyTurnChange();
                 }
+            }
+            catch (InvalidOperationException ex)
+            {
+                ServerException.HandleException(ex, nameof(RespondToFlor));
+            }
+            catch (TimeoutException ex)
+            {
+                ServerException.HandleException(ex, nameof(RespondToFlor));
+            }
+            catch (CommunicationException ex)
+            {
+                ServerException.HandleException(ex, nameof(RespondToFlor));
             }
             catch (Exception ex)
             {
@@ -606,6 +755,14 @@ namespace TrucoServer.GameLogic
 
                 ResetFlorState();
             }
+            catch (TimeoutException ex)
+            {
+                ServerException.HandleException(ex, nameof(ResolveFlor));
+            }
+            catch (CommunicationException ex)
+            {
+                ServerException.HandleException(ex, nameof(ResolveFlor));
+            }
             catch (Exception ex)
             {
                 ServerException.HandleException(ex, nameof(ResolveFlor));
@@ -620,6 +777,7 @@ namespace TrucoServer.GameLogic
                 int id2 = waitingForFlorResponseId.Value;
 
                 int winnerId = DetermineContraFlorWinner(id1, id2);
+
                 var winner = Players.First(p => p.PlayerID == winnerId);
 
                 int score1 = playerFlorScores[id1];
@@ -633,6 +791,18 @@ namespace TrucoServer.GameLogic
                 ResetFlorState();
                 CurrentState = GameState.Truco;
                 NotifyTurnChange();
+            }
+            catch (InvalidOperationException ex)
+            {
+                ServerException.HandleException(ex, nameof(ResolveContraFlor));
+            }
+            catch (TimeoutException ex)
+            {
+                ServerException.HandleException(ex, nameof(ResolveContraFlor));
+            }
+            catch (CommunicationException ex)
+            {
+                ServerException.HandleException(ex, nameof(ResolveContraFlor));
             }
             catch (Exception ex)
             {
@@ -756,6 +926,14 @@ namespace TrucoServer.GameLogic
                     HandleMatchWin();
                 }
             }
+            catch (TimeoutException ex)
+            {
+                ServerException.HandleException(ex, nameof(AwardEnvidoPoints));
+            }
+            catch (CommunicationException ex)
+            {
+                ServerException.HandleException(ex, nameof(AwardEnvidoPoints));
+            }
             catch (Exception ex)
             {
                 ServerException.HandleException(ex, nameof(AwardEnvidoPoints));
@@ -782,6 +960,14 @@ namespace TrucoServer.GameLogic
                     HandleMatchWin();
                 }
             }
+            catch (TimeoutException ex)
+            {
+                ServerException.HandleException(ex, nameof(AwardFlorPoints));
+            }
+            catch (CommunicationException ex)
+            {
+                ServerException.HandleException(ex, nameof(AwardFlorPoints));
+            }
             catch (Exception ex)
             {
                 ServerException.HandleException(ex, nameof(AwardFlorPoints));
@@ -797,6 +983,7 @@ namespace TrucoServer.GameLogic
                     return;
                 }
             }
+
             try
             {
                 if (winningTeam == TEAM_1)
@@ -818,6 +1005,18 @@ namespace TrucoServer.GameLogic
                 {
                     StartNewHand();
                 }
+            }
+            catch (InvalidOperationException ex)
+            {
+                ServerException.HandleException(ex, nameof(EndHandWithPoints));
+            }
+            catch (TimeoutException ex)
+            {
+                ServerException.HandleException(ex, nameof(EndHandWithPoints));
+            }
+            catch (CommunicationException ex)
+            {
+                ServerException.HandleException(ex, nameof(EndHandWithPoints));
             }
             catch (Exception ex)
             {
@@ -1035,8 +1234,22 @@ namespace TrucoServer.GameLogic
                 }
 
                 int pointsToAward = GetPointsForBet(TrucoBetValue);
+
                 NotifyResponse(AL_MAZO, player.Username, TrucoBetValue.ToString());
+
                 EndHandWithPoints(opponent.Team, pointsToAward);
+            }
+            catch (InvalidOperationException ex)
+            {
+                ServerException.HandleException(ex, nameof(PlayerGoesToDeck));
+            }
+            catch (TimeoutException ex)
+            {
+                ServerException.HandleException(ex, nameof(PlayerGoesToDeck));
+            }
+            catch (CommunicationException ex)
+            {
+                ServerException.HandleException(ex, nameof(PlayerGoesToDeck));
             }
             catch (Exception ex)
             {
@@ -1077,6 +1290,18 @@ namespace TrucoServer.GameLogic
                 string winnerTeamString = (loserTeam == TEAM_1) ? TEAM_2 : TEAM_1;
 
                 SaveAndNotifyMatchResult(winnerTeamString);
+            }
+            catch (SqlException ex)
+            {
+                ServerException.HandleException(ex, nameof(AbortMatch));
+            }
+            catch (TimeoutException ex)
+            {
+                ServerException.HandleException(ex, nameof(AbortMatch));
+            }
+            catch (CommunicationException ex)
+            {
+                ServerException.HandleException(ex, nameof(AbortMatch));
             }
             catch (Exception ex)
             {
@@ -1170,6 +1395,11 @@ namespace TrucoServer.GameLogic
         {
             try
             {
+                if (caller == null)
+                {
+                    throw new ArgumentNullException(nameof(caller));
+                }
+
                 int numPlayers = Players.Count;
                 int callerIndex = Players.FindIndex(p => p.PlayerID == caller.PlayerID);
 
@@ -1181,8 +1411,7 @@ namespace TrucoServer.GameLogic
                 if (numPlayers == 2)
                 {
                     int opponentIndex = (callerIndex + 1) % 2;
-                    var opponent = Players[opponentIndex];
-                    return opponent;
+                    return Players[opponentIndex];
                 }
 
                 for (int i = 1; i < numPlayers; i++)
@@ -1196,6 +1425,16 @@ namespace TrucoServer.GameLogic
                     }
                 }
 
+                return null;
+            }
+            catch (ArgumentNullException ex)
+            {
+                ServerException.HandleException(ex, nameof(GetOpponentToRespond));
+                return null;
+            }
+            catch (ArgumentOutOfRangeException ex)
+            {
+                ServerException.HandleException(ex, nameof(GetOpponentToRespond));
                 return null;
             }
             catch (Exception ex)
@@ -1213,6 +1452,14 @@ namespace TrucoServer.GameLogic
                 {
                     action(callback);
                 }
+                catch (TimeoutException ex)
+                {
+                    ServerException.HandleException(ex, nameof(NotifyAll));
+                }
+                catch (CommunicationException ex)
+                {
+                    ServerException.HandleException(ex, nameof(NotifyAll));
+                }
                 catch (Exception ex)
                 {
                     ServerException.HandleException(ex, nameof(NotifyAll));
@@ -1227,6 +1474,14 @@ namespace TrucoServer.GameLogic
                 try
                 {
                     action(callback);
+                }
+                catch (TimeoutException ex)
+                {
+                    ServerException.HandleException(ex, nameof(NotifyPlayer));
+                }
+                catch (CommunicationException ex)
+                {
+                    ServerException.HandleException(ex, nameof(NotifyPlayer));
                 }
                 catch (Exception ex)
                 {
@@ -1247,7 +1502,7 @@ namespace TrucoServer.GameLogic
 
                 if (Players != null && Players.Count > 0)
                 {
-                    turnIndex = INDEX_VALUE;
+                    turnIndex = 0;
                     return Players[0];
                 }
 
@@ -1271,6 +1526,14 @@ namespace TrucoServer.GameLogic
                     NotifyAll(callback => callback.NotifyTurnChange(nextPlayer.Username));
                 }
             }
+            catch (TimeoutException ex)
+            {
+                ServerException.HandleException(ex, nameof(NotifyTurnChange));
+            }
+            catch (CommunicationException ex)
+            {
+                ServerException.HandleException(ex, nameof(NotifyTurnChange));
+            }
             catch (Exception ex)
             {
                 ServerException.HandleException(ex, nameof(NotifyTurnChange));
@@ -1282,6 +1545,14 @@ namespace TrucoServer.GameLogic
             try
             {
                 NotifyAll(callback => callback.NotifyScoreUpdate(Team1Score, Team2Score));
+            }
+            catch (TimeoutException ex)
+            {
+                ServerException.HandleException(ex, nameof(NotifyScoreUpdate));
+            }
+            catch (CommunicationException ex)
+            {
+                ServerException.HandleException(ex, nameof(NotifyScoreUpdate));
             }
             catch (Exception ex)
             {
@@ -1295,6 +1566,14 @@ namespace TrucoServer.GameLogic
             {
                 NotifyAll(callback => callback.NotifyResponse(callerName, response, newBetState));
             }
+            catch (TimeoutException ex)
+            {
+                ServerException.HandleException(ex, nameof(NotifyResponse));
+            }
+            catch (CommunicationException ex)
+            {
+                ServerException.HandleException(ex, nameof(NotifyResponse));
+            }
             catch (Exception ex)
             {
                 ServerException.HandleException(ex, nameof(NotifyResponse));
@@ -1306,7 +1585,6 @@ namespace TrucoServer.GameLogic
             try
             {
                 var caller = Players.First(p => p.PlayerID == callerId);
-                var responder = Players.First(p => p.PlayerID == responderId);
 
                 NotifyPlayer(responderId, callback =>
                 {
@@ -1321,6 +1599,18 @@ namespace TrucoServer.GameLogic
                     });
                 }
             }
+            catch (InvalidOperationException ex)
+            {
+                ServerException.HandleException(ex, nameof(NotifyTrucoCall));
+            }
+            catch (TimeoutException ex)
+            {
+                ServerException.HandleException(ex, nameof(NotifyTrucoCall));
+            }
+            catch (CommunicationException ex)
+            {
+                ServerException.HandleException(ex, nameof(NotifyTrucoCall));
+            }
             catch (Exception ex)
             {
                 ServerException.HandleException(ex, nameof(NotifyTrucoCall));
@@ -1332,7 +1622,6 @@ namespace TrucoServer.GameLogic
             try
             {
                 var caller = Players.First(p => p.PlayerID == callerId);
-                var responder = Players.First(p => p.PlayerID == responderId);
 
                 NotifyPlayer(responderId, callback =>
                 {
@@ -1347,8 +1636,20 @@ namespace TrucoServer.GameLogic
                     });
                 }
             }
-            catch (Exception ex)
+            catch (InvalidOperationException ex)
             {
+                ServerException.HandleException(ex, nameof(NotifyFlorCallHelper));
+            }
+            catch (TimeoutException ex)
+            {
+                ServerException.HandleException(ex, nameof(NotifyFlorCallHelper));
+            }
+            catch (CommunicationException ex)
+            {
+                ServerException.HandleException(ex, nameof(NotifyFlorCallHelper));
+            }
+            catch (Exception ex)
+            { 
                 ServerException.HandleException(ex, nameof(NotifyFlorCallHelper));
             }
         }
@@ -1358,7 +1659,6 @@ namespace TrucoServer.GameLogic
             try
             {
                 var caller = Players.First(p => p.PlayerID == callerId);
-                var responder = Players.First(p => p.PlayerID == responderId);
 
                 NotifyPlayer(responderId, callback =>
                 {
@@ -1435,6 +1735,16 @@ namespace TrucoServer.GameLogic
 
                 return false;
             }
+            catch (ArgumentNullException ex)
+            {
+                ServerException.HandleException(ex, nameof(CheckHandWinner));
+                return false;
+            }
+            catch (IndexOutOfRangeException ex)
+            {
+                ServerException.HandleException(ex, nameof(CheckHandWinner));
+                return false;
+            }
             catch (Exception ex)
             {
                 ServerException.HandleException(ex, nameof(CheckHandWinner));
@@ -1444,7 +1754,15 @@ namespace TrucoServer.GameLogic
 
         private bool CheckMatchEnd()
         {
-            return Team1Score >= MAX_SCORE || Team2Score >= MAX_SCORE;
+            try
+            {
+                return Team1Score >= MAX_SCORE || Team2Score >= MAX_SCORE;
+            }
+            catch (Exception ex)
+            {
+                ServerException.HandleException(ex, nameof(CheckMatchEnd));
+                return false;
+            }
         }
 
         private static int GetPointsForBet(TrucoBet bet)
@@ -1455,24 +1773,19 @@ namespace TrucoServer.GameLogic
                 {
                     case TrucoBet.Truco:
                         return 2;
-
                     case TrucoBet.Retruco:
                         return 3;
-
                     case TrucoBet.ValeCuatro:
                         return 4;
-
                     case TrucoBet.None:
-
                     default:
                         return 1;
                 }
             }
-
             catch (Exception ex)
             {
                 ServerException.HandleException(ex, nameof(GetPointsForBet));
-                return 0;
+                return 1;
             }
         }
 
@@ -1484,10 +1797,8 @@ namespace TrucoServer.GameLogic
                 {
                     case EnvidoBet.Envido:
                         return 2;
-
                     case EnvidoBet.RealEnvido:
                         return 3;
-
                     default:
                         return 0;
                 }
@@ -1507,10 +1818,8 @@ namespace TrucoServer.GameLogic
                 {
                     case FlorBet.Flor:
                         return 3;
-
                     case FlorBet.ContraFlor:
                         return 6;
-
                     default:
                         return 0;
                 }

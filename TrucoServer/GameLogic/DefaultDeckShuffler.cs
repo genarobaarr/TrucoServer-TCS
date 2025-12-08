@@ -26,6 +26,18 @@ namespace TrucoServer.GameLogic
                     }
                 }
             }
+            catch (ArgumentNullException ex)
+            {
+                ServerException.HandleException(ex, nameof(Shuffle));
+            }
+            catch (ArgumentOutOfRangeException ex)
+            {
+                ServerException.HandleException(ex, nameof(Shuffle));
+            }
+            catch (CryptographicException ex)
+            {
+                ServerException.HandleException(ex, nameof(Shuffle));
+            }
             catch (Exception ex)
             {
                 ServerException.HandleException(ex, nameof(Shuffle));

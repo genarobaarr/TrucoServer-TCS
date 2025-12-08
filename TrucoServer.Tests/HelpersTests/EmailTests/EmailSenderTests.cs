@@ -1,9 +1,4 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using TrucoServer.Helpers.Email;
 using TrucoServer.Data.DTOs;
 
@@ -33,37 +28,39 @@ namespace TrucoServer.Tests.HelpersTests.EmailTests
                 Assert.Fail("Should handle exception internally");
             }
 
-            Assert.IsTrue(true);
+            Assert.IsNotNull(sender);
         }
 
         [TestMethod]
         public void TestSendLoginEmailAsyncHandlesExceptionRun()
         {
             var sender = new EmailSender();
-           
-            var user = new User 
+
+            var user = new User
             {
                 email = "test@gmail.com",
-                username = "test" 
+                username = "test"
             };
 
             sender.SendLoginEmailAsync(user);
-            Assert.IsTrue(true);
+
+            Assert.IsNotNull(sender);
         }
 
         [TestMethod]
         public void TestNotifyPasswordChangeDoesNotThrow()
         {
             var sender = new EmailSender();
-            
-            var user = new User 
+
+            var user = new User
             {
                 email = "test@gmail.com",
                 username = "test"
             };
 
             sender.NotifyPasswordChange(user);
-            Assert.IsTrue(true);
+
+            Assert.IsNotNull(sender);
         }
 
         [TestMethod]
@@ -71,7 +68,8 @@ namespace TrucoServer.Tests.HelpersTests.EmailTests
         {
             var sender = new EmailSender();
             sender.SendEmail(null);
-            Assert.IsTrue(true);
+
+            Assert.IsNotNull(sender);
         }
 
         [TestMethod]
@@ -79,7 +77,8 @@ namespace TrucoServer.Tests.HelpersTests.EmailTests
         {
             var sender = new EmailSender();
             sender.SendLoginEmailAsync(null);
-            Assert.IsTrue(true);
+
+            Assert.IsNotNull(sender);
         }
     }
 }

@@ -86,6 +86,21 @@ namespace TrucoServer.Data.Entities
 
                 return (T)Convert.ChangeType(value, typeof(T));
             }
+            catch (FormatException ex)
+            {
+                ServerException.HandleException(ex, nameof(EfHelpers) + "." + nameof(ConvertValue));
+                return default;
+            }
+            catch (OverflowException ex)
+            {
+                ServerException.HandleException(ex, nameof(EfHelpers) + "." + nameof(ConvertValue));
+                return default;
+            }
+            catch (InvalidCastException ex)
+            {
+                ServerException.HandleException(ex, nameof(EfHelpers) + "." + nameof(ConvertValue));
+                return default;
+            }
             catch (Exception ex)
             {
                 ServerException.HandleException(ex, nameof(EfHelpers) + "." + nameof(ConvertValue));

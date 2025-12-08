@@ -1,6 +1,7 @@
 ﻿using System;
-using TrucoServer.Utilities;
+using System.ServiceModel;
 using TrucoServer.Services;
+using TrucoServer.Utilities;
 
 namespace TrucoServer.Helpers.Friends
 {
@@ -16,6 +17,14 @@ namespace TrucoServer.Helpers.Friends
                 {
                     callback.OnFriendRequestReceived(fromUsername);
                 }
+            }
+            catch (TimeoutException ex)
+            {
+                ServerException.HandleException(ex, nameof(NotifyRequestReceived));
+            }
+            catch (CommunicationException ex)
+            {
+                ServerException.HandleException(ex, nameof(NotifyRequestReceived));
             }
             catch (Exception ex)
             {
@@ -33,6 +42,14 @@ namespace TrucoServer.Helpers.Friends
                 {
                     callback.OnFriendRequestAccepted(fromUsername);
                 }
+            }
+            catch (TimeoutException ex)
+            {
+                ServerException.HandleException(ex, nameof(NotifyRequestAccepted));
+            }
+            catch (CommunicationException ex)
+            {
+                ServerException.HandleException(ex, nameof(NotifyRequestAccepted));
             }
             catch (Exception ex)
             {

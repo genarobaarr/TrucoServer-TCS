@@ -82,7 +82,7 @@ namespace TrucoServer.Helpers.Profiles
 
             if (options.ProfileData == null)
             {
-                throw new ArgumentNullException(nameof(options.ProfileData));
+                throw new InvalidOperationException("Profile data cannot be null");
             }
 
             EnsureUserProfileExists(user, options);
@@ -95,12 +95,12 @@ namespace TrucoServer.Helpers.Profiles
             UpdateSocialLinks(userProfile, inputData);
         }
 
-        private void UpdateAvatar(UserProfile userProfile, UserProfileData data, string defaultAvatar)
+        private static void UpdateAvatar(UserProfile userProfile, UserProfileData data, string defaultAvatar)
         {
             userProfile.avatarID = data.AvatarId ?? userProfile.avatarID ?? defaultAvatar;
         }
 
-        private void UpdateLanguageSettings(UserProfile userProfile, UserProfileData data, string defaultLang)
+        private static void UpdateLanguageSettings(UserProfile userProfile, UserProfileData data, string defaultLang)
         {
             if (!string.IsNullOrWhiteSpace(data.LanguageCode))
             {

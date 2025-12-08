@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Concurrent;
+using System.Globalization;
 using System.Net.Mail;
 using System.Threading.Tasks;
 using TrucoServer.Data.DTOs;
@@ -31,6 +32,7 @@ namespace TrucoServer.Helpers.Verification
             try
             {
                 string code = authenticationHelper.GenerateSecureNumericCode();
+
                 verificationCodes[email] = code;
 
                 Langs.LanguageManager.SetLanguage(languageCode);
@@ -39,17 +41,31 @@ namespace TrucoServer.Helpers.Verification
                 {
                     ToEmail = email,
                     EmailSubject = Langs.Lang.EmailVerificationSubject,
-                    EmailBody = string.Format(Langs.Lang.EmailVerificationBody, code).Replace("\\n", Environment.NewLine)
+                    EmailBody = string.Format(Langs.Lang.EmailVerificationBody, code)
+                                       .Replace("\\n", Environment.NewLine)
                 };
 
                 Task.Run(() => emailSender.SendEmail(emailOptions));
 
                 return true;
             }
+            catch (CultureNotFoundException ex)
+            {
+                ServerException.HandleException(ex, nameof(RequestEmailVerification));
+            }
+            catch (FormatException ex)
+            { 
+                ServerException.HandleException(ex, nameof(RequestEmailVerification));
+            }
+            catch (ArgumentNullException ex)
+            {
+                ServerException.HandleException(ex, nameof(RequestEmailVerification));
+            }
             catch (Exception ex)
             {
                 ServerException.HandleException(ex, nameof(RequestEmailVerification));
             }
+
             return false;
         }
 

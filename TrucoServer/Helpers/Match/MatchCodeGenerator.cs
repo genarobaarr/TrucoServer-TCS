@@ -13,21 +13,36 @@ namespace TrucoServer.Helpers.Match
         public string GenerateMatchCode()
         {
             char[] result = new char[MATCH_CODE_LENGTH];
-           
+
             try
             {
                 using (var rng = new RNGCryptoServiceProvider())
                 {
                     byte[] randomBytes = new byte[result.Length];
                     rng.GetBytes(randomBytes);
-            
+
                     for (int i = 0; i < result.Length; i++)
                     {
                         result[i] = CHARS[randomBytes[i] % CHARS.Length];
                     }
                 }
-                
+
                 return new string(result);
+            }
+            catch (CryptographicException ex)
+            {
+                Utilities.ServerException.HandleException(ex, nameof(GenerateMatchCode));
+                return string.Empty;
+            }
+            catch (DivideByZeroException ex)
+            {
+                Utilities.ServerException.HandleException(ex, nameof(GenerateMatchCode));
+                return string.Empty;
+            }
+            catch (IndexOutOfRangeException ex)
+            {
+                Utilities.ServerException.HandleException(ex, nameof(GenerateMatchCode));
+                return string.Empty;
             }
             catch (Exception ex)
             {

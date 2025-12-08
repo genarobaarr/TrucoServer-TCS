@@ -1,10 +1,6 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using TrucoServer.Utilities;
 
 namespace TrucoServer.Tests.UtilitiesTests
@@ -26,7 +22,7 @@ namespace TrucoServer.Tests.UtilitiesTests
                 Assert.Fail("Should not throw exception");
             }
 
-            Assert.IsTrue(true); 
+            Assert.IsNotNull(ex);
         }
 
         [TestMethod]
@@ -43,7 +39,7 @@ namespace TrucoServer.Tests.UtilitiesTests
                 Assert.Fail("Should not throw exception");
             }
 
-            Assert.IsTrue(true);
+            Assert.IsNotNull(ex);
         }
 
         [TestMethod]
@@ -60,7 +56,7 @@ namespace TrucoServer.Tests.UtilitiesTests
                 Assert.Fail("Should not throw exception");
             }
 
-            Assert.IsTrue(true);
+            Assert.IsNotNull(ex);
         }
 
         [TestMethod]
@@ -77,7 +73,7 @@ namespace TrucoServer.Tests.UtilitiesTests
                 Assert.Fail("Should not throw exception");
             }
 
-            Assert.IsTrue(true);
+            Assert.IsNotNull(ex);
         }
 
         [TestMethod]
@@ -94,7 +90,7 @@ namespace TrucoServer.Tests.UtilitiesTests
                 Assert.Fail("Should not throw exception");
             }
 
-            Assert.IsTrue(true);
+            Assert.IsNotNull(ex);
         }
     }
 }

@@ -12,6 +12,5 @@ namespace TrucoServer.Data.DTOs
         public IDeckShuffler Shuffler { get; set; }
         public IGameManager GameManager { get; set; }
         public GamePlayerBuilder ParticipantBuilder { get; set; }
-        public ListPositionService PositionService { get; set; }
     }
 }
