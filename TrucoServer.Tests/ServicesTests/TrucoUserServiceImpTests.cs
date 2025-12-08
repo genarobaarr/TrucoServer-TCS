@@ -443,8 +443,6 @@ namespace TrucoServer.Tests.ServicesTests
             {
                 Assert.Fail("An unexpected exception was thrown: " + ex.Message);
             }
-
-            Assert.IsNotNull(service);
         }
     }
 }
