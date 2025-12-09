@@ -9,6 +9,7 @@ namespace TrucoServer.Contracts
     public interface ITrucoUserService
     {
         [OperationContract]
+        [FaultContract(typeof(CustomFault))]
         bool RequestEmailVerification(string email, string languageCode);
 
         [OperationContract]
@@ -18,13 +19,15 @@ namespace TrucoServer.Contracts
         bool Register(string username, string password, string email);
 
         [OperationContract]
+        [FaultContract(typeof(CustomFault))]
         bool UsernameExists(string username);
 
         [OperationContract]
+        [FaultContract(typeof(CustomFault))]
         bool EmailExists(string email);
 
         [OperationContract]
-        [FaultContract(typeof(LoginFault))]
+        [FaultContract(typeof(CustomFault))]
         bool Login(string username, string password, string languageCode);
 
         [OperationContract]

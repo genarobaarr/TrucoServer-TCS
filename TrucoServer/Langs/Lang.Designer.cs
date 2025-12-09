@@ -133,11 +133,56 @@ namespace TrucoServer.Langs {
         }
         
         /// <summary>
+        ///   Busca una cadena traducida similar a Email availability could not be verified due to a database error..
+        /// </summary>
+        public static string ExceptionTextDBErrorEmailExists {
+            get {
+                return ResourceManager.GetString("ExceptionTextDBErrorEmailExists", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a User availability could not be verified due to a database error..
+        /// </summary>
+        public static string ExceptionTextDBErrorUsernameExists {
+            get {
+                return ResourceManager.GetString("ExceptionTextDBErrorUsernameExists", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a An error occurred..
+        /// </summary>
+        public static string ExceptionTextErrorOcurred {
+            get {
+                return ResourceManager.GetString("ExceptionTextErrorOcurred", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Busca una cadena traducida similar a This user already has an active session..
         /// </summary>
         public static string ExceptionTextLogin {
             get {
                 return ResourceManager.GetString("ExceptionTextLogin", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a The verification email could not be sent. Please try again later..
+        /// </summary>
+        public static string ExceptionTextSmtpVerification {
+            get {
+                return ResourceManager.GetString("ExceptionTextSmtpVerification", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a It seems the server is taking a long time to respond. Please try again later..
+        /// </summary>
+        public static string ExceptionTextTimeout {
+            get {
+                return ResourceManager.GetString("ExceptionTextTimeout", resourceCulture);
             }
         }
         

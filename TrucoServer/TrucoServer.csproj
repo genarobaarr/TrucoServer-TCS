@@ -113,7 +113,7 @@
     <Compile Include="Contracts\ITrucoUserService.cs" />
     <Compile Include="Data\DTOs\AttemptInfo.cs" />
     <Compile Include="Data\DTOs\EmblemLayer.cs" />
-    <Compile Include="Data\DTOs\LoginFault.cs" />
+    <Compile Include="Data\DTOs\CustomFault.cs" />
     <Compile Include="GameLogic\ActiveMatch.cs" />
     <Compile Include="Ban.cs">
       <DependentUpon>baseDatosTruco.tt</DependentUpon>
@@ -242,6 +242,7 @@
     <Compile Include="Data\DTOs\ValidatedLobbyData.cs" />
     <Compile Include="Utilities\ServerException.cs" />
     <Compile Include="Utilities\ServerValidator.cs" />
+    <Compile Include="Utilities\FaultFactory.cs" />
     <Compile Include="Versions.cs">
       <DependentUpon>baseDatosTruco.tt</DependentUpon>
     </Compile>

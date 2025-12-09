@@ -3,7 +3,7 @@
 namespace TrucoServer.Data.DTOs
 {
     [DataContract]
-    public class LoginFault
+    public class CustomFault
     {
         [DataMember]
         public string ErrorMessage { get; set; }

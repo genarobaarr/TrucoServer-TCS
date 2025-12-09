@@ -86,12 +86,12 @@ namespace TrucoServer.Helpers.Security
         {
             if (IsUserBanned(username))
             {
-                var fault = new LoginFault
+                var fault = new CustomFault
                 {
                     ErrorCode = "UserBanned",
                     ErrorMessage = Langs.Lang.ExceptionTextUserBanned
                 };
-                throw new FaultException<LoginFault>(fault, new FaultReason("UserBanned"));
+                throw new FaultException<CustomFault>(fault, new FaultReason("UserBanned"));
             }
         }
 

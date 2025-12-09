@@ -150,4 +150,19 @@
   <data name="EmailInvitationBody" xml:space="preserve">
     <value>¡Hola {0}!\n\n{1} te ha invitado a jugar una partida.\nÚnete usando el código: {2}\n\n¡Nos vemos en la mesa!</value>
   </data>
+  <data name="ExceptionTextDBErrorUsernameExists" xml:space="preserve">
+    <value>No se pudo verificar la disponibilidad del usuario por un error de base de datos.</value>
+  </data>
+  <data name="ExceptionTextTimeout" xml:space="preserve">
+    <value>Parece que el servidor está tardando mucho en responder. Inténtalo de nuevo más tarde.</value>
+  </data>
+  <data name="ExceptionTextErrorOcurred" xml:space="preserve">
+    <value>Ocurrió un error.</value>
+  </data>
+  <data name="ExceptionTextDBErrorEmailExists" xml:space="preserve">
+    <value>No se pudo verificar la disponibilidad del correo electrónico por un error de base de datos.</value>
+  </data>
+  <data name="ExceptionTextSmtpVerification" xml:space="preserve">
+    <value>No se pudo enviar el correo de verificación. Inténtelo de nuevo más tarde.</value>
+  </data>
 </root>

@@ -45,22 +45,32 @@ namespace TrucoServer.Helpers.Email
             catch (SmtpFailedRecipientsException ex)
             {
                 ServerException.HandleException(ex, nameof(SendEmail));
+                throw;
             }
             catch (SmtpException ex)
             {
                 ServerException.HandleException(ex, nameof(SendEmail));
+                throw;
+            }
+            catch (WebException ex)
+            {
+                ServerException.HandleException(ex, nameof(SendEmail));
+                throw;
             }
             catch (FormatException ex)
             {
                 ServerException.HandleException(ex, nameof(SendEmail));
+                throw;
             }
             catch (ArgumentNullException ex)
             {
                 ServerException.HandleException(ex, nameof(SendEmail));
+                throw;
             }
             catch (Exception ex)
             {
                 ServerException.HandleException(ex, nameof(SendEmail));
+                throw;
             }
         }
 
