@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Data;
+using System.Data.Entity.Core;
 using System.Data.SqlClient;
 using System.Linq;
 using System.Security.Cryptography;
 using System.ServiceModel;
 using TrucoServer.Data.DTOs;
+using TrucoServer.Langs;
 using TrucoServer.Security;
 using TrucoServer.Utilities;
 
@@ -51,22 +53,22 @@ namespace TrucoServer.Helpers.Authentication
             catch (SqlException ex)
             {
                 ServerException.HandleException(ex, nameof(AuthenticateUser));
-                return null;
+                throw FaultFactory.CreateFault("ServerDBErrorLogin", Lang.ExceptionTextDBErrorLogin);
             }
-            catch (DataException ex)
+            catch (EntityException ex)
             {
                 ServerException.HandleException(ex, nameof(AuthenticateUser));
-                return null;
+                throw FaultFactory.CreateFault("ServerDBErrorLogin", Lang.ExceptionTextDBErrorLogin);
             }
             catch (TimeoutException ex)
             {
                 ServerException.HandleException(ex, nameof(AuthenticateUser));
-                return null;
+                throw FaultFactory.CreateFault("ServerTimeout", Lang.ExceptionTextTimeout);
             }
             catch (Exception ex)
             {
                 ServerException.HandleException(ex, nameof(AuthenticateUser));
-                return null;
+                throw FaultFactory.CreateFault("ServerError", Lang.ExceptionTextErrorOcurred);
             }
         }
 
