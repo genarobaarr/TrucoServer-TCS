@@ -40,9 +40,11 @@ namespace TrucoServer.Contracts
         List<string> GetOnlinePlayers();
 
         [OperationContract]
+        [FaultContract(typeof(CustomFault))]
         List<PlayerStats> GetGlobalRanking();
 
         [OperationContract]
+        [FaultContract(typeof(CustomFault))]
         List<MatchScore> GetLastMatches(string username);
 
         [OperationContract]

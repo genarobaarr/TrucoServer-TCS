@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Data.Entity.Core;
 using System.Data.SqlClient;
 using System.Linq;
 using TrucoServer.Data.DTOs;
+using TrucoServer.Langs;
 using TrucoServer.Utilities;
 
 namespace TrucoServer.Helpers.Ranking
@@ -25,7 +27,6 @@ namespace TrucoServer.Helpers.Ranking
 
                     if (user == null)
                     {
-                        LogManager.LogWarn($"[WARN] History attempt for user not found: {username}", nameof(GetLastMatches));
                         return new List<MatchScore>();
                     }
 
@@ -48,27 +49,22 @@ namespace TrucoServer.Helpers.Ranking
             catch (SqlException ex)
             {
                 ServerException.HandleException(ex, nameof(GetLastMatches));
-                return new List<MatchScore>();
+                throw FaultFactory.CreateFault("ServerDBErrorHistory", Lang.ExceptionTextDBErrorHistory);
             }
-            catch (DataException ex)
+            catch (EntityException ex)
             {
                 ServerException.HandleException(ex, nameof(GetLastMatches));
-                return new List<MatchScore>();
+                throw FaultFactory.CreateFault("ServerDBErrorHistory", Lang.ExceptionTextDBErrorHistory);
             }
             catch (TimeoutException ex)
             {
                 ServerException.HandleException(ex, nameof(GetLastMatches));
-                return new List<MatchScore>();
-            }
-            catch (InvalidOperationException ex)
-            {
-                ServerException.HandleException(ex, nameof(GetLastMatches));
-                return new List<MatchScore>();
+                throw FaultFactory.CreateFault("ServerTimeout", Lang.ExceptionTextTimeout);
             }
             catch (Exception ex)
             {
                 ServerException.HandleException(ex, nameof(GetLastMatches));
-                return new List<MatchScore>();
+                throw FaultFactory.CreateFault("ServerError", Lang.ExceptionTextErrorOcurred);
             }
         }
     }

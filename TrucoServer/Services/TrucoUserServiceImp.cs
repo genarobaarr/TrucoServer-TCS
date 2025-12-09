@@ -547,15 +547,15 @@ namespace TrucoServer.Services
             {
                 return rankingService.GetGlobalRanking();
             }
-            catch (SqlException ex)
+
+            catch (FaultException<CustomFault>)
             {
-                ServerException.HandleException(ex, nameof(GetGlobalRanking));
-                return new List<PlayerStats>();
+                throw;
             }
             catch (Exception ex)
             {
                 ServerException.HandleException(ex, nameof(GetGlobalRanking));
-                return new List<PlayerStats>();
+                throw FaultFactory.CreateFault("ServerError", Lang.ExceptionTextErrorOcurred);
             }
         }
 
@@ -570,15 +570,15 @@ namespace TrucoServer.Services
             {
                 return matchHistoryService.GetLastMatches(username);
             }
-            catch (SqlException ex)
+
+            catch (FaultException<CustomFault>)
             {
-                ServerException.HandleException(ex, nameof(GetLastMatches));
-                return new List<MatchScore>();
+                throw;
             }
             catch (Exception ex)
             {
                 ServerException.HandleException(ex, nameof(GetLastMatches));
-                return new List<MatchScore>();
+                throw FaultFactory.CreateFault("ServerError", Lang.ExceptionTextErrorOcurred);
             }
         }
 

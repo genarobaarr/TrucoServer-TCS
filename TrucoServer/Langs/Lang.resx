@@ -165,4 +165,34 @@
   <data name="ExceptionTextSmtpVerification" xml:space="preserve">
     <value>The verification email could not be sent. Please try again later.</value>
   </data>
+  <data name="ExceptionTextDBErrorGetFriends" xml:space="preserve">
+    <value>The friends data could not be obtained due to a database error.</value>
+  </data>
+  <data name="ExceptionTextFriendRequestUserNotFound" xml:space="preserve">
+    <value>The user {0} does not exist.</value>
+  </data>
+  <data name="ExceptionTextFriendRequestAlreadyFriends" xml:space="preserve">
+    <value>You are already friends with {0}.</value>
+  </data>
+  <data name="ExceptionTextDBErrorFriendRequest" xml:space="preserve">
+    <value>The request could not be sent due to a database error.</value>
+  </data>
+  <data name="ExceptionTextDBErrorRanking" xml:space="preserve">
+    <value>The global top data could not be obtained due to a database error.</value>
+  </data>
+  <data name="ExceptionTextDBErrorHistory" xml:space="preserve">
+    <value>Data from the latest games could not be obtained due to a database error.</value>
+  </data>
+  <data name="ExceptionTextDBErrorLogin" xml:space="preserve">
+    <value>It was not possible to log in due to a database error.</value>
+  </data>
+  <data name="ExceptionTextDBErrorJoin" xml:space="preserve">
+    <value>You were unable to join the game due to a database error.</value>
+  </data>
+  <data name="ExceptionTextDBErrorGetLobbyPlayers" xml:space="preserve">
+    <value>The player list could not be loaded due to a database error.</value>
+  </data>
+  <data name="ExceptionTextDBErrorGetPublicLobbies" xml:space="preserve">
+    <value>The list of games could not be loaded due to a database error.</value>
+  </data>
 </root>
