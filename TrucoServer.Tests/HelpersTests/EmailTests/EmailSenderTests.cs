@@ -66,8 +66,7 @@ namespace TrucoServer.Tests.HelpersTests.EmailTests
         public void TestSendEmailHandlesNullArguments()
         {
             var sender = new EmailSender();
-            sender.SendEmail(null);
-            Assert.IsNotNull(sender);
+            Assert.ThrowsException<ArgumentNullException>(() => sender.SendEmail(null));
         }
 
         [TestMethod]

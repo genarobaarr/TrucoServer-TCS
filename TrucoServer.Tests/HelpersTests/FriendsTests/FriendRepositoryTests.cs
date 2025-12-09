@@ -84,7 +84,7 @@ namespace TrucoServer.Tests.HelpersTests.FriendsTests
                 Request = null 
             };
 
-            Assert.ThrowsException<ArgumentNullException>(() => repo.CommitFriendshipAcceptance(options));
+            Assert.ThrowsException<InvalidOperationException>(() => repo.CommitFriendshipAcceptance(options));
         }
 
         [TestMethod]

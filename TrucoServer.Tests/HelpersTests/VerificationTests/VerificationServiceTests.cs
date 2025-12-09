@@ -4,12 +4,13 @@ using Moq;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.ServiceModel;
 using System.Text;
-using IEmailSender = TrucoServer.Helpers.Email.IEmailSender;
 using System.Threading.Tasks;
+using TrucoServer.Data.DTOs;
 using TrucoServer.Helpers.Authentication;
 using TrucoServer.Helpers.Verification;
-using TrucoServer.Data.DTOs;
+using IEmailSender = TrucoServer.Helpers.Email.IEmailSender;
 
 namespace TrucoServer.Tests.HelpersTests.VerificationTests
 {
@@ -18,12 +19,14 @@ namespace TrucoServer.Tests.HelpersTests.VerificationTests
     {
         private Mock<IUserAuthenticationHelper> mockAuth;
         private Mock<IEmailSender> mockEmail;
+        private VerificationService service;
 
         [TestInitialize]
         public void Setup()
         {
             mockAuth = new Mock<IUserAuthenticationHelper>();
             mockEmail = new Mock<IEmailSender>();
+            service = new VerificationService(mockAuth.Object, mockEmail.Object);
         }
 
         [TestMethod]
@@ -36,16 +39,14 @@ namespace TrucoServer.Tests.HelpersTests.VerificationTests
         }
 
         [TestMethod]
-        public void TestRequestEmailVerificationHandlesEmailSenderException()
+        public void TestRequestEmailVerificationThrowsFaultExceptionOnEmailSenderFailure()
         {
             mockAuth.Setup(a => a.GenerateSecureNumericCode()).Returns("123456");
             mockEmail.Setup(e => e.SendEmail(It.IsAny<EmailFormatOptions>()))
-                      .Throws(new Exception("SMTP Error"));
+                     .Throws(new Exception("SMTP Error"));
 
-            var service = new VerificationService(mockAuth.Object, mockEmail.Object);
-            mockAuth.Setup(a => a.GenerateSecureNumericCode()).Throws(new Exception("Gen Error"));
-            bool result = service.RequestEmailVerification("valid@gmail.com", "es-MX");
-            Assert.IsFalse(result);
+            Assert.ThrowsException<FaultException<CustomFault>>(() =>
+                service.RequestEmailVerification("valid@gmail.com", "es-MX"));
         }
 
         [TestMethod]

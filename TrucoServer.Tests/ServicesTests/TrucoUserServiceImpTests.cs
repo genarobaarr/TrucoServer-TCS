@@ -99,10 +99,9 @@ namespace TrucoServer.Tests.ServicesTests
         public void TestLoginThrowsFaultExceptionWhenBruteForceDetected()
         {
             mockAuth.Setup(a => a.ValidateBruteForceStatus(It.IsAny<string>()))
-                     .Throws(new FaultException("Blocked"));
+                .Throws(new FaultException("Blocked"));
 
-            bool result = service.Login("user", "pass", "en-US");
-            Assert.IsFalse(result);
+            Assert.ThrowsException<FaultException>(() => service.Login("user", "pass", "en-US"));
         }
 
         [TestMethod]
@@ -276,8 +275,7 @@ namespace TrucoServer.Tests.ServicesTests
         public void TestUsernameExistsReturnsFalseOnDbException()
         {
             mockUserSet.As<IQueryable<User>>().Setup(m => m.Provider).Throws(new Exception("DB"));
-            bool result = service.UsernameExists("User");
-            Assert.IsFalse(result);
+            Assert.ThrowsException<FaultException<CustomFault>>(() => service.UsernameExists("User"));
         }
 
         [TestMethod]
@@ -308,8 +306,7 @@ namespace TrucoServer.Tests.ServicesTests
         public void TestEmailExistsReturnsFalseOnDbException()
         {
             mockUserSet.As<IQueryable<User>>().Setup(m => m.Provider).Throws(new Exception("DB"));
-            bool result = service.EmailExists("valid@gmail.com");
-            Assert.IsFalse(result);
+            Assert.ThrowsException<FaultException<CustomFault>>(() => service.EmailExists("valid@gmail.com"));
         }
 
         [TestMethod]

@@ -2,10 +2,10 @@
 using Moq;
 using System;
 using System.Collections.Generic;
-using System.Data.Entity;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Data.Entity;
 using TrucoServer.Helpers.Ranking;
 
 namespace TrucoServer.Tests.HelpersTests.RankingTests
@@ -14,7 +14,6 @@ namespace TrucoServer.Tests.HelpersTests.RankingTests
     public class UserStatsServiceTests
     {
         private Mock<baseDatosTrucoEntities> mockContext;
-        private Mock<DbSet<User>> mockUserSet;
         private UserStatsService service;
 
         private const int USER_ID = 1;
@@ -27,23 +26,25 @@ namespace TrucoServer.Tests.HelpersTests.RankingTests
         public void Setup()
         {
             mockContext = new Mock<baseDatosTrucoEntities>();
-            mockUserSet = new Mock<DbSet<User>>();
-            mockContext.Setup(c => c.User).Returns(mockUserSet.Object);
-
             service = new UserStatsService(mockContext.Object);
         }
 
         [TestMethod]
         public void TestUpdateUserStatsIncrementsWinsCountForWinner()
         {
-            var user = new User 
+            var user = new User
             {
                 userID = USER_ID,
                 wins = WINS,
                 losses = LOSSES
             };
-            
-            SetupMockUser(user);
+
+            var mockSet = GetMockDbSet(new List<User> 
+            {
+                user 
+            });
+
+            mockContext.Setup(c => c.User).Returns(mockSet.Object);
             service.UpdateUserStats(USER_ID, true);
             Assert.AreEqual(11, user.wins);
         }
@@ -51,14 +52,19 @@ namespace TrucoServer.Tests.HelpersTests.RankingTests
         [TestMethod]
         public void TestUpdateUserStatsDoesNotChangeLossesForWinner()
         {
-            var user = new User 
+            var user = new User
             {
                 userID = USER_ID,
                 wins = WINS,
                 losses = LOSSES
             };
-            
-            SetupMockUser(user);
+
+            var mockSet = GetMockDbSet(new List<User> 
+            {
+                user 
+            });
+
+            mockContext.Setup(c => c.User).Returns(mockSet.Object);
             service.UpdateUserStats(USER_ID, true);
             Assert.AreEqual(5, user.losses);
         }
@@ -66,29 +72,34 @@ namespace TrucoServer.Tests.HelpersTests.RankingTests
         [TestMethod]
         public void TestUpdateUserStatsIncrementsLossesCountForLoser()
         {
-            var user = new User 
-            { 
+            var user = new User
+            {
                 userID = SECOND_USER_ID,
                 wins = ZERO_WINS_OR_LOSSES,
                 losses = ZERO_WINS_OR_LOSSES
             };
-           
-            SetupMockUser(user);
+
+            var mockSet = GetMockDbSet(new List<User>
+            { 
+                user 
+            });
+
+            mockContext.Setup(c => c.User).Returns(mockSet.Object);
             service.UpdateUserStats(SECOND_USER_ID, false);
             Assert.AreEqual(1, user.losses);
         }
 
-        private void SetupMockUser(User user)
+        private static Mock<DbSet<T>> GetMockDbSet<T>(List<T> sourceList) where T : class
         {
-            var data = new List<User> 
-            {
-                user
-            }.AsQueryable();
+            var queryable = sourceList.AsQueryable();
+            var mockSet = new Mock<DbSet<T>>();
 
-            mockUserSet.As<IQueryable<User>>().Setup(m => m.Provider).Returns(data.Provider);
-            mockUserSet.As<IQueryable<User>>().Setup(m => m.Expression).Returns(data.Expression);
-            mockUserSet.As<IQueryable<User>>().Setup(m => m.ElementType).Returns(data.ElementType);
-            mockUserSet.As<IQueryable<User>>().Setup(m => m.GetEnumerator()).Returns(data.GetEnumerator());
+            mockSet.As<IQueryable<T>>().Setup(m => m.Provider).Returns(queryable.Provider);
+            mockSet.As<IQueryable<T>>().Setup(m => m.Expression).Returns(queryable.Expression);
+            mockSet.As<IQueryable<T>>().Setup(m => m.ElementType).Returns(queryable.ElementType);
+            mockSet.As<IQueryable<T>>().Setup(m => m.GetEnumerator()).Returns(() => queryable.GetEnumerator());
+
+            return mockSet;
         }
     }
 }

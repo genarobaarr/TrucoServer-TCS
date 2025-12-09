@@ -110,7 +110,7 @@ namespace TrucoServer.Tests.HelpersTests.ProfilesTests
                 ProfileData = null 
             };
 
-            Assert.ThrowsException<ArgumentNullException>(() => updater.UpdateProfileDetails(user, options));
+            Assert.ThrowsException<InvalidOperationException>(() => updater.UpdateProfileDetails(user, options));
         }
 
         [TestMethod]
