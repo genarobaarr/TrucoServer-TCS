@@ -150,4 +150,19 @@
   <data name="EmailInvitationBody" xml:space="preserve">
     <value>Hello {0}!\n\n{1} has invited you to play a match.\nJoin using the code: {2}\n\nSee you at the table!</value>
   </data>
+  <data name="ExceptionTextDBErrorUsernameExists" xml:space="preserve">
+    <value>User availability could not be verified due to a database error.</value>
+  </data>
+  <data name="ExceptionTextTimeout" xml:space="preserve">
+    <value>It seems the server is taking a long time to respond. Please try again later.</value>
+  </data>
+  <data name="ExceptionTextErrorOcurred" xml:space="preserve">
+    <value>An error occurred.</value>
+  </data>
+  <data name="ExceptionTextDBErrorEmailExists" xml:space="preserve">
+    <value>Email availability could not be verified due to a database error.</value>
+  </data>
+  <data name="ExceptionTextSmtpVerification" xml:space="preserve">
+    <value>The verification email could not be sent. Please try again later.</value>
+  </data>
 </root>

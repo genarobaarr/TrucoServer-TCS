@@ -3,10 +3,13 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.Entity;
+using System.Data.Entity.Core;
 using System.Data.Entity.Infrastructure;
 using System.Data.SqlClient;
 using System.Globalization;
 using System.Linq;
+using System.Net;
+using System.Net.Mail;
 using System.ServiceModel;
 using System.Threading.Tasks;
 using TrucoServer.Contracts;
@@ -370,15 +373,27 @@ namespace TrucoServer.Services
             {
                 return verificationService.RequestEmailVerification(email, languageCode);
             }
+            catch (SmtpFailedRecipientsException ex)
+            {
+                ServerException.HandleException(ex, nameof(RequestEmailVerification));
+            }
+            catch (SmtpException ex)
+            {
+                ServerException.HandleException(ex, nameof(RequestEmailVerification));
+            }
+            catch (WebException ex)
+            {
+                ServerException.HandleException(ex, nameof(RequestEmailVerification));
+            }
             catch (CultureNotFoundException ex)
             {
                 ServerException.HandleException(ex, nameof(RequestEmailVerification));
             }
-            catch (ArgumentException ex)
+            catch (FormatException ex)
             {
                 ServerException.HandleException(ex, nameof(RequestEmailVerification));
             }
-            catch (SqlException ex)
+            catch (ArgumentNullException ex)
             {
                 ServerException.HandleException(ex, nameof(RequestEmailVerification));
             }
@@ -409,17 +424,22 @@ namespace TrucoServer.Services
             catch (SqlException ex)
             {
                 ServerException.HandleException(ex, nameof(UsernameExists));
-                return false;
+                throw FaultFactory.CreateFault("ServerDBErrorUser", Lang.ExceptionTextDBErrorUsernameExists);
+            }
+            catch (EntityException ex)
+            {
+                ServerException.HandleException(ex, nameof(UsernameExists));
+                throw FaultFactory.CreateFault("ServerDBErrorUser", Lang.ExceptionTextDBErrorUsernameExists);
             }
             catch (TimeoutException ex)
             {
                 ServerException.HandleException(ex, nameof(UsernameExists));
-                return false;
+                throw FaultFactory.CreateFault("ServerTimeout", Lang.ExceptionTextTimeout);
             }
             catch (Exception ex)
             {
                 ServerException.HandleException(ex, nameof(UsernameExists));
-                return false;
+                throw FaultFactory.CreateFault("ServerError", Lang.ExceptionTextErrorOcurred);
             }
         }
 
@@ -437,17 +457,22 @@ namespace TrucoServer.Services
             catch (SqlException ex)
             {
                 ServerException.HandleException(ex, nameof(EmailExists));
-                return false;
+                throw FaultFactory.CreateFault("ServerDBErrorEmail", Lang.ExceptionTextDBErrorUsernameExists);
+            }
+            catch (EntityException ex)
+            {
+                ServerException.HandleException(ex, nameof(UsernameExists));
+                throw FaultFactory.CreateFault("ServerDBErrorEmail", Lang.ExceptionTextDBErrorUsernameExists);
             }
             catch (TimeoutException ex)
             {
                 ServerException.HandleException(ex, nameof(EmailExists));
-                return false;
+                throw FaultFactory.CreateFault("ServerTimeout", Lang.ExceptionTextTimeout);
             }
             catch (Exception ex)
             {
                 ServerException.HandleException(ex, nameof(EmailExists));
-                return false;
+                throw FaultFactory.CreateFault("ServerError", Lang.ExceptionTextErrorOcurred);
             }
         }
 

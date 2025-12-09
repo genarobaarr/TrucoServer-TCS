@@ -16,13 +16,13 @@ namespace TrucoServer.Helpers.Authentication
         {
             if (BruteForceProtector.IsBlocked(username))
             {
-                var fault = new LoginFault
+                var fault = new CustomFault
                 {
                     ErrorCode = "TooManyAttempts",
                     ErrorMessage = Langs.Lang.ExceptionTextTooManyAttempts
                 };
 
-                throw new FaultException<LoginFault>(fault, new FaultReason("TooManyAttempts"));
+                throw new FaultException<CustomFault>(fault, new FaultReason("TooManyAttempts"));
             }
         }
 

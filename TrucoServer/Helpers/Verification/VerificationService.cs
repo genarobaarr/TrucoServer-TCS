@@ -1,11 +1,13 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Globalization;
+using System.Net;
 using System.Net.Mail;
-using System.Threading.Tasks;
+using System.ServiceModel;
 using TrucoServer.Data.DTOs;
 using TrucoServer.Helpers.Authentication;
 using TrucoServer.Helpers.Email;
+using TrucoServer.Langs;
 using TrucoServer.Utilities;
 
 namespace TrucoServer.Helpers.Verification
@@ -35,38 +37,55 @@ namespace TrucoServer.Helpers.Verification
 
                 verificationCodes[email] = code;
 
-                Langs.LanguageManager.SetLanguage(languageCode);
+                LanguageManager.SetLanguage(languageCode);
 
                 var emailOptions = new EmailFormatOptions
                 {
                     ToEmail = email,
-                    EmailSubject = Langs.Lang.EmailVerificationSubject,
-                    EmailBody = string.Format(Langs.Lang.EmailVerificationBody, code)
+                    EmailSubject = Lang.EmailVerificationSubject,
+                    EmailBody = string.Format(Lang.EmailVerificationBody, code)
                                        .Replace("\\n", Environment.NewLine)
                 };
 
-                Task.Run(() => emailSender.SendEmail(emailOptions));
+                emailSender.SendEmail(emailOptions);
 
                 return true;
+            }
+            catch (SmtpFailedRecipientsException ex)
+            {
+                ServerException.HandleException(ex, nameof(RequestEmailVerification));
+                throw FaultFactory.CreateFault("ServerSmtpError", Lang.ExceptionTextSmtpVerification);
+            }
+            catch (SmtpException ex)
+            {
+                ServerException.HandleException(ex, nameof(RequestEmailVerification));
+                throw FaultFactory.CreateFault("ServerSmtpError", Lang.ExceptionTextSmtpVerification);
+            }
+            catch (WebException ex)
+            {
+                ServerException.HandleException(ex, nameof(RequestEmailVerification));
+                throw FaultFactory.CreateFault("ServerSmtpError", Lang.ExceptionTextSmtpVerification);
             }
             catch (CultureNotFoundException ex)
             {
                 ServerException.HandleException(ex, nameof(RequestEmailVerification));
+                throw FaultFactory.CreateFault("ServerError", Lang.ExceptionTextErrorOcurred);
             }
             catch (FormatException ex)
             { 
                 ServerException.HandleException(ex, nameof(RequestEmailVerification));
+                throw FaultFactory.CreateFault("ServerError", Lang.ExceptionTextErrorOcurred);
             }
             catch (ArgumentNullException ex)
             {
                 ServerException.HandleException(ex, nameof(RequestEmailVerification));
+                throw FaultFactory.CreateFault("ServerError", Lang.ExceptionTextErrorOcurred);
             }
             catch (Exception ex)
             {
                 ServerException.HandleException(ex, nameof(RequestEmailVerification));
+                throw FaultFactory.CreateFault("ServerError", Lang.ExceptionTextErrorOcurred);
             }
-
-            return false;
         }
 
         public bool ConfirmEmailVerification(string email, string code)

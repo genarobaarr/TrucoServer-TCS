@@ -86,13 +86,13 @@ namespace TrucoServer.Helpers.Sessions
 
             if (!isZombie)
             {
-                var fault = new LoginFault
+                var fault = new CustomFault
                 {
                     ErrorCode = "UserAlreadyLoggedIn",
                     ErrorMessage = Langs.Lang.ExceptionTextLogin
                 };
 
-                throw new FaultException<LoginFault>(fault, new FaultReason("UserAlreadyLoggedIn"));
+                throw new FaultException<CustomFault>(fault, new FaultReason("UserAlreadyLoggedIn"));
             }
             else
             {
