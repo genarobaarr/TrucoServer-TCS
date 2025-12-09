@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data.Entity.Core;
 using System.Data.Entity.Infrastructure;
 using System.Data.SqlClient;
 using System.Linq;
@@ -7,6 +8,7 @@ using System.ServiceModel;
 using TrucoServer.Contracts;
 using TrucoServer.Data.DTOs;
 using TrucoServer.Helpers.Friends;
+using TrucoServer.Langs;
 using TrucoServer.Utilities;
 
 namespace TrucoServer.Services
@@ -51,7 +53,7 @@ namespace TrucoServer.Services
 
                 if (!lookupResult.Success)
                 {
-                    return false;
+                    throw FaultFactory.CreateFault("FriendRequestUserNotFound", string.Format(Lang.ExceptionTextFriendRequestUserNotFound, toUser));
                 }
 
                 User requester = lookupResult.User1;
@@ -59,7 +61,7 @@ namespace TrucoServer.Services
 
                 if (friendshipRepository.CheckFriendshipExists(requester.userID, target.userID))
                 {
-                    return false;
+                    throw FaultFactory.CreateFault("FriendRequestAlreadyFriends", string.Format(Lang.ExceptionTextFriendRequestAlreadyFriends, toUser));
                 }
 
                 var requestDto = new FriendRequest
@@ -75,30 +77,29 @@ namespace TrucoServer.Services
 
                 return true;
             }
-            catch (DbUpdateException ex)
+            catch (FaultException<CustomFault>)
             {
-                ServerException.HandleException(ex, nameof(SendFriendRequest));
-                return false;
+                throw;
             }
             catch (SqlException ex)
             {
                 ServerException.HandleException(ex, nameof(SendFriendRequest));
-                return false;
+                throw FaultFactory.CreateFault("ServerDBErrorFriendRequest", Lang.ExceptionTextDBErrorFriendRequest);
+            }
+            catch (EntityException ex)
+            {
+                ServerException.HandleException(ex, nameof(SendFriendRequest));
+                throw FaultFactory.CreateFault("ServerDBErrorFriendRequest", Lang.ExceptionTextDBErrorFriendRequest);
             }
             catch (TimeoutException ex)
             {
                 ServerException.HandleException(ex, nameof(SendFriendRequest));
-                return true;
-            }
-            catch (CommunicationException ex)
-            {
-                ServerException.HandleException(ex, nameof(SendFriendRequest));
-                return true;
+                throw FaultFactory.CreateFault("ServerTimeout", Lang.ExceptionTextTimeout);
             }
             catch (Exception ex)
             {
                 ServerException.HandleException(ex, nameof(SendFriendRequest));
-                return false;
+                throw FaultFactory.CreateFault("ServerError", Lang.ExceptionTextErrorOcurred);
             }
         }
 
@@ -237,17 +238,22 @@ namespace TrucoServer.Services
             catch (SqlException ex)
             {
                 ServerException.HandleException(ex, nameof(GetFriends));
-                return new List<FriendData>();
+                throw FaultFactory.CreateFault("ServerDBErrorGetFriends", Lang.ExceptionTextDBErrorGetFriends);
             }
-            catch (InvalidOperationException ex)
+            catch (EntityException ex)
             {
                 ServerException.HandleException(ex, nameof(GetFriends));
-                return new List<FriendData>();
+                throw FaultFactory.CreateFault("ServerDBErrorGetFriends", Lang.ExceptionTextDBErrorGetFriends);
+            }
+            catch (TimeoutException ex)
+            {
+                ServerException.HandleException(ex, nameof(GetFriends));
+                throw FaultFactory.CreateFault("ServerTimeout", Lang.ExceptionTextTimeout);
             }
             catch (Exception ex)
             {
                 ServerException.HandleException(ex, nameof(GetFriends));
-                return new List<FriendData>();
+                throw FaultFactory.CreateFault("ServerError", Lang.ExceptionTextErrorOcurred);
             }
         }
 
@@ -272,17 +278,22 @@ namespace TrucoServer.Services
             catch (SqlException ex)
             {
                 ServerException.HandleException(ex, nameof(GetPendingFriendRequests));
-                return new List<FriendData>();
+                throw FaultFactory.CreateFault("ServerDBErrorGetFriends", Lang.ExceptionTextDBErrorGetFriends);
             }
-            catch (InvalidOperationException ex)
+            catch (EntityException ex)
             {
                 ServerException.HandleException(ex, nameof(GetPendingFriendRequests));
-                return new List<FriendData>();
+                throw FaultFactory.CreateFault("ServerDBErrorGetFriends", Lang.ExceptionTextDBErrorGetFriends);
+            }
+            catch (TimeoutException ex)
+            {
+                ServerException.HandleException(ex, nameof(GetPendingFriendRequests));
+                throw FaultFactory.CreateFault("ServerTimeout", Lang.ExceptionTextTimeout);
             }
             catch (Exception ex)
             {
                 ServerException.HandleException(ex, nameof(GetPendingFriendRequests));
-                return new List<FriendData>();
+                throw FaultFactory.CreateFault("ServerError", Lang.ExceptionTextErrorOcurred);
             }
         }
     }
