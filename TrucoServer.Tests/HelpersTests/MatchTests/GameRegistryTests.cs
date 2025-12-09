@@ -18,6 +18,8 @@ namespace TrucoServer.Tests.HelpersTests.MatchTests
         private GameRegistry registry;
         private TrucoMatch mockMatch;
 
+        private const int LOBBY_ID = 1;
+
         [TestInitialize]
         public void Setup()
         {
@@ -30,7 +32,7 @@ namespace TrucoServer.Tests.HelpersTests.MatchTests
             var context = new TrucoMatchContext
             {
                 MatchCode = "TEST01",
-                LobbyId = 1,
+                LobbyId = LOBBY_ID,
                 Players = players,
                 Callbacks = callbacks,
                 Deck = mockDeck.Object,

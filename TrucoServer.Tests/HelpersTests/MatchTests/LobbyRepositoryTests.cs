@@ -17,6 +17,9 @@ namespace TrucoServer.Tests.HelpersTests.MatchTests
         private Mock<DbSet<Lobby>> mockLobbySet;
         private LobbyRepository repository;
 
+        private const int USER_ID = 1;
+        private const int MAX_PLAYERS = 2;
+
         [TestInitialize]
         public void Setup()
         {
@@ -31,13 +34,13 @@ namespace TrucoServer.Tests.HelpersTests.MatchTests
         {
             var host = new User
             { 
-                userID = 1
+                userID = USER_ID
             };
 
             var options = new LobbyCreationOptions
             {
                 Host = host,
-                MaxPlayers = 2,
+                MaxPlayers = MAX_PLAYERS,
                 Status = "Public"
             };
 
@@ -57,7 +60,7 @@ namespace TrucoServer.Tests.HelpersTests.MatchTests
             mockVersionSet.As<IQueryable<Versions>>().Setup(m => m.GetEnumerator()).Returns(emptyVersions.GetEnumerator());
 
             mockContext.Setup(c => c.Versions).Returns(mockVersionSet.Object);
-            int versionId = repository.ResolveVersionId(2);
+            int versionId = repository.ResolveVersionId(MAX_PLAYERS);
             Assert.AreEqual(0, versionId);
         }
     }

@@ -12,6 +12,8 @@ namespace TrucoServer.Tests.HelpersTests.MappingTests
     [TestClass]
     public class UserMapperTests
     {
+        private const int MAX_NAME_CHANGE = 3;
+
         [TestMethod]
         public void TestMapUserToProfileDataHandlesNullUserProfile()
         {
@@ -55,7 +57,7 @@ namespace TrucoServer.Tests.HelpersTests.MappingTests
             {
                 username = "User",
                 email = "test@gmail.com",
-                nameChangeCount = 5,
+                nameChangeCount = MAX_NAME_CHANGE,
                 UserProfile = new UserProfile
                 {
                     avatarID = "avatar_aaa_default",

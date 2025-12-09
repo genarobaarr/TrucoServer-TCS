@@ -23,13 +23,13 @@ namespace TrucoServer.Tests.HelpersTests.MatchTests
         [TestMethod]
         public void TestDetermineTurnOrderSetsHostFirstForDuel()
         {
-            var p1 = new PlayerInformation(1, "Host", "Team 1");
-            var p2 = new PlayerInformation(2, "Guest", "Team 2");
+            var player1 = new PlayerInformation(1, "Host", "Team 1");
+            var player2 = new PlayerInformation(2, "Guest", "Team 2");
            
             var players = new List<PlayerInformation> 
             {
-                p2,
-                p1 
+                player2,
+                player1 
             };
 
             var result = ListPositionService.DetermineTurnOrder(players, "Host");
@@ -39,13 +39,13 @@ namespace TrucoServer.Tests.HelpersTests.MatchTests
         [TestMethod]
         public void TestDetermineTurnOrderSetsGuestSecondForDuel()
         {
-            var p1 = new PlayerInformation(1, "Host", "Team 1");
-            var p2 = new PlayerInformation(2, "Guest", "Team 2");
+            var player1 = new PlayerInformation(1, "Host", "Team 1");
+            var player2 = new PlayerInformation(2, "Guest", "Team 2");
            
             var players = new List<PlayerInformation> 
             {
-                p2, 
-                p1 
+                player2, 
+                player1 
             };
 
             var result = ListPositionService.DetermineTurnOrder(players, "Host");
@@ -57,8 +57,8 @@ namespace TrucoServer.Tests.HelpersTests.MatchTests
         {
             var host = new PlayerInformation(1, "Host", "Team 1");
             var mate = new PlayerInformation(2, "Teammate", "Team 1");
-            var enemy1 = new PlayerInformation(3, "Alpha", "Team 2");
-            var enemy2 = new PlayerInformation(4, "Zeta", "Team 2");
+            var enemy1 = new PlayerInformation(3, "Hazard", "Team 2");
+            var enemy2 = new PlayerInformation(4, "Pablo", "Team 2");
 
             var players = new List<PlayerInformation> 
             {
@@ -77,8 +77,8 @@ namespace TrucoServer.Tests.HelpersTests.MatchTests
         {
             var host = new PlayerInformation(1, "Host", "Team 1");
             var mate = new PlayerInformation(2, "Teammate", "Team 1");
-            var enemy1 = new PlayerInformation(3, "Alpha", "Team 2");
-            var enemy2 = new PlayerInformation(4, "Zeta", "Team 2");
+            var enemy1 = new PlayerInformation(3, "Hazard", "Team 2");
+            var enemy2 = new PlayerInformation(4, "Pablo", "Team 2");
 
             var players = new List<PlayerInformation> 
             {
@@ -89,7 +89,7 @@ namespace TrucoServer.Tests.HelpersTests.MatchTests
             };
 
             var result = ListPositionService.DetermineTurnOrder(players, "Host");
-            Assert.AreEqual("Alpha", result[1].Username);
+            Assert.AreEqual("Hazard", result[1].Username);
         }
     }
 }

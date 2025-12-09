@@ -21,6 +21,13 @@ namespace TrucoServer.Tests.HelpersTests.MatchTests
         private Mock<DbSet<User>> mockUserSet;
         private JoinService service;
 
+        private const int MAX_PLAYERS_2V2 = 4;
+        private const int TEAM_1_COUNT = 2;
+        private const int TEAM_2_COUNT = 1;
+        private const int LOBBY_ID = 1;
+        private const int MAX_PLAYERS_1V1 = 2;
+        private const int USER_ID = 10;
+
         [TestInitialize]
         public void Setup()
         {
@@ -41,9 +48,9 @@ namespace TrucoServer.Tests.HelpersTests.MatchTests
         {
             var options = new TeamDeterminationOptions
             {
-                MaxPlayers = 4,
-                Team1Count = 2,
-                Team2Count = 1,
+                MaxPlayers = MAX_PLAYERS_2V2,
+                Team1Count = TEAM_1_COUNT,
+                Team2Count = TEAM_2_COUNT,
                 Username = "NewUser"
             };
 
@@ -56,13 +63,13 @@ namespace TrucoServer.Tests.HelpersTests.MatchTests
         {
             var lobby = new Lobby 
             { 
-                lobbyID = 1, 
-                maxPlayers = 2 
+                lobbyID = LOBBY_ID, 
+                maxPlayers = MAX_PLAYERS_1V1
             };
 
             var user = new User 
             { 
-                userID = 10, 
+                userID = USER_ID, 
                 username = "PlayerX"
             };
 
@@ -70,12 +77,12 @@ namespace TrucoServer.Tests.HelpersTests.MatchTests
             {
                 new LobbyMember 
                 { 
-                    lobbyID = 1
+                    lobbyID = LOBBY_ID
                 },
                 
                 new LobbyMember 
                 {
-                    lobbyID = 1 
+                    lobbyID = LOBBY_ID
                 }
             }.AsQueryable();
 

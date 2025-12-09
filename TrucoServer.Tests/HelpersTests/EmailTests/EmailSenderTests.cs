@@ -1,6 +1,7 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using TrucoServer.Helpers.Email;
 using TrucoServer.Data.DTOs;
+using System;
 
 namespace TrucoServer.Tests.HelpersTests.EmailTests
 {
@@ -23,9 +24,9 @@ namespace TrucoServer.Tests.HelpersTests.EmailTests
 
                 sender.SendEmail(options);
             }
-            catch
+            catch (Exception ex)
             {
-                Assert.Fail("Should handle exception internally");
+                Assert.Fail($"Should handle exception internally {ex.Message}");
             }
 
             Assert.IsNotNull(sender);
@@ -43,7 +44,6 @@ namespace TrucoServer.Tests.HelpersTests.EmailTests
             };
 
             sender.SendLoginEmailAsync(user);
-
             Assert.IsNotNull(sender);
         }
 
@@ -59,7 +59,6 @@ namespace TrucoServer.Tests.HelpersTests.EmailTests
             };
 
             sender.NotifyPasswordChange(user);
-
             Assert.IsNotNull(sender);
         }
 
@@ -68,7 +67,6 @@ namespace TrucoServer.Tests.HelpersTests.EmailTests
         {
             var sender = new EmailSender();
             sender.SendEmail(null);
-
             Assert.IsNotNull(sender);
         }
 
@@ -77,7 +75,6 @@ namespace TrucoServer.Tests.HelpersTests.EmailTests
         {
             var sender = new EmailSender();
             sender.SendLoginEmailAsync(null);
-
             Assert.IsNotNull(sender);
         }
     }
