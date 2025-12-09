@@ -14,22 +14,26 @@ namespace TrucoServer.Tests.DataTests.EntititesTests
     [TestClass]
     public class FriendShipMappingTests
     {
+        private const int USER_ID = 100;
+        private const int SECOND_USER_ID = 200;
+        private const int NEGATIVE_USER_ID = -1;
+
         [TestMethod]
         public void TestUserIDSetValidIdReturnsId()
         {
             var mapping = new FriendShipMapping();
-            int id = 100;
-            mapping.UserID = id;
-            Assert.AreEqual(id, mapping.UserID);
+            int userId = USER_ID;
+            mapping.UserID = userId;
+            Assert.AreEqual(userId, mapping.UserID);
         }
 
         [TestMethod]
         public void TestFriendIDSetValidIdReturnsId()
         {
             var mapping = new FriendShipMapping();
-            int id = 200;
-            mapping.FriendID = id;
-            Assert.AreEqual(id, mapping.FriendID);
+            int userId = SECOND_USER_ID;
+            mapping.FriendID = userId;
+            Assert.AreEqual(userId, mapping.FriendID);
         }
 
         [TestMethod]
@@ -45,9 +49,9 @@ namespace TrucoServer.Tests.DataTests.EntititesTests
         public void TestFriendIDSetNegativeReturnsNegative()
         {
             var mapping = new FriendShipMapping();
-            int negative = -1;
-            mapping.FriendID = negative;
-            Assert.AreEqual(negative, mapping.FriendID);
+            int negativeId = NEGATIVE_USER_ID;
+            mapping.FriendID = negativeId;
+            Assert.AreEqual(negativeId, mapping.FriendID);
         }
 
         [TestMethod]

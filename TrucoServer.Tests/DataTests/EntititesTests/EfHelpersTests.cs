@@ -11,6 +11,8 @@ namespace TrucoServer.Tests.DataTests.EntititesTests
     [TestClass]
     public class EfHelpersTests
     {
+        private const int USER_ID = 1;
+
         private class TestEntity
         {
             public int Id { get; set; }
@@ -22,7 +24,7 @@ namespace TrucoServer.Tests.DataTests.EntititesTests
         {
             var entity = new TestEntity
             {
-                Id = 1,
+                Id = USER_ID,
                 Name = "TestName"
             };
 
@@ -36,7 +38,7 @@ namespace TrucoServer.Tests.DataTests.EntititesTests
         {
             var entity = new TestEntity 
             {
-                Id = 1 
+                Id = USER_ID 
             };
 
             string propName = "NonExistent";

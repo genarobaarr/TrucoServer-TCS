@@ -12,13 +12,17 @@ namespace TrucoServer.Tests.DataTests.EntititesTests
     [TestClass]
     public class BannedWordEntityTests
     {
+        private const int USER_ID = 10;
+        private const int WORD_ID = 0;
+        private const int LONG_WORD = 50;
+
         [TestMethod]
         public void TestWordIDSetPositiveIntegerReturnsInteger()
         {
             var entity = new BannedWordEntity();
-            int id = 10;
-            entity.WordID = id;
-            Assert.AreEqual(id, entity.WordID);
+            int userId = USER_ID;
+            entity.WordID = userId;
+            Assert.AreEqual(userId, entity.WordID);
         }
 
         [TestMethod]
@@ -42,7 +46,7 @@ namespace TrucoServer.Tests.DataTests.EntititesTests
         public void TestWordIDSetZeroReturnsZero()
         {
             var entity = new BannedWordEntity();
-            entity.WordID = 0;
+            entity.WordID = WORD_ID;
             Assert.AreEqual(0, entity.WordID);
         }
 
@@ -50,7 +54,7 @@ namespace TrucoServer.Tests.DataTests.EntititesTests
         public void TestWordSetMaxLengthStringReturnsString()
         {
             var entity = new BannedWordEntity();
-            string longWord = new string('x', 50);
+            string longWord = new string('x', LONG_WORD);
             entity.Word = longWord;
             Assert.AreEqual(50, entity.Word.Length);
         }

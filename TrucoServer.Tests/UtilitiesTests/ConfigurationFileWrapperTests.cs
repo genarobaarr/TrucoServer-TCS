@@ -11,6 +11,8 @@ namespace TrucoServer.Tests.UtilitiesTests
     [TestClass]
     public class ConfigurationFileWrapperTests
     {
+        private const int SMTP_PORT= 25;
+
         [TestMethod]
         public void TestEmailSettingsSetObjectReturnsObject()
         {
@@ -42,7 +44,7 @@ namespace TrucoServer.Tests.UtilitiesTests
 
             wrapper.EmailSettings = new EmailSettings 
             { 
-                SmtpPort = 25 
+                SmtpPort = SMTP_PORT 
             };
 
             int port = wrapper.EmailSettings.SmtpPort;

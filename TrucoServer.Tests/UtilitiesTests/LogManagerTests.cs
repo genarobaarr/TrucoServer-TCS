@@ -10,86 +10,86 @@ namespace TrucoServer.Tests.UtilitiesTests
         [TestMethod]
         public void TestLogFatalDoesNotThrowException()
         {
-            var ex = new Exception("Fatal Error");
+            var exception = new Exception("Fatal Error");
 
             try
             {
-                LogManager.LogFatal(ex, "TestMethod");
+                LogManager.LogFatal(exception, "TestMethod");
             }
-            catch
+            catch (Exception ex) 
             {
-                Assert.Fail("LogFatal should not throw");
+                Assert.Fail($"LogFatal should not throw {ex.Message}");
             }
 
-            Assert.IsNotNull(ex);
+            Assert.IsNotNull(exception);
         }
 
         [TestMethod]
         public void TestLogErrorDoesNotThrowException()
         {
-            var ex = new Exception("Error");
+            var exception = new Exception("Error");
 
             try
             {
-                LogManager.LogError(ex, "TestMethod");
+                LogManager.LogError(exception, "TestMethod");
             }
-            catch
+            catch (Exception ex)
             {
-                Assert.Fail("LogError should not throw");
+                Assert.Fail($"LogError should not throw {ex.Message}");
             }
 
-            Assert.IsNotNull(ex);
+            Assert.IsNotNull(exception);
         }
 
         [TestMethod]
         public void TestLogWarnDoesNotThrowException()
         {
-            string msg = "Warning message";
+            string message = "Warning message";
 
             try
             {
-                LogManager.LogWarn(msg, "TestMethod");
+                LogManager.LogWarn(message, "TestMethod");
             }
             catch
             {
                 Assert.Fail("LogWarn should not throw");
             }
 
-            Assert.AreEqual("Warning message", msg);
+            Assert.AreEqual("Warning message", message);
         }
 
         [TestMethod]
         public void TestLogWarnHandlesNullMessage()
         {
-            string msg = null;
+            string message = null;
 
             try
             {
-                LogManager.LogWarn(msg, "TestMethod");
+                LogManager.LogWarn(message, "TestMethod");
             }
             catch
             {
                 Assert.Fail("Should handle null message");
             }
 
-            Assert.IsNull(msg);
+            Assert.IsNull(message);
         }
 
         [TestMethod]
         public void TestLogErrorHandlesNullException()
         {
-            Exception ex = null;
+            Exception exception = null;
 
             try
             {
-                LogManager.LogError(ex, "TestMethod");
+                LogManager.LogError(exception, "TestMethod");
             }
-            catch
+            catch (Exception ex)
             {
-                Assert.Fail("Should handle null exception");
+                Assert.Fail($"Should handle null exception {ex.Message}");
             }
 
-            Assert.IsNull(ex);
+            Assert.IsNull(exception);
         }
     }
 }
