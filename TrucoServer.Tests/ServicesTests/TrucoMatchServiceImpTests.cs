@@ -4,13 +4,14 @@ using System;
 using System.Collections.Generic;
 using System.Data.Entity;
 using System.Linq;
+using System.ServiceModel;
 using TrucoServer.Contracts;
 using TrucoServer.Data.DTOs;
 using TrucoServer.GameLogic;
+using TrucoServer.Helpers.Email;
 using TrucoServer.Helpers.Match;
 using TrucoServer.Helpers.Profanity;
 using TrucoServer.Services;
-using TrucoServer.Helpers.Email;
 
 namespace TrucoServer.Tests.ServicesTests
 {
@@ -193,9 +194,9 @@ namespace TrucoServer.Tests.ServicesTests
         [TestMethod]
         public void TestGetPublicLobbiesReturnsEmptyOnException()
         {
-            mockLobbySet.As<IQueryable<Lobby>>().Setup(m => m.Provider).Throws(new Exception("Data base"));
-            var result = service.GetPublicLobbies();
-            Assert.AreEqual(0, result.Count);
+            mockLobbySet.As<IQueryable<Lobby>>().Setup(m => m.Provider)
+                .Throws(new Exception("Data base"));
+            Assert.ThrowsException<FaultException<CustomFault>>(() => service.GetPublicLobbies());
         }
 
         [TestMethod]

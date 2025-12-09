@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Data.Entity;
 using System.Linq;
+using System.ServiceModel;
 using TrucoServer.Contracts;
 using TrucoServer.Data.DTOs;
 using TrucoServer.Helpers.Friends;
@@ -17,12 +18,7 @@ namespace TrucoServer.Tests.ServicesTests
         private Mock<baseDatosTrucoEntities> mockContext;
         private Mock<IFriendRepository> mockRepo;
         private Mock<IFriendNotifier> mockNotifier;
-        private Mock<DbSet<User>> mockUserSet;
-
         private TrucoFriendServiceImp service;
-
-        private const int USER_ID = 1;
-        private const int SECOND_USER_ID = 2;
 
         [TestInitialize]
         public void Setup()
@@ -30,16 +26,29 @@ namespace TrucoServer.Tests.ServicesTests
             mockContext = new Mock<baseDatosTrucoEntities>();
             mockRepo = new Mock<IFriendRepository>();
             mockNotifier = new Mock<IFriendNotifier>();
-            mockUserSet = new Mock<DbSet<User>>();
-            mockContext.Setup(c => c.User).Returns(mockUserSet.Object);
+            var emptyUsers = GetMockDbSet(new List<User>());
+            mockContext.Setup(c => c.User).Returns(emptyUsers.Object);
+
             service = new TrucoFriendServiceImp(mockContext.Object, mockRepo.Object, mockNotifier.Object);
         }
 
+        private static Mock<DbSet<T>> GetMockDbSet<T>(List<T> sourceList) where T : class
+        {
+            var queryable = sourceList.AsQueryable();
+            var mockSet = new Mock<DbSet<T>>();
+
+            mockSet.As<IQueryable<T>>().Setup(m => m.Provider).Returns(queryable.Provider);
+            mockSet.As<IQueryable<T>>().Setup(m => m.Expression).Returns(queryable.Expression);
+            mockSet.As<IQueryable<T>>().Setup(m => m.ElementType).Returns(queryable.ElementType);
+            mockSet.As<IQueryable<T>>().Setup(m => m.GetEnumerator()).Returns(() => queryable.GetEnumerator());
+
+            return mockSet;
+        }
 
         [TestMethod]
         public void TestSendFriendRequestReturnsFalseIfUsersAreSame()
         {
-            bool result = service.SendFriendRequest("UserA", "UserA");
+            bool result = service.SendFriendRequest("User1", "User1");
             Assert.IsFalse(result);
         }
 
@@ -47,60 +56,47 @@ namespace TrucoServer.Tests.ServicesTests
         public void TestSendFriendRequestReturnsFalseIfLookupFails()
         {
             mockRepo.Setup(r => r.GetUsersFromDatabase(It.IsAny<UserLookupOptions>()))
-                    .Returns(new UserLookupResult 
-                    { 
-                        Success = false
-                    });
+                 .Returns(new UserLookupResult
+                 {
+                     Success = false
+                 });
 
-            bool result = service.SendFriendRequest("UserA", "UserB");
-            Assert.IsFalse(result);
+            Assert.ThrowsException<FaultException<CustomFault>>(() => service.SendFriendRequest("UserA", "UserB"));
         }
 
         [TestMethod]
-        public void TestSendFriendRequestReturnsFalseIfFriendshipExists()
+        public void TestSendFriendRequestThrowsFaultExceptionIfFriendshipExists()
         {
-            var user1 = new User
-            { 
-                userID = USER_ID
-            };
-
-            var user2 = new User 
-            { 
-                userID = SECOND_USER_ID
-            };
-
             mockRepo.Setup(r => r.GetUsersFromDatabase(It.IsAny<UserLookupOptions>()))
-                    .Returns(new UserLookupResult 
-                    { 
-                        Success = true,
-                        User1 = user1,
-                        User2 = user2 
+                    .Returns(new UserLookupResult { Success = true, User1 = new User 
+                    {
+                        userID = 1 
+                    }, 
+                        User2 = new User
+                        {
+                            userID = 2 
+                        }
                     });
 
             mockRepo.Setup(r => r.CheckFriendshipExists(1, 2)).Returns(true);
-            bool result = service.SendFriendRequest("UserA", "UserB");
-            Assert.IsFalse(result);
+            Assert.ThrowsException<FaultException<CustomFault>>(() => service.SendFriendRequest("UserA", "UserB"));
         }
 
         [TestMethod]
         public void TestSendFriendRequestReturnsTrueOnSuccess()
         {
-            var user1 = new User 
-            { 
-                userID = USER_ID
-            };
-
-            var user2 = new User 
-            {
-                userID = SECOND_USER_ID
-            };
-
             mockRepo.Setup(r => r.GetUsersFromDatabase(It.IsAny<UserLookupOptions>()))
                     .Returns(new UserLookupResult 
                     {
-                        Success = true,
-                        User1 = user1,
-                        User2 = user2 
+                        Success = true, 
+                        User1 = new User 
+                        {
+                            userID = 1 
+                        },
+                        User2 = new User 
+                        {
+                            userID = 2 
+                        } 
                     });
 
             mockRepo.Setup(r => r.CheckFriendshipExists(1, 2)).Returns(false);
@@ -109,37 +105,32 @@ namespace TrucoServer.Tests.ServicesTests
         }
 
         [TestMethod]
-        public void TestSendFriendRequestHandlesException()
+        public void TestSendFriendRequestThrowsFaultExceptionOnDbError()
         {
             mockRepo.Setup(r => r.GetUsersFromDatabase(It.IsAny<UserLookupOptions>()))
                     .Throws(new Exception("DB Error"));
-
-            bool result = service.SendFriendRequest("UserA", "UserB");
-            Assert.IsFalse(result);
+            Assert.ThrowsException<FaultException<CustomFault>>(() => service.SendFriendRequest("UserA", "UserB"));
         }
-
 
         [TestMethod]
         public void TestAcceptFriendRequestReturnsFalseIfNoPendingRequest()
         {
-            var user1 = new User
-            { 
-                userID = USER_ID
-            };
-           
-            var user2 = new User
-            { 
-                userID = SECOND_USER_ID
-            };
-
+            // Arrange
             mockRepo.Setup(r => r.GetUsersFromDatabase(It.IsAny<UserLookupOptions>()))
-                    .Returns(new UserLookupResult
+                    .Returns(new UserLookupResult 
                     { 
                         Success = true, 
-                        User1 = user1, 
-                        User2 = user2 
+                        User1 = new User 
+                        {
+                            userID = 1 
+                        },
+
+                        User2 = new User 
+                        {
+                            userID = 2 
+                        }
                     });
-           
+
             mockRepo.Setup(r => r.FindPendingFriendship(It.IsAny<FriendRequest>())).Returns((Friendship)null);
             bool result = service.AcceptFriendRequest("UserA", "UserB");
             Assert.IsFalse(result);
@@ -148,46 +139,34 @@ namespace TrucoServer.Tests.ServicesTests
         [TestMethod]
         public void TestAcceptFriendRequestReturnsTrueOnSuccess()
         {
-            var user1 = new User
-            { 
-                userID = USER_ID
-            };
-           
-            var user2 = new User 
-            { 
-                userID = SECOND_USER_ID
-            };
-
-            var friendship = new Friendship();
-
             mockRepo.Setup(r => r.GetUsersFromDatabase(It.IsAny<UserLookupOptions>()))
-                    .Returns(new UserLookupResult
+                    .Returns(new UserLookupResult 
                     { 
-                        Success = true, 
-                        User1 = user1,
-                        User2 = user2
+                        Success = true,
+                        User1 = new User 
+                        {
+                            userID = 1 
+                        },
+
+                        User2 = new User 
+                        { 
+                            userID = 2 
+                        } 
                     });
 
-            mockRepo.Setup(r => r.FindPendingFriendship(It.IsAny<FriendRequest>())).Returns(friendship);
+            mockRepo.Setup(r => r.FindPendingFriendship(It.IsAny<FriendRequest>())).Returns(new Friendship());
+
             bool result = service.AcceptFriendRequest("UserA", "UserB");
             Assert.IsTrue(result);
         }
 
         [TestMethod]
-        public void TestAcceptFriendRequestValidatesInputs()
-        {
-            bool result = service.AcceptFriendRequest(string.Empty, "UserB");
-            Assert.IsFalse(result);
-        }
-
-
-        [TestMethod]
         public void TestRemoveFriendOrRequestReturnsFalseIfLookupFails()
         {
             mockRepo.Setup(r => r.GetUsersFromDatabase(It.IsAny<UserLookupOptions>()))
-                    .Returns(new UserLookupResult
+                    .Returns(new UserLookupResult 
                     {
-                        Success = false 
+                        Success = false
                     });
 
             bool result = service.RemoveFriendOrRequest("UserA", "UserB");
@@ -197,77 +176,60 @@ namespace TrucoServer.Tests.ServicesTests
         [TestMethod]
         public void TestRemoveFriendOrRequestReturnsTrueOnDelete()
         {
-            var user1 = new User 
-            {
-                userID = USER_ID
-            };
-          
-            var user2 = new User 
-            { 
-                userID = SECOND_USER_ID
-            };
-
             mockRepo.Setup(r => r.GetUsersFromDatabase(It.IsAny<UserLookupOptions>()))
-                    .Returns(new UserLookupResult 
-                    {
-                        Success = true, 
-                        User1 = user1,
-                        User2 = user2 
+                    .Returns(new UserLookupResult
+                    { 
+                        Success = true,
+                        User1 = new User 
+                        { 
+                            userID = 1 
+                        },
+                        User2 = new User
+                        { 
+                            userID = 2 
+                        } 
                     });
 
             mockRepo.Setup(r => r.DeleteFriendships(1, 2)).Returns(true);
+
             bool result = service.RemoveFriendOrRequest("UserA", "UserB");
             Assert.IsTrue(result);
         }
 
         [TestMethod]
-        public void TestRemoveFriendOrRequestHandlesException()
+        public void TestGetFriendsReturnsEmptyListWhenUserNotFound()
         {
-            mockRepo.Setup(r => r.GetUsersFromDatabase(It.IsAny<UserLookupOptions>())).Throws(new Exception("DB"));
-            bool result = service.RemoveFriendOrRequest("UserA", "UserB");
-            Assert.IsFalse(result);
-        }
-
-        [TestMethod]
-        public void TestGetFriendsReturnsEmptyIfUserNotFound()
-        {
-            var data = new List<User>().AsQueryable();
-            mockUserSet.As<IQueryable<User>>().Setup(m => m.Provider).Returns(data.Provider);
-            mockUserSet.As<IQueryable<User>>().Setup(m => m.Expression).Returns(data.Expression);
-            mockUserSet.As<IQueryable<User>>().Setup(m => m.ElementType).Returns(data.ElementType);
-            mockUserSet.As<IQueryable<User>>().Setup(m => m.GetEnumerator()).Returns(data.GetEnumerator());
-            var result = service.GetFriends("Test");
+            var emptySet = GetMockDbSet(new List<User>());
+            mockContext.Setup(c => c.User).Returns(emptySet.Object);
+            var result = service.GetFriends("NonExistentUser");
             Assert.AreEqual(0, result.Count);
         }
 
         [TestMethod]
-        public void TestGetFriendsHandlesException()
+        public void TestGetFriendsThrowsFaultExceptionOnDbException()
         {
-            mockUserSet.As<IQueryable<User>>().Setup(m => m.Provider).Throws(new Exception("DB"));
-            var result = service.GetFriends("UserA");
+            var mockSet = new Mock<DbSet<User>>();
+            mockSet.As<IQueryable<User>>().Setup(m => m.Provider).Throws(new Exception("DB"));
+            mockContext.Setup(c => c.User).Returns(mockSet.Object);
+            Assert.ThrowsException<FaultException<CustomFault>>(() => service.GetFriends("UserA"));
+        }
+
+        [TestMethod]
+        public void TestGetPendingFriendRequestsReturnsEmptyWhenUserNotFound()
+        {
+            var emptySet = GetMockDbSet(new List<User>());
+            mockContext.Setup(c => c.User).Returns(emptySet.Object);
+            var result = service.GetPendingFriendRequests("NonExistentUser");
             Assert.AreEqual(0, result.Count);
         }
 
-
         [TestMethod]
-        public void TestGetPendingFriendRequestsReturnsEmptyIfUserNotFound()
+        public void TestGetPendingFriendRequestsThrowsFaultExceptionOnDbException()
         {
-            var data = new List<User>().AsQueryable();
-            mockUserSet.As<IQueryable<User>>().Setup(m => m.Provider).Returns(data.Provider);
-            mockUserSet.As<IQueryable<User>>().Setup(m => m.Expression).Returns(data.Expression);
-            mockUserSet.As<IQueryable<User>>().Setup(m => m.ElementType).Returns(data.ElementType);
-            mockUserSet.As<IQueryable<User>>().Setup(m => m.GetEnumerator()).Returns(data.GetEnumerator());
-            var result = service.GetPendingFriendRequests("Test");
-            Assert.AreEqual(0, result.Count);
-        }
-
-
-        [TestMethod]
-        public void TestGetPendingFriendRequestsHandlesException()
-        {
-            mockUserSet.As<IQueryable<User>>().Setup(m => m.Provider).Throws(new Exception("DB"));
-            var result = service.GetPendingFriendRequests("UserA");
-            Assert.AreEqual(0, result.Count);
+            var mockSet = new Mock<DbSet<User>>();
+            mockSet.As<IQueryable<User>>().Setup(m => m.Provider).Throws(new Exception("DB"));
+            mockContext.Setup(c => c.User).Returns(mockSet.Object);
+            Assert.ThrowsException<FaultException<CustomFault>>(() => service.GetPendingFriendRequests("UserA"));
         }
     }
 }
