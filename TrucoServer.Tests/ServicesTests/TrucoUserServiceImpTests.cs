@@ -367,9 +367,9 @@ namespace TrucoServer.Tests.ServicesTests
         [TestMethod]
         public void TestGetGlobalRankingHandlesServiceException()
         {
-            mockRanking.Setup(r => r.GetGlobalRanking()).Throws(new Exception("Rank Error"));
-            var result = service.GetGlobalRanking();
-            Assert.AreEqual(0, result.Count);
+            mockRanking.Setup(r => r.GetGlobalRanking())
+               .Throws(new Exception("Rank Error"));
+            Assert.ThrowsException<FaultException<CustomFault>>(() => service.GetGlobalRanking());
         }
 
         [TestMethod]
@@ -398,9 +398,9 @@ namespace TrucoServer.Tests.ServicesTests
         [TestMethod]
         public void TestGetLastMatchesHandlesException()
         {
-            mockHistory.Setup(h => h.GetLastMatches(It.IsAny<string>())).Throws(new Exception("History Error"));
-            var result = service.GetLastMatches("User");
-            Assert.AreEqual(0, result.Count);
+            mockHistory.Setup(h => h.GetLastMatches(It.IsAny<string>()))
+               .Throws(new Exception("History Error"));
+            Assert.ThrowsException<FaultException<CustomFault>>(() => service.GetLastMatches("User"));
         }
 
         [TestMethod]
