@@ -16,6 +16,9 @@ namespace TrucoServer.Tests.HelpersTests.FriendsTests
     {
         private Mock<baseDatosTrucoEntities> mockContext;
 
+        private const int USER_ID = 2;
+        private const int FRIEND_ID = 1;
+
         [TestInitialize]
         public void Setup()
         {
@@ -59,15 +62,15 @@ namespace TrucoServer.Tests.HelpersTests.FriendsTests
             {
                 new Friendship
                 {
-                    userID = 2,
-                    friendID = 1
+                    userID = USER_ID,
+                    friendID = FRIEND_ID
                 }
             };
 
             var mockFriendshipSet = GetMockDbSet(friendshipList);
             mockContext.Setup(c => c.Friendship).Returns(mockFriendshipSet.Object);
             var repo = new FriendRepository(mockContext.Object);
-            bool exists = repo.CheckFriendshipExists(1, 2);
+            bool exists = repo.CheckFriendshipExists(FRIEND_ID, USER_ID);
             Assert.IsTrue(exists);
         }
 
@@ -91,7 +94,7 @@ namespace TrucoServer.Tests.HelpersTests.FriendsTests
             var mockFriendshipSet = GetMockDbSet(emptyList);
             mockContext.Setup(c => c.Friendship).Returns(mockFriendshipSet.Object);
             var repo = new FriendRepository(mockContext.Object);
-            bool result = repo.DeleteFriendships(1, 2);
+            bool result = repo.DeleteFriendships(FRIEND_ID, USER_ID);
             Assert.IsFalse(result);
         }
     }

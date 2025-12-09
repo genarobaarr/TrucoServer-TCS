@@ -74,7 +74,7 @@ namespace TrucoServer.Tests.HelpersTests.ProfanityTests
         [TestMethod]
         public void TestLoadBannedWordsHandlesRepositoryExceptionGracefully()
         {
-            mockRepo.Setup(r => r.GetAllWords()).Throws(new Exception("DB Down"));
+            mockRepo.Setup(r => r.GetAllWords()).Throws(new Exception("DB down"));
             var service = new ProfanityServerService(mockRepo.Object);
             service.LoadBannedWords();
             var result = service.GetBannedWordsForClient();

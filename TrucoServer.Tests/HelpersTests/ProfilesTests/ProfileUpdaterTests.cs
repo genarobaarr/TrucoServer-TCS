@@ -16,6 +16,12 @@ namespace TrucoServer.Tests.HelpersTests.ProfilesTests
     {
         private Mock<baseDatosTrucoEntities> mockContext;
 
+        private const int USER_ID = 1;
+        private const int MAX_CHANGE_NAME = 3;
+        private const int ZERO_CHANGE_NAME = 0;
+        private const int SECOND_USER_ID = 2;
+        private const int THIRD_USER_ID = 10;
+
         [TestInitialize]
         public void Setup()
         {
@@ -43,14 +49,14 @@ namespace TrucoServer.Tests.HelpersTests.ProfilesTests
             var user = new User 
             {
                 username = "OldName", 
-                nameChangeCount = 3
+                nameChangeCount = MAX_CHANGE_NAME
             };
 
             var context = new UsernameUpdateContext 
             {
                 User = user,
                 NewUsername = "NewName",
-                MaxNameChanges = 3 
+                MaxNameChanges = MAX_CHANGE_NAME
             };
 
             bool result = updater.TryUpdateUsername(context);
@@ -62,14 +68,14 @@ namespace TrucoServer.Tests.HelpersTests.ProfilesTests
         {
             var currentUser = new User
             {
-                userID = 1,
+                userID = USER_ID,
                 username = "Me",
-                nameChangeCount = 0
+                nameChangeCount = ZERO_CHANGE_NAME
             };
 
             var otherUser = new User
             {
-                userID = 2,
+                userID = SECOND_USER_ID,
                 username = "TakenName"
             };
 
@@ -86,7 +92,7 @@ namespace TrucoServer.Tests.HelpersTests.ProfilesTests
             {
                 User = currentUser,
                 NewUsername = "TakenName",
-                MaxNameChanges = 5
+                MaxNameChanges = MAX_CHANGE_NAME
             };
 
             bool result = updater.TryUpdateUsername(updateContext);
@@ -117,7 +123,7 @@ namespace TrucoServer.Tests.HelpersTests.ProfilesTests
 
             var user = new User
             {
-                userID = 10,
+                userID = THIRD_USER_ID,
                 UserProfile = null
             };
 
