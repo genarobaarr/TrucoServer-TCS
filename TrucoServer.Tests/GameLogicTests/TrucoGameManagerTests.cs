@@ -19,6 +19,13 @@ namespace TrucoServer.Tests.GameLogic
         private Mock<IUserStatsService> mockStats;
         private Mock<DbSet<User>> mockUserSet;
 
+        private const int LOBBY_ID = 1;
+        private const int WINER_SCORE = 30;
+        private const int LOSSER_SCORE = 30;
+        private const int MATCH_ID = 10;
+        private const int SECOND_MATCH_ID = 99;
+        private const int SECOND_LOBBY_ID = 50;
+
         [TestInitialize]
         public void Setup()
         {
@@ -54,8 +61,7 @@ namespace TrucoServer.Tests.GameLogic
         {
             var manager = new TrucoGameManager(mockContext.Object, mockStats.Object);
             var players = new List<PlayerInformation>();
-            int lobbyId = 1;
-
+            int lobbyId = LOBBY_ID;
             var matchList = new List<Match>();
             
             var lobbyList = new List<Lobby> 
@@ -80,8 +86,8 @@ namespace TrucoServer.Tests.GameLogic
         public void TestSaveMatchToDatabaseExistingInProgressReturnsExistingId()
         {
             var manager = new TrucoGameManager(mockContext.Object, mockStats.Object);
-            int existingId = 99;
-            int lobbyId = 50;
+            int existingId = SECOND_MATCH_ID;
+            int lobbyId = SECOND_LOBBY_ID;
 
             var matchList = new List<Match>
             {
@@ -116,7 +122,7 @@ namespace TrucoServer.Tests.GameLogic
         public void TestSaveMatchResultUpdatesMatchStatus()
         {
             var manager = new TrucoGameManager(mockContext.Object, mockStats.Object);
-            int matchId = 10;
+            int matchId = MATCH_ID;
 
             var match = new Match 
             { 
@@ -135,8 +141,8 @@ namespace TrucoServer.Tests.GameLogic
             var outcome = new MatchOutcome
             {
                 WinnerTeam = "Team 1",
-                WinnerScore = 30,
-                LoserScore = 15
+                WinnerScore = WINER_SCORE,
+                LoserScore = LOSSER_SCORE
             };
 
             var mockMatchSet = GetMockDbSet(matchList);

@@ -11,11 +11,13 @@ namespace TrucoServer.Tests.GameLogic
     [TestClass]
     public class DeckTests
     {
+        private const int CARDS = 40;
+
         [TestMethod]
         public void TestRemainingCardsInitializesWith40Cards()
         {
             var deck = new Deck();
-            Assert.AreEqual(40, deck.RemainingCards);
+            Assert.AreEqual(CARDS, deck.RemainingCards);
         }
 
         [TestMethod]
@@ -43,7 +45,7 @@ namespace TrucoServer.Tests.GameLogic
             deck.DealHand();
             deck.DealHand();
             deck.Reset();
-            Assert.AreEqual(40, deck.RemainingCards);
+            Assert.AreEqual(CARDS, deck.RemainingCards);
         }
 
         [TestMethod]

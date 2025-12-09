@@ -72,6 +72,13 @@ namespace TrucoServer.Tests.ServicesTests
             service = new TrucoMatchServiceImp(mockContext.Object, dependencies);
         }
 
+        private const int MAX_PLAYERS = 2;
+        private const int USER_ID = 1;
+        private const int LOBBY_ID = 1;
+        private const int SECOND_LOBBY_ID = 10;
+        private const int OWNER_ID = 5;
+        private const int SECOND_OWNER_ID = 9;
+
         private static Mock<DbSet<T>> GetMockDbSet<T>(List<T> sourceList) where T : class
         {
             var queryable = sourceList.AsQueryable();
@@ -92,7 +99,7 @@ namespace TrucoServer.Tests.ServicesTests
         public void TestCreateLobbyReturnsEmptyIfUsernameInvalid()
         {
             string invalidUsername = string.Empty;
-            int maxPlayers = 2;
+            int maxPlayers = MAX_PLAYERS;
             string privacy = "public";
             var result = service.CreateLobby(invalidUsername, maxPlayers, privacy);
             Assert.AreEqual(string.Empty, result);
@@ -102,7 +109,7 @@ namespace TrucoServer.Tests.ServicesTests
         public void TestCreateLobbyReturnsEmptyIfHostNotFound()
         {
             mockGenerator.Setup(g => g.GenerateMatchCode()).Returns("ABC");
-            var result = service.CreateLobby("Host", 2, "public");
+            var result = service.CreateLobby("Host", MAX_PLAYERS, "public");
             Assert.AreEqual(string.Empty, result);
         }
 
@@ -112,7 +119,7 @@ namespace TrucoServer.Tests.ServicesTests
             var host = new User
             {
                 username = "Host",
-                userID = 1
+                userID = USER_ID
             };
 
             var userList = new List<User> 
@@ -127,11 +134,11 @@ namespace TrucoServer.Tests.ServicesTests
             var lobby = new Lobby
             {
                 status = "Public",
-                lobbyID = 1
+                lobbyID = LOBBY_ID
             };
 
             mockRepo.Setup(r => r.CreateNewLobby(It.IsAny<LobbyCreationOptions>())).Returns(lobby);
-            var result = service.CreateLobby("Host", 2, "public");
+            var result = service.CreateLobby("Host", MAX_PLAYERS, "public");
             Assert.AreEqual("CODE", result);
         }
 
@@ -145,12 +152,12 @@ namespace TrucoServer.Tests.ServicesTests
         [TestMethod]
         public void TestJoinMatchReturnsFalseIfLobbyClosed()
         {
-            int lobbyId = 10;
+            int lobbyId = SECOND_LOBBY_ID;
             mockCoordinator.Setup(c => c.TryGetLobbyIdFromCode("CODE", out lobbyId)).Returns(true);
           
             var lobby = new Lobby
             {
-                lobbyID = 10,
+                lobbyID = SECOND_LOBBY_ID,
                 status = "Closed"
             };
 
@@ -177,16 +184,16 @@ namespace TrucoServer.Tests.ServicesTests
             {
                 service.LeaveMatch("CODE", "Player");
             }
-            catch
+            catch (Exception ex) 
             {
-                Assert.Fail("Exception should be handled");
+                Assert.Fail($"Exception should be handled {ex.Message}");
             }
         }
 
         [TestMethod]
         public void TestGetPublicLobbiesReturnsEmptyOnException()
         {
-            mockLobbySet.As<IQueryable<Lobby>>().Setup(m => m.Provider).Throws(new Exception("DB"));
+            mockLobbySet.As<IQueryable<Lobby>>().Setup(m => m.Provider).Throws(new Exception("Data base"));
             var result = service.GetPublicLobbies();
             Assert.AreEqual(0, result.Count);
         }
@@ -196,10 +203,10 @@ namespace TrucoServer.Tests.ServicesTests
         {
             var lobby = new Lobby 
             {
-                lobbyID = 1,
+                lobbyID = LOBBY_ID,
                 status = "Public",
-                maxPlayers = 2, 
-                ownerID = 5 
+                maxPlayers = MAX_PLAYERS, 
+                ownerID = OWNER_ID
             };
 
             mockLobbySet = GetMockDbSet(new List<Lobby> 
@@ -227,13 +234,13 @@ namespace TrucoServer.Tests.ServicesTests
             TrucoMatch dummy = null;
             mockRegistry.Setup(r => r.TryGetGame("CODE", out dummy)).Returns(false);
 
-            int id = 1;
+            int id = LOBBY_ID;
             mockCoordinator.Setup(c => c.TryGetLobbyIdFromCode("CODE", out id)).Returns(true);
             
             var lobby = new Lobby
             {
-                lobbyID = 1,
-                ownerID = 9
+                lobbyID = LOBBY_ID,
+                ownerID = SECOND_OWNER_ID
             };
 
             var data = new List<Lobby> 
@@ -258,7 +265,10 @@ namespace TrucoServer.Tests.ServicesTests
         public void TestStartMatchDoesNothingIfValidationFails()
         {
             mockStarter.Setup(s => s.ValidateMatchStart("CODE"))
-                        .Returns(new MatchStartValidation { IsValid = false });
+                        .Returns(new MatchStartValidation 
+                        { 
+                            IsValid = false 
+                        });
 
             service.StartMatch("CODE");
             mockStarter.Verify(s => s.InitiateMatchSequence(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<List<PlayerInfo>>()), Times.Never);
@@ -271,9 +281,9 @@ namespace TrucoServer.Tests.ServicesTests
             {
                 service.JoinMatchChat("CODE", "Player");
             }
-            catch
+            catch (Exception ex)
             {
-                Assert.Fail("Exception should be handled internally");
+                Assert.Fail($"Exception should be handled internally {ex.Message}");
             }
 
             Assert.IsNotNull(service);
@@ -297,9 +307,9 @@ namespace TrucoServer.Tests.ServicesTests
         [TestMethod]
         public void TestPlayCardDoesNotThrowWhenMatchNotFound()
         {
-            TrucoMatch m = null;
+            TrucoMatch match = null;
             int pid = 0;
-            mockStarter.Setup(s => s.GetMatchAndPlayerID("CODE", out m, out pid)).Returns(false);
+            mockStarter.Setup(s => s.GetMatchAndPlayerID("CODE", out match, out pid)).Returns(false);
             service.PlayCard("CODE", "card");
             Assert.IsNotNull(service);
         }

@@ -11,6 +11,13 @@ namespace TrucoServer.Tests.GameLogic
     [TestClass]
     public class DefaultDeckShufflerTests
     {
+        private const int LIST_COUNT_1 = 1;
+        private const int LIST_COUNT_2 = 2;
+        private const int LIST_COUNT_3 = 3;
+        private const int LIST_COUNT_4 = 4;
+        private const int LIST_COUNT_5 = 5;
+        private const int LIST_COUNT_99 = 99;
+
         [TestMethod]
         public void TestShuffleWithValidListDoesNotThrow()
         {
@@ -18,20 +25,20 @@ namespace TrucoServer.Tests.GameLogic
             
             var list = new List<int> 
             { 
-                1,
-                2,
-                3, 
-                4, 
-                5 
+                LIST_COUNT_1,
+                LIST_COUNT_2,
+                LIST_COUNT_3, 
+                LIST_COUNT_4, 
+                LIST_COUNT_5 
             };
 
             try
             {
                 shuffler.Shuffle(list);
             }
-            catch
+            catch (Exception ex)
             {
-                Assert.Fail("Shuffle should not throw exception on valid list.");
+                Assert.Fail($"Shuffle should not throw exception on valid list {ex.Message}");
             }
 
             Assert.AreEqual(5, list.Count);
@@ -52,7 +59,7 @@ namespace TrucoServer.Tests.GameLogic
             var shuffler = new DefaultDeckShuffler();
             var list = new List<int>
             { 
-                99 
+                LIST_COUNT_99
             };
 
             shuffler.Shuffle(list);
@@ -70,7 +77,7 @@ namespace TrucoServer.Tests.GameLogic
             {
                 shuffler.Shuffle(list);
             }
-            catch
+            catch (Exception)
             {
                 exceptionHandled = false;
             }

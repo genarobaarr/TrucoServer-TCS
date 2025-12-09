@@ -21,6 +21,9 @@ namespace TrucoServer.Tests.ServicesTests
 
         private TrucoFriendServiceImp service;
 
+        private const int USER_ID = 1;
+        private const int SECOND_USER_ID = 2;
+
         [TestInitialize]
         public void Setup()
         {
@@ -58,12 +61,12 @@ namespace TrucoServer.Tests.ServicesTests
         {
             var user1 = new User
             { 
-                userID = 1 
+                userID = USER_ID
             };
 
             var user2 = new User 
             { 
-                userID = 2
+                userID = SECOND_USER_ID
             };
 
             mockRepo.Setup(r => r.GetUsersFromDatabase(It.IsAny<UserLookupOptions>()))
@@ -84,12 +87,12 @@ namespace TrucoServer.Tests.ServicesTests
         {
             var user1 = new User 
             { 
-                userID = 1
+                userID = USER_ID
             };
 
             var user2 = new User 
             {
-                userID = 2
+                userID = SECOND_USER_ID
             };
 
             mockRepo.Setup(r => r.GetUsersFromDatabase(It.IsAny<UserLookupOptions>()))
@@ -121,12 +124,12 @@ namespace TrucoServer.Tests.ServicesTests
         {
             var user1 = new User
             { 
-                userID = 1 
+                userID = USER_ID
             };
            
             var user2 = new User
             { 
-                userID = 2 
+                userID = SECOND_USER_ID
             };
 
             mockRepo.Setup(r => r.GetUsersFromDatabase(It.IsAny<UserLookupOptions>()))
@@ -147,12 +150,12 @@ namespace TrucoServer.Tests.ServicesTests
         {
             var user1 = new User
             { 
-                userID = 1
+                userID = USER_ID
             };
            
             var user2 = new User 
             { 
-                userID = 2 
+                userID = SECOND_USER_ID
             };
 
             var friendship = new Friendship();
@@ -196,12 +199,12 @@ namespace TrucoServer.Tests.ServicesTests
         {
             var user1 = new User 
             {
-                userID = 1 
+                userID = USER_ID
             };
           
             var user2 = new User 
             { 
-                userID = 2
+                userID = SECOND_USER_ID
             };
 
             mockRepo.Setup(r => r.GetUsersFromDatabase(It.IsAny<UserLookupOptions>()))

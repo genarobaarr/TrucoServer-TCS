@@ -20,6 +20,10 @@ namespace TrucoServer.Tests.GameLogic
         private List<PlayerInformation> players;
         private Dictionary<int, ITrucoCallback> callbacks;
 
+        private const int LOBBY_ID = 1;
+        private const int PLAYER_INFORMATION_1 = 1;
+        private const int PLAYER_INFORMATION_2 = 2;
+
         [TestInitialize]
         public void Setup()
         {
@@ -28,19 +32,19 @@ namespace TrucoServer.Tests.GameLogic
             
             players = new List<PlayerInformation>
             {
-                new PlayerInformation(1, "P1", "Team 1"),
-                new PlayerInformation(2, "P2", "Team 2")
+                new PlayerInformation(PLAYER_INFORMATION_1, "P1", "Team 1"),
+                new PlayerInformation(PLAYER_INFORMATION_2, "P2", "Team 2")
             };
             
             callbacks = new Dictionary<int, ITrucoCallback>
             {
                 { 
-                    1, 
+                    PLAYER_INFORMATION_1, 
                     new Mock<ITrucoCallback>().Object 
                 },
 
                 { 
-                    2, 
+                    PLAYER_INFORMATION_2,
                     new Mock<ITrucoCallback>().Object 
                 }
             };
@@ -51,7 +55,7 @@ namespace TrucoServer.Tests.GameLogic
             context = new TrucoMatchContext
             {
                 MatchCode = "TEST-MATCH",
-                LobbyId = 1,
+                LobbyId = LOBBY_ID,
                 Players = players,
                 Callbacks = callbacks,
                 Deck = mockDeck.Object,

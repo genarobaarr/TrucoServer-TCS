@@ -382,7 +382,7 @@ namespace TrucoServer.Tests.ServicesTests
             {
                 new PlayerStats 
                 { 
-                    PlayerName = "A"
+                    PlayerName = "Angel"
                 }
             };
 
