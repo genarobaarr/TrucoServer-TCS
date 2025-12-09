@@ -101,7 +101,6 @@ namespace TrucoServer.Tests.ServicesTests
                     });
 
             mockRepo.Setup(r => r.CheckFriendshipExists(1, 2)).Returns(false);
-
             bool result = service.SendFriendRequest("UserA", "UserB");
             Assert.IsTrue(result);
         }
@@ -124,6 +123,7 @@ namespace TrucoServer.Tests.ServicesTests
             { 
                 userID = 1 
             };
+           
             var user2 = new User
             { 
                 userID = 2 
@@ -149,6 +149,7 @@ namespace TrucoServer.Tests.ServicesTests
             { 
                 userID = 1
             };
+           
             var user2 = new User 
             { 
                 userID = 2 
@@ -172,7 +173,7 @@ namespace TrucoServer.Tests.ServicesTests
         [TestMethod]
         public void TestAcceptFriendRequestValidatesInputs()
         {
-            bool result = service.AcceptFriendRequest("", "UserB");
+            bool result = service.AcceptFriendRequest(string.Empty, "UserB");
             Assert.IsFalse(result);
         }
 
@@ -197,10 +198,12 @@ namespace TrucoServer.Tests.ServicesTests
             {
                 userID = 1 
             };
+          
             var user2 = new User 
             { 
                 userID = 2
             };
+
             mockRepo.Setup(r => r.GetUsersFromDatabase(It.IsAny<UserLookupOptions>()))
                     .Returns(new UserLookupResult 
                     {

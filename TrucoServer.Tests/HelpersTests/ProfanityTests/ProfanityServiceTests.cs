@@ -33,7 +33,7 @@ namespace TrucoServer.Tests.HelpersTests.ProfanityTests
             var dirtyList = new List<string> 
             {
                 "  badword  ",
-                "",
+                string.Empty,
                 null,
                 "cleanword" 
             };
@@ -43,7 +43,6 @@ namespace TrucoServer.Tests.HelpersTests.ProfanityTests
 
             service.LoadBannedWords();
             var result = service.GetBannedWordsForClient();
-
             Assert.AreEqual(2, result.BannedWords.Count);
         }
 
