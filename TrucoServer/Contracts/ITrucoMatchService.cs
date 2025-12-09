@@ -11,6 +11,7 @@ namespace TrucoServer.Contracts
         string CreateLobby(string hostUsername, int maxPlayers, string privacy);
 
         [OperationContract]
+        [FaultContract(typeof(CustomFault))]
         int JoinMatch(string matchCode, string player);
 
         [OperationContract(IsOneWay = true)]
@@ -26,9 +27,11 @@ namespace TrucoServer.Contracts
         void SendChatMessage(string matchCode, string player, string message);
 
         [OperationContract]
+        [FaultContract(typeof(CustomFault))]
         List<PlayerInfo> GetLobbyPlayers(string matchCode);
 
         [OperationContract]
+        [FaultContract(typeof(CustomFault))]
         List<PublicLobbyInfo> GetPublicLobbies();
 
         [OperationContract]

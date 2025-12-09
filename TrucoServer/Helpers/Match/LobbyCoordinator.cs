@@ -2,6 +2,7 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Data;
+using System.Data.Entity.Core;
 using System.Data.SqlClient;
 using System.Linq;
 using System.ServiceModel;
@@ -329,8 +330,10 @@ namespace TrucoServer.Helpers.Match
                     {
                         comm.Abort();
                     }
-                    catch
+                    catch (Exception ex) 
                     {
+
+                        ServerException.HandleException(ex, nameof(ProcessSingleCallbackAsync));
                         /*
                          * Exceptions during comm.Abort() are intentionally ignored 
                          * as this is a cleanup operation for an already inactive callback.
@@ -432,15 +435,6 @@ namespace TrucoServer.Helpers.Match
                     ServerException.HandleException(ex, nameof(NotifyPlayerLeft));
                 }
             });
-        }
-
-        public void TerminateRunningGameIfExist(string matchCode, string player)
-        {
-            /* 
-             * GameRegistry handles running games; coordinator just invokes registry if needed.
-             * Keep an entry point here if service wants to call it via coordinator in future.
-             * Implementation left intentionally blank for separation of concerns.
-             */
         }
 
         public bool TryGetCallbacksSnapshot(string matchCode, out Contracts.ITrucoCallback[] snapshot)
@@ -562,6 +556,12 @@ namespace TrucoServer.Helpers.Match
                 ServerException.HandleException(ex, nameof(CreatePlayerInfoForChat));
                 return new PlayerInfo { Username = player };
             }
+
+            catch (EntityException ex)
+            {
+                ServerException.HandleException(ex, nameof(CreatePlayerInfoForChat));
+                return new PlayerInfo { Username = player };
+            }
             catch (DataException ex)
             {
                 ServerException.HandleException(ex, nameof(CreatePlayerInfoForChat));
@@ -624,6 +624,10 @@ namespace TrucoServer.Helpers.Match
                 }
             }
             catch (SqlException ex)
+            {
+                ServerException.HandleException(ex, nameof(CreateGuestPlayerInfo));
+            }
+            catch (EntityException ex)
             {
                 ServerException.HandleException(ex, nameof(CreateGuestPlayerInfo));
             }

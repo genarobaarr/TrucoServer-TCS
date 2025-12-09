@@ -151,12 +151,22 @@ namespace TrucoServer.Services
 
                 return true;
             }
-            catch (DbUpdateException ex)
+            catch (SqlException ex)
             {
                 ServerException.HandleException(ex, nameof(AcceptFriendRequest));
                 return false;
             }
-            catch (SqlException ex)
+            catch (EntityException ex)
+            {
+                ServerException.HandleException(ex, nameof(AcceptFriendRequest));
+                return false;
+            }
+            catch (ArgumentNullException ex)
+            {
+                ServerException.HandleException(ex, nameof(AcceptFriendRequest));
+                return false;
+            }
+            catch (InvalidOperationException ex)
             {
                 ServerException.HandleException(ex, nameof(AcceptFriendRequest));
                 return false;
@@ -207,7 +217,12 @@ namespace TrucoServer.Services
             }
             catch (SqlException ex)
             {
-                ServerException.HandleException(ex, nameof(RemoveFriendOrRequest));
+                ServerException.HandleException(ex, nameof(AcceptFriendRequest));
+                return false;
+            }
+            catch (EntityException ex)
+            {
+                ServerException.HandleException(ex, nameof(AcceptFriendRequest));
                 return false;
             }
             catch (Exception ex)

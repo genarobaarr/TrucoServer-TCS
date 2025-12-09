@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Data.Entity.Core;
 using System.Data.Entity.Infrastructure;
 using System.Data.SqlClient;
 using System.Linq;
@@ -15,6 +16,7 @@ using TrucoServer.Helpers.Match;
 using TrucoServer.Helpers.Profanity;
 using TrucoServer.Helpers.Ranking;
 using TrucoServer.Helpers.Security;
+using TrucoServer.Langs;
 using TrucoServer.Utilities;
 
 namespace TrucoServer.Services
@@ -210,25 +212,25 @@ namespace TrucoServer.Services
 
                 return joinSuccess ? lobby.maxPlayers : 0;
             }
-            catch (DbUpdateException ex)
-            {
-                ServerException.HandleException(ex, nameof(JoinMatch));
-                return 0;
-            }
             catch (SqlException ex)
             {
                 ServerException.HandleException(ex, nameof(JoinMatch));
-                return 0;
+                throw FaultFactory.CreateFault("ServerDBErrorJoin", Lang.ExceptionTextDBErrorJoin);
             }
-            catch (InvalidOperationException ex)
+            catch (EntityException ex)
             {
                 ServerException.HandleException(ex, nameof(JoinMatch));
-                return 0;
+                throw FaultFactory.CreateFault("ServerDBErrorJoin", Lang.ExceptionTextDBErrorJoin);
+            }
+            catch (TimeoutException ex)
+            {
+                ServerException.HandleException(ex, nameof(JoinMatch));
+                throw FaultFactory.CreateFault("ServerTimeout", Lang.ExceptionTextTimeout);
             }
             catch (Exception ex)
             {
                 ServerException.HandleException(ex, nameof(JoinMatch));
-                return 0;
+                throw FaultFactory.CreateFault("ServerError", Lang.ExceptionTextErrorOcurred);
             }
         }
 
@@ -450,17 +452,22 @@ namespace TrucoServer.Services
             catch (SqlException ex)
             {
                 ServerException.HandleException(ex, nameof(GetPublicLobbies));
-                return new List<PublicLobbyInfo>();
+                throw FaultFactory.CreateFault("ServerDBErrorGetPublicLobbies", Lang.ExceptionTextDBErrorGetPublicLobbies);
             }
-            catch (DataException ex)
+            catch (EntityException ex)
             {
                 ServerException.HandleException(ex, nameof(GetPublicLobbies));
-                return new List<PublicLobbyInfo>();
+                throw FaultFactory.CreateFault("ServerDBErrorGetPublicLobbies", Lang.ExceptionTextDBErrorGetPublicLobbies);
+            }
+            catch (TimeoutException ex)
+            {
+                ServerException.HandleException(ex, nameof(GetPublicLobbies));
+                throw FaultFactory.CreateFault("ServerTimeout", Lang.ExceptionTextTimeout);
             }
             catch (Exception ex)
             {
                 ServerException.HandleException(ex, nameof(GetPublicLobbies));
-                return new List<PublicLobbyInfo>();
+                throw FaultFactory.CreateFault("ServerError", Lang.ExceptionTextErrorOcurred);
             }
         }
 
@@ -512,12 +519,22 @@ namespace TrucoServer.Services
             catch (SqlException ex)
             {
                 ServerException.HandleException(ex, nameof(GetLobbyPlayers));
-                return new List<PlayerInfo>();
+                throw FaultFactory.CreateFault("ServerDBErrorGetLobbyPlayers", Lang.ExceptionTextDBErrorGetLobbyPlayers);
+            }
+            catch (EntityException ex)
+            {
+                ServerException.HandleException(ex, nameof(GetLobbyPlayers));
+                throw FaultFactory.CreateFault("ServerDBErrorGetLobbyPlayers", Lang.ExceptionTextDBErrorGetLobbyPlayers);
+            }
+            catch (TimeoutException ex)
+            {
+                ServerException.HandleException(ex, nameof(GetLobbyPlayers));
+                throw FaultFactory.CreateFault("ServerTimeout", Lang.ExceptionTextTimeout);
             }
             catch (Exception ex)
             {
                 ServerException.HandleException(ex, nameof(GetLobbyPlayers));
-                return new List<PlayerInfo>();
+                throw FaultFactory.CreateFault("ServerError", Lang.ExceptionTextErrorOcurred);
             }
         }
 
@@ -547,6 +564,10 @@ namespace TrucoServer.Services
                 matchStarter.InitiateMatchSequence(matchCode, validation.LobbyId, playersList);
             }
             catch (SqlException ex)
+            {
+                ServerException.HandleException(ex, nameof(StartMatch));
+            }
+            catch (EntityException ex)
             {
                 ServerException.HandleException(ex, nameof(StartMatch));
             }
@@ -680,8 +701,9 @@ namespace TrucoServer.Services
                         { 
                             cb.OnChatMessage(matchCode, player, message); 
                         }
-                        catch (Exception)
+                        catch (Exception ex)
                         {
+                            ServerException.HandleException(ex, nameof(SendChatMessage));
                             /*
                              * Exceptions from individual client callbacks are 
                              * intentionally ignored here to prevent a single failure
@@ -882,8 +904,9 @@ namespace TrucoServer.Services
                     {
                         bannedUserCallback.OnForcedLogout();
                     }
-                    catch 
+                    catch(Exception ex)
                     {
+                        ServerException.HandleException(ex, nameof(KickAndBanPlayer));
                         /* 
                          * Callback may fail if user is already 
                          * disconnected; ignore to continue 

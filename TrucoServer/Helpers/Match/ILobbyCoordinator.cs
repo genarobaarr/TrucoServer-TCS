@@ -19,7 +19,6 @@ namespace TrucoServer.Helpers.Match
         void RemoveInactiveCallbacks(string matchCode);
         void NotifyPlayerJoined(string matchCode, string player);
         void NotifyPlayerLeft(string matchCode, string player);
-        void TerminateRunningGameIfExist(string matchCode, string player);
         bool TryGetActiveCallbackForPlayer(string username, out Contracts.ITrucoCallback callback);
         void AddMatchCallbackMapping(Contracts.ITrucoCallback callback, PlayerInfo info);
         void RemoveMatchCallbackMapping(Contracts.ITrucoCallback callback);

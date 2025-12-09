@@ -4,8 +4,6 @@ using System.Data.Entity.Core;
 using System.Data.SqlClient;
 using System.Linq;
 using System.Security.Cryptography;
-using System.ServiceModel;
-using TrucoServer.Data.DTOs;
 using TrucoServer.Langs;
 using TrucoServer.Security;
 using TrucoServer.Utilities;
@@ -18,13 +16,7 @@ namespace TrucoServer.Helpers.Authentication
         {
             if (BruteForceProtector.IsBlocked(username))
             {
-                var fault = new CustomFault
-                {
-                    ErrorCode = "TooManyAttempts",
-                    ErrorMessage = Langs.Lang.ExceptionTextTooManyAttempts
-                };
-
-                throw new FaultException<CustomFault>(fault, new FaultReason("TooManyAttempts"));
+                throw FaultFactory.CreateFault("TooManyAttempts", Lang.ExceptionTextTooManyAttempts);
             }
         }
 
