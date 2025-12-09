@@ -177,4 +177,10 @@
   <data name="ExceptionTextDBErrorFriendRequest" xml:space="preserve">
     <value>The request could not be sent due to a database error.</value>
   </data>
+  <data name="ExceptionTextDBErrorRanking" xml:space="preserve">
+    <value>The global top data could not be obtained due to a database error.</value>
+  </data>
+  <data name="ExceptionTextDBErrorHistory" xml:space="preserve">
+    <value>Data from the latest games could not be obtained due to a database error.</value>
+  </data>
 </root>
