@@ -12,6 +12,9 @@ namespace TrucoServer.Tests.HelpersTests.RankingTests
     {
         private Helpers.Ranking.RankingService rankingService;
 
+        private const int WINS = 100;
+        private const int ZERO_WINS = 0;
+
         [TestInitialize]
         public void Setup()
         {
@@ -23,7 +26,7 @@ namespace TrucoServer.Tests.HelpersTests.RankingTests
                     context.User.Add(new User  
                     { 
                         username = "WinnerUser",
-                        wins = 100, 
+                        wins = WINS, 
                         email = "w@gmail.com",
                         passwordHash = "password" 
                     });
@@ -31,7 +34,7 @@ namespace TrucoServer.Tests.HelpersTests.RankingTests
                     context.User.Add(new User 
                     { 
                         username = "LoserUser",
-                        wins = 0,
+                        wins = ZERO_WINS,
                         email = "l@gmail.com", 
                         passwordHash = "password" 
                     });

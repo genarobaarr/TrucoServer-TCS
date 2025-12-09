@@ -17,6 +17,12 @@ namespace TrucoServer.Tests.HelpersTests.RankingTests
         private Mock<DbSet<User>> mockUserSet;
         private UserStatsService service;
 
+        private const int USER_ID = 1;
+        private const int WINS = 10;
+        private const int LOSSES = 5;
+        private const int SECOND_USER_ID = 2;
+        private const int ZERO_WINS_OR_LOSSES = 0;
+
         [TestInitialize]
         public void Setup()
         {
@@ -32,13 +38,13 @@ namespace TrucoServer.Tests.HelpersTests.RankingTests
         {
             var user = new User 
             {
-                userID = 1,
-                wins = 10, 
-                losses = 5
+                userID = USER_ID,
+                wins = WINS,
+                losses = LOSSES
             };
             
             SetupMockUser(user);
-            service.UpdateUserStats(1, true);
+            service.UpdateUserStats(USER_ID, true);
             Assert.AreEqual(11, user.wins);
         }
 
@@ -47,13 +53,13 @@ namespace TrucoServer.Tests.HelpersTests.RankingTests
         {
             var user = new User 
             {
-                userID = 1,
-                wins = 10, 
-                losses = 5 
+                userID = USER_ID,
+                wins = WINS,
+                losses = LOSSES
             };
             
             SetupMockUser(user);
-            service.UpdateUserStats(1, true);
+            service.UpdateUserStats(USER_ID, true);
             Assert.AreEqual(5, user.losses);
         }
 
@@ -62,19 +68,23 @@ namespace TrucoServer.Tests.HelpersTests.RankingTests
         {
             var user = new User 
             { 
-                userID = 2,
-                wins = 0, 
-                losses = 0
+                userID = SECOND_USER_ID,
+                wins = ZERO_WINS_OR_LOSSES,
+                losses = ZERO_WINS_OR_LOSSES
             };
            
             SetupMockUser(user);
-            service.UpdateUserStats(2, false);
+            service.UpdateUserStats(SECOND_USER_ID, false);
             Assert.AreEqual(1, user.losses);
         }
 
         private void SetupMockUser(User user)
         {
-            var data = new List<User> { user }.AsQueryable();
+            var data = new List<User> 
+            {
+                user
+            }.AsQueryable();
+
             mockUserSet.As<IQueryable<User>>().Setup(m => m.Provider).Returns(data.Provider);
             mockUserSet.As<IQueryable<User>>().Setup(m => m.Expression).Returns(data.Expression);
             mockUserSet.As<IQueryable<User>>().Setup(m => m.ElementType).Returns(data.ElementType);

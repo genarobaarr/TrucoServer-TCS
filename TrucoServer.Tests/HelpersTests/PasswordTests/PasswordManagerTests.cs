@@ -28,6 +28,7 @@ namespace TrucoServer.Tests.HelpersTests.PasswordTests
         public void TestUpdatePasswordAndNotifyReturnsFalseOnDbConnectionFailure()
         {
             var manager = new PasswordManager(mockEmail.Object);
+           
             var options = new PasswordUpdateOptions
             { 
                 Email = "test@gmail.com"
@@ -48,6 +49,7 @@ namespace TrucoServer.Tests.HelpersTests.PasswordTests
         public void TestUpdatePasswordAndNotifyDoesNotCallEmailIfDbFails()
         {
             var manager = new PasswordManager(mockEmail.Object);
+           
             var options = new PasswordUpdateOptions 
             {
                 Email = "test@gmail.com"

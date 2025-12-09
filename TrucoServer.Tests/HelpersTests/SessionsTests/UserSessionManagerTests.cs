@@ -32,9 +32,9 @@ namespace TrucoServer.Tests.HelpersTests.SessionsTests
             {
                 sessionManager.HandleExistingSession("NewUser");
             }
-            catch
+            catch (Exception ex) 
             {
-                Assert.Fail("Should not throw exception for new user");
+                Assert.Fail($"Should not throw exception for new user {ex.Message}");
             }
         }
     }

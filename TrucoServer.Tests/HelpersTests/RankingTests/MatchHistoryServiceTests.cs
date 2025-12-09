@@ -11,7 +11,10 @@ namespace TrucoServer.Tests.HelpersTests.RankingTests
     public class MatchHistoryServiceTests
     {
         private Helpers.Ranking.MatchHistoryService historyService;
-        private const string TEST_USER = "HistoryUser";
+
+        private const int LOBBY_ID = 1;
+        private const int VERSION_ID = 1;
+        private const int SCORE = 30;
 
         [TestInitialize]
         public void Setup()
@@ -21,7 +24,7 @@ namespace TrucoServer.Tests.HelpersTests.RankingTests
             {
                 var user = new User 
                 { 
-                    username = TEST_USER, 
+                    username = "NoobMaster69", 
                     email = "h@gmail.com", 
                     passwordHash = "password" 
                 };
@@ -31,11 +34,11 @@ namespace TrucoServer.Tests.HelpersTests.RankingTests
 
                 var match = new Match 
                 {
-                    lobbyID = 1, 
+                    lobbyID = LOBBY_ID, 
                     status = "Finished",
                     startedAt = DateTime.Now.AddMinutes(-30),
                     endedAt = DateTime.Now, 
-                    versionID = 1 
+                    versionID = VERSION_ID
                 };
 
                 context.Match.Add(match);
@@ -46,7 +49,7 @@ namespace TrucoServer.Tests.HelpersTests.RankingTests
                     matchID = match.matchID, 
                     userID = user.userID,
                     team = "Team 1",
-                    score = 30,
+                    score = SCORE,
                     isWinner = true 
                 };
 
@@ -60,7 +63,8 @@ namespace TrucoServer.Tests.HelpersTests.RankingTests
         {
             using (var context = new baseDatosTrucoEntities())
             {
-                var user = context.User.FirstOrDefault(u => u.username == TEST_USER);
+                var user = context.User.FirstOrDefault(u => u.username == "NoobMaster69");
+                
                 if (user != null)
                 {
                     var mps = context.MatchPlayer.Where(mp => mp.userID == user.userID);
@@ -74,14 +78,14 @@ namespace TrucoServer.Tests.HelpersTests.RankingTests
         [TestMethod]
         public void TestGetLastMatchesExistingUserShouldReturnNonEmptyList()
         {
-            var result = historyService.GetLastMatches(TEST_USER);
+            var result = historyService.GetLastMatches("NoobMaster69");
             Assert.IsTrue(result?.Count > 0);
         }
 
         [TestMethod]
         public void TestGetLastMatchesMostRecentMatchShouldBeWin()
         {
-            var result = historyService.GetLastMatches(TEST_USER);
+            var result = historyService.GetLastMatches("NoobMaster69");
             Assert.IsTrue(result?[0].IsWin ?? false);
         }
 
