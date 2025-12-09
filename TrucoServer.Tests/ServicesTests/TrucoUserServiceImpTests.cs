@@ -91,7 +91,7 @@ namespace TrucoServer.Tests.ServicesTests
         [TestMethod]
         public void TestLoginReturnsFalseWhenInputsAreInvalid()
         {
-            bool result = service.Login("", "pass", "en-US");
+            bool result = service.Login(string.Empty, "pass", "en-US");
             Assert.IsFalse(result);
         }
 
@@ -127,7 +127,10 @@ namespace TrucoServer.Tests.ServicesTests
         {
             var data = new List<User>
             {
-                new User { email = "exist@gmail.com" }
+                new User 
+                {
+                    email = "exist@gmail.com" 
+                }
             }.AsQueryable();
 
             mockUserSet.As<IQueryable<User>>().Setup(m => m.Provider).Returns(data.Provider);
@@ -282,7 +285,10 @@ namespace TrucoServer.Tests.ServicesTests
         {
             var userList = new List<User>
             {
-                new User { username = "User" }
+                new User 
+                { 
+                    username = "User"
+                }
             };
 
             var mockSet = GetMockDbSet(userList);
@@ -311,7 +317,10 @@ namespace TrucoServer.Tests.ServicesTests
         {
             var data = new List<User>
             {
-                new User { email = "found@gmail.com" }
+                new User 
+                { 
+                    email = "found@gmail.com" 
+                }
             }.AsQueryable();
 
             mockUserSet.As<IQueryable<User>>().Setup(m => m.Provider).Returns(data.Provider);
@@ -371,7 +380,10 @@ namespace TrucoServer.Tests.ServicesTests
         {
             var list = new List<PlayerStats>
             {
-                new PlayerStats { PlayerName = "A" }
+                new PlayerStats 
+                { 
+                    PlayerName = "A"
+                }
             };
 
             mockRanking.Setup(r => r.GetGlobalRanking()).Returns(list);
@@ -382,7 +394,7 @@ namespace TrucoServer.Tests.ServicesTests
         [TestMethod]
         public void TestGetLastMatchesReturnsEmptyForInvalidUser()
         {
-            var result = service.GetLastMatches("");
+            var result = service.GetLastMatches(string.Empty);
             Assert.AreEqual(0, result.Count);
         }
 
@@ -399,7 +411,10 @@ namespace TrucoServer.Tests.ServicesTests
         {
             var matches = new List<MatchScore>
             {
-                new MatchScore { MatchID = "1" }
+                new MatchScore 
+                { 
+                    MatchID = "1" 
+                }
             };
 
             mockHistory.Setup(h => h.GetLastMatches("User")).Returns(matches);
@@ -431,7 +446,6 @@ namespace TrucoServer.Tests.ServicesTests
         public void TestLogClientExceptionDoesNotThrow()
         {
             service.LogClientException("Error", "Stack", "User");
-
             Assert.IsNotNull(service);
         }
     }

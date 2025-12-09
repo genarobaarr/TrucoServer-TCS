@@ -83,7 +83,7 @@ namespace TrucoServer.Tests.HelpersTests.MappingTests
             };
 
             var result = mapper.MapUserToProfileData(user);
-            Assert.AreEqual("", result.FacebookHandle);
+            Assert.AreEqual(string.Empty, result.FacebookHandle);
         }
 
         [TestMethod]

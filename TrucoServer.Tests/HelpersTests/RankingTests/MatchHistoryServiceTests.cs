@@ -88,7 +88,7 @@ namespace TrucoServer.Tests.HelpersTests.RankingTests
         [TestMethod]
         public void TestGetLastMatchesInvalidUsernameShouldReturnEmpty()
         {
-            var result = historyService.GetLastMatches("");
+            var result = historyService.GetLastMatches(string.Empty);
             Assert.AreEqual(0, result.Count);
         }
 
