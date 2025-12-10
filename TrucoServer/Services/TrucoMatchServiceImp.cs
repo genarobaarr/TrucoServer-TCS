@@ -314,15 +314,15 @@ namespace TrucoServer.Services
             }
             catch (DbUpdateException ex)
             {
-                LogManager.LogError(ex, nameof(ExpireInvitation));
+                ServerException.HandleException(ex, nameof(ExpireInvitation));
             }
             catch (SqlException ex)
             {
-                LogManager.LogError(ex, nameof(ExpireInvitation));
+                ServerException.HandleException(ex, nameof(ExpireInvitation));
             }
             catch (Exception ex)
             {
-                LogManager.LogError(ex, nameof(ExpireInvitation));
+                ServerException.HandleException(ex, nameof(ExpireInvitation));
             }
         }
 
@@ -610,7 +610,7 @@ namespace TrucoServer.Services
                         }
                         catch (Exception ex)
                         {
-                            LogManager.LogError(ex, nameof(JoinMatchChat) + "_NotifyTask");
+                            ServerException.HandleException(ex, nameof(JoinMatchChat) + "_NotifyTask");
                         }
                     });
                 }

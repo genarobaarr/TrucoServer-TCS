@@ -66,19 +66,19 @@ namespace TrucoServer.Helpers.Security
             }
             catch (DbUpdateException ex)
             {
-                LogManager.LogError(ex, nameof(BanUser));
+                ServerException.HandleException(ex, nameof(BanUser));
             }
             catch (SqlException ex)
             {
-                LogManager.LogError(ex, nameof(BanUser));
+                ServerException.HandleException(ex, nameof(BanUser));
             }
             catch (InvalidOperationException ex)
             {
-                LogManager.LogError(ex, nameof(BanUser));
+                ServerException.HandleException(ex, nameof(BanUser));
             }
             catch (Exception ex)
             {
-                LogManager.LogError(ex, nameof(BanUser));
+                ServerException.HandleException(ex, nameof(BanUser));
             }
         }
 
@@ -117,27 +117,27 @@ namespace TrucoServer.Helpers.Security
             }
             catch (SqlException ex)
             { 
-                LogManager.LogError(ex, nameof(IsUserBanned));
+                ServerException.HandleException(ex, nameof(IsUserBanned));
                 return false;
             }
             catch (TimeoutException ex)
             {
-                LogManager.LogError(ex, nameof(IsUserBanned));
+                ServerException.HandleException(ex, nameof(IsUserBanned));
                 return false;
             }
             catch (DataException ex)
             {
-                LogManager.LogError(ex, nameof(IsUserBanned));
+                ServerException.HandleException(ex, nameof(IsUserBanned));
                 return false;
             }
             catch (InvalidOperationException ex)
             {
-                LogManager.LogError(ex, nameof(IsUserBanned));
+                ServerException.HandleException(ex, nameof(IsUserBanned));
                 return false;
             }
             catch (Exception ex)
             {
-                LogManager.LogError(ex, nameof(IsUserBanned));
+                ServerException.HandleException(ex, nameof(IsUserBanned));
                 return false;
             }
         }

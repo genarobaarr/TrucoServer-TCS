@@ -278,13 +278,13 @@ namespace TrucoServer.GameLogic
         {
             if (Players == null || Players.Count == 0)
             {
-                LogManager.LogError(new InvalidOperationException("Attempt to advance turn without players"), nameof(AdvanceTurn));
+                ServerException.HandleException(new InvalidOperationException("Attempt to advance turn without players"), nameof(AdvanceTurn));
                 return;
             }
 
             if (cardsOnTable == null)
             {
-                LogManager.LogError(new InvalidOperationException("The list of cards on the table is null"), nameof(AdvanceTurn));
+                ServerException.HandleException(new InvalidOperationException("The list of cards on the table is null"), nameof(AdvanceTurn));
                 return;
             }
 
@@ -1675,15 +1675,15 @@ namespace TrucoServer.GameLogic
             }
             catch (InvalidOperationException ex)
             {
-                LogManager.LogWarn(ex.Message, nameof(NotifyEnvidoCall));
+                ServerException.HandleException(ex, nameof(NotifyEnvidoCall));
             }
             catch (CommunicationException ex)
             {
-                LogManager.LogError(ex, nameof(NotifyEnvidoCall));
+                ServerException.HandleException(ex, nameof(NotifyEnvidoCall));
             }
             catch (Exception ex)
             {
-                LogManager.LogError(ex, nameof(NotifyEnvidoCall));
+                ServerException.HandleException(ex, nameof(NotifyEnvidoCall));
             }
         }
 

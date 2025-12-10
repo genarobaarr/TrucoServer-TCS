@@ -86,19 +86,19 @@ namespace TrucoServer.Helpers.Match
             }
             catch (SqlException ex)
             {
-                LogManager.LogError(ex, nameof(ValidateMatchStart));
+                ServerException.HandleException(ex, nameof(ValidateMatchStart));
             }
             catch (DataException ex)
             {
-                LogManager.LogError(ex, nameof(ValidateMatchStart));
+                ServerException.HandleException(ex, nameof(ValidateMatchStart));
             }
             catch (InvalidOperationException ex)
             {
-                LogManager.LogError(ex, nameof(ValidateMatchStart));
+                ServerException.HandleException(ex, nameof(ValidateMatchStart));
             }
             catch (Exception ex)
             {
-                LogManager.LogError(ex, nameof(ValidateMatchStart));
+                ServerException.HandleException(ex, nameof(ValidateMatchStart));
             }
 
             return result;
@@ -198,25 +198,25 @@ namespace TrucoServer.Helpers.Match
                     }
                     catch (TimeoutException ex)
                     {
-                        LogManager.LogError(ex, nameof(NotifyMatchStart));
+                        ServerException.HandleException(ex, nameof(NotifyMatchStart));
                     }
                     catch (CommunicationException ex)
                     {
-                        LogManager.LogError(ex, nameof(NotifyMatchStart));
+                        ServerException.HandleException(ex, nameof(NotifyMatchStart));
                     }
                     catch (Exception ex)
                     {
-                        LogManager.LogError(ex, nameof(NotifyMatchStart));
+                        ServerException.HandleException(ex, nameof(NotifyMatchStart));
                     }
                 });
             }
             catch (SqlException ex)
             {
-                LogManager.LogError(ex, nameof(NotifyMatchStart));
+                ServerException.HandleException(ex, nameof(NotifyMatchStart));
             }
             catch (Exception ex)
             {
-                LogManager.LogError(ex, nameof(NotifyMatchStart));
+                ServerException.HandleException(ex, nameof(NotifyMatchStart));
             }
         }
 
@@ -268,7 +268,7 @@ namespace TrucoServer.Helpers.Match
         {
             if (!dependencies.GameRegistry.TryAddGame(matchCode, newGame))
             {
-                LogManager.LogError(new Exception($"Failed to add running game {matchCode}"), nameof(InitializeAndRegisterGame));
+                ServerException.HandleException(new Exception($"Failed to add running game {matchCode}"), nameof(InitializeAndRegisterGame));
             }
         }
 
@@ -390,15 +390,15 @@ namespace TrucoServer.Helpers.Match
             }
             catch (SqlException ex)
             {
-                LogManager.LogError(ex, nameof(GetOwnerUsername));
+                ServerException.HandleException(ex, nameof(GetOwnerUsername));
             }
             catch (InvalidOperationException ex)
             {
-                LogManager.LogError(ex, nameof(GetOwnerUsername));
+                ServerException.HandleException(ex, nameof(GetOwnerUsername));
             }
             catch (Exception ex)
             {
-                LogManager.LogError(ex, nameof(GetOwnerUsername));
+                ServerException.HandleException(ex, nameof(GetOwnerUsername));
             }
 
             return null;
@@ -420,15 +420,15 @@ namespace TrucoServer.Helpers.Match
             }
             catch (SqlException ex)
             {
-                LogManager.LogError(ex, nameof(GetOwnerUsernameByLobbyId));
+                ServerException.HandleException(ex, nameof(GetOwnerUsernameByLobbyId));
             }
             catch (InvalidOperationException ex)
             {
-                LogManager.LogError(ex, nameof(GetOwnerUsernameByLobbyId));
+                ServerException.HandleException(ex, nameof(GetOwnerUsernameByLobbyId));
             }
             catch (Exception ex)
             {
-                LogManager.LogError(ex, nameof(GetOwnerUsernameByLobbyId));
+                ServerException.HandleException(ex, nameof(GetOwnerUsernameByLobbyId));
             }
 
             return null;

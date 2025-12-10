@@ -258,7 +258,7 @@ namespace TrucoServer.Services
             }
             catch (JsonSerializationException ex)
             {
-                LogManager.LogError(ex, $"{nameof(SaveUserProfile)} - JSON Serialization Error");
+                ServerException.HandleException(ex, $"{nameof(SaveUserProfile)} - JSON Serialization Error");
                 return false;
             }
             catch (DbUpdateException ex)
@@ -531,12 +531,12 @@ namespace TrucoServer.Services
             }
             catch (SqlException ex)
             {
-                LogManager.LogError(ex, nameof(GetUserProfileByEmailAsync));
+                ServerException.HandleException(ex, nameof(GetUserProfileByEmailAsync));
                 return null;
             }
             catch (Exception ex)
             {
-                LogManager.LogError(ex, nameof(GetUserProfileByEmailAsync));
+                ServerException.HandleException(ex, nameof(GetUserProfileByEmailAsync));
                 return null;
             }
         }

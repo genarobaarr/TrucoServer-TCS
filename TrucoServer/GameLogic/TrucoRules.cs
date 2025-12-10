@@ -168,7 +168,7 @@ namespace TrucoServer.GameLogic
                     return value;
                 }
 
-                LogManager.LogError(new InvalidOperationException($"Unmapped card: {card.FileName}"), nameof(GetTrucoValue));
+                ServerException.HandleException(new InvalidOperationException($"Unmapped card: {card.FileName}"), nameof(GetTrucoValue));
 
                 return 0;
             }

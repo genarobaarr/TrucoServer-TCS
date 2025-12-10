@@ -15,7 +15,7 @@ namespace TrucoServer.Helpers.Match
         {
             if (!runningGames.TryAdd(matchCode, match))
             {
-                LogManager.LogError(new Exception($"Failed to add running game {matchCode}"), nameof(TryAddGame));
+                ServerException.HandleException(new Exception($"Failed to add running game {matchCode}"), nameof(TryAddGame));
                 return false;
             }
             return true;
@@ -41,19 +41,19 @@ namespace TrucoServer.Helpers.Match
                 }
                 catch (SqlException ex)
                 {
-                    LogManager.LogError(ex, nameof(AbortAndRemoveGame));
+                    ServerException.HandleException(ex, nameof(AbortAndRemoveGame));
                 }
                 catch (TimeoutException ex)
                 {
-                    LogManager.LogError(ex, nameof(AbortAndRemoveGame));
+                    ServerException.HandleException(ex, nameof(AbortAndRemoveGame));
                 }
                 catch (CommunicationException ex)
                 {
-                    LogManager.LogError(ex, nameof(AbortAndRemoveGame));
+                    ServerException.HandleException(ex, nameof(AbortAndRemoveGame));
                 }
                 catch (Exception ex)
                 {
-                    LogManager.LogError(ex, nameof(AbortAndRemoveGame));
+                    ServerException.HandleException(ex, nameof(AbortAndRemoveGame));
                 }
 
                 runningGames.TryRemove(matchCode, out _);
