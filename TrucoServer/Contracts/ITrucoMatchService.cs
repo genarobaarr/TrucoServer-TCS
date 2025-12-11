@@ -172,12 +172,5 @@ namespace TrucoServer.Contracts
         /// <param name="response">The player's response.</param>
         [OperationContract(IsOneWay = true)]
         void RespondToFlor(string matchCode, string response);
-
-        /// <summary>
-        /// Reports activy for current turn user.
-        /// </summary>
-        /// <param name="currentTurnPlayerName">The player's name of the current turn.</param>
-        [OperationContract(IsOneWay = true)]
-        void ReportActivity(string matchCode, string currentTurnPlayerName);
     }
 }

@@ -36,7 +36,6 @@ namespace TrucoServer.Services
         private const string STATUS_EXPIRED = "Expired";
         private const string GUEST_PREFIX = "Guest_";
         private const int MILLISECONDS_DELAY_JOIN = 100;
-        private const int MILLISECONDS_DELAY_FOR_PING = 30000;
 
         private readonly IGameRegistry gameRegistry;
         private readonly IJoinService joinService;
@@ -46,8 +45,7 @@ namespace TrucoServer.Services
         private readonly IMatchCodeGenerator codeGenerator;
         private readonly IMatchStarter matchStarter;
         private readonly IProfanityServerService profanityService;
-        private readonly BanService banService;
-        private readonly UserSessionManager userSessionManager;
+        private readonly BanService banService; 
 
         private readonly baseDatosTrucoEntities context;
 
@@ -97,7 +95,6 @@ namespace TrucoServer.Services
             this.emailSender = dependencies.EmailSender;
 
             this.banService = new BanService(context);
-            this.userSessionManager = new UserSessionManager();
             this.profanityService.LoadBannedWords();
         }
 
@@ -1016,29 +1013,6 @@ namespace TrucoServer.Services
             catch (Exception ex)
             {
                 ServerException.HandleException(ex, callerName);
-            }
-        }
-
-        public void ReportActivity(string matchCode, string currentTurnPlayerName)
-        {
-            if (ServerValidator.IsUsernameValid(currentTurnPlayerName))
-            {
-                Task.Delay(MILLISECONDS_DELAY_FOR_PING).ContinueWith(_ => 
-                {
-                    try
-                    {
-                        lobbyCoordinator.TryGetActiveCallbackForPlayer(currentTurnPlayerName, out var callback);
-
-                        if (!userSessionManager.IsCallbackActive(callback))
-                        {
-                            LeaveMatchChat(matchCode, currentTurnPlayerName);
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        ServerException.HandleException(ex, nameof(ReportActivity));
-                    }
-                });
             }
         }
     }
