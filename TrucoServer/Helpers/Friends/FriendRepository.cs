@@ -70,7 +70,7 @@ namespace TrucoServer.Helpers.Friends
 
             if (options.Request == null)
             {
-                throw new InvalidOperationExceptionTEXT_INVALID_OPERATION_REQUEST_NULL);
+                throw new InvalidOperationException(TEXT_INVALID_OPERATION_REQUEST_NULL);
             }
 
             options.Request.status = options.StatusAccepted;
