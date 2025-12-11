@@ -24,6 +24,11 @@ namespace TrucoServer.Services
     [ServiceBehavior(InstanceContextMode = InstanceContextMode.Single, ConcurrencyMode = ConcurrencyMode.Multiple)]
     public class TrucoMatchServiceImp : ITrucoMatchService
     {
+        private const string ERROR_CODE_DB_ERROR_JOIN = "ServerDBErrorJoin";
+        private const string ERROR_CODE_DB_ERROR_GET_PUBLIC_LOBBIES = "ServerDBErrorGetPublicLobbies";
+        private const string ERROR_CODE_DB_ERROR_GET_LOBBY_PLAYERS = "ServerDBErrorGetLobbyPlayers";
+        private const string ERROR_CODE_GENERAL_ERROR = "ServerError";
+        private const string ERROR_CODE_TIMEOUT_ERROR = "ServerTimeout";
         private const string STATUS_PUBLIC = "Public";
         private const string STATUS_PRIVATE = "Private";
         private const string STATUS_CLOSED = "Closed";
@@ -216,22 +221,22 @@ namespace TrucoServer.Services
             catch (SqlException ex)
             {
                 ServerException.HandleException(ex, nameof(JoinMatch));
-                throw FaultFactory.CreateFault("ServerDBErrorJoin", Lang.ExceptionTextDBErrorJoin);
+                throw FaultFactory.CreateFault(ERROR_CODE_DB_ERROR_JOIN, Lang.ExceptionTextDBErrorJoin);
             }
             catch (EntityException ex)
             {
                 ServerException.HandleException(ex, nameof(JoinMatch));
-                throw FaultFactory.CreateFault("ServerDBErrorJoin", Lang.ExceptionTextDBErrorJoin);
+                throw FaultFactory.CreateFault(ERROR_CODE_DB_ERROR_JOIN, Lang.ExceptionTextDBErrorJoin);
             }
             catch (TimeoutException ex)
             {
                 ServerException.HandleException(ex, nameof(JoinMatch));
-                throw FaultFactory.CreateFault("ServerTimeout", Lang.ExceptionTextTimeout);
+                throw FaultFactory.CreateFault(ERROR_CODE_TIMEOUT_ERROR, Lang.ExceptionTextTimeout);
             }
             catch (Exception ex)
             {
                 ServerException.HandleException(ex, nameof(JoinMatch));
-                throw FaultFactory.CreateFault("ServerError", Lang.ExceptionTextErrorOcurred);
+                throw FaultFactory.CreateFault(ERROR_CODE_GENERAL_ERROR, Lang.ExceptionTextErrorOcurred);
             }
         }
 
@@ -453,22 +458,22 @@ namespace TrucoServer.Services
             catch (SqlException ex)
             {
                 ServerException.HandleException(ex, nameof(GetPublicLobbies));
-                throw FaultFactory.CreateFault("ServerDBErrorGetPublicLobbies", Lang.ExceptionTextDBErrorGetPublicLobbies);
+                throw FaultFactory.CreateFault(ERROR_CODE_DB_ERROR_GET_PUBLIC_LOBBIES, Lang.ExceptionTextDBErrorGetPublicLobbies);
             }
             catch (EntityException ex)
             {
                 ServerException.HandleException(ex, nameof(GetPublicLobbies));
-                throw FaultFactory.CreateFault("ServerDBErrorGetPublicLobbies", Lang.ExceptionTextDBErrorGetPublicLobbies);
+                throw FaultFactory.CreateFault(ERROR_CODE_DB_ERROR_GET_PUBLIC_LOBBIES, Lang.ExceptionTextDBErrorGetPublicLobbies);
             }
             catch (TimeoutException ex)
             {
                 ServerException.HandleException(ex, nameof(GetPublicLobbies));
-                throw FaultFactory.CreateFault("ServerTimeout", Lang.ExceptionTextTimeout);
+                throw FaultFactory.CreateFault(ERROR_CODE_TIMEOUT_ERROR, Lang.ExceptionTextTimeout);
             }
             catch (Exception ex)
             {
                 ServerException.HandleException(ex, nameof(GetPublicLobbies));
-                throw FaultFactory.CreateFault("ServerError", Lang.ExceptionTextErrorOcurred);
+                throw FaultFactory.CreateFault(ERROR_CODE_GENERAL_ERROR, Lang.ExceptionTextErrorOcurred);
             }
         }
 
@@ -520,22 +525,22 @@ namespace TrucoServer.Services
             catch (SqlException ex)
             {
                 ServerException.HandleException(ex, nameof(GetLobbyPlayers));
-                throw FaultFactory.CreateFault("ServerDBErrorGetLobbyPlayers", Lang.ExceptionTextDBErrorGetLobbyPlayers);
+                throw FaultFactory.CreateFault(ERROR_CODE_DB_ERROR_GET_LOBBY_PLAYERS, Lang.ExceptionTextDBErrorGetLobbyPlayers);
             }
             catch (EntityException ex)
             {
                 ServerException.HandleException(ex, nameof(GetLobbyPlayers));
-                throw FaultFactory.CreateFault("ServerDBErrorGetLobbyPlayers", Lang.ExceptionTextDBErrorGetLobbyPlayers);
+                throw FaultFactory.CreateFault(ERROR_CODE_DB_ERROR_GET_LOBBY_PLAYERS, Lang.ExceptionTextDBErrorGetLobbyPlayers);
             }
             catch (TimeoutException ex)
             {
                 ServerException.HandleException(ex, nameof(GetLobbyPlayers));
-                throw FaultFactory.CreateFault("ServerTimeout", Lang.ExceptionTextTimeout);
+                throw FaultFactory.CreateFault(ERROR_CODE_TIMEOUT_ERROR, Lang.ExceptionTextTimeout);
             }
             catch (Exception ex)
             {
                 ServerException.HandleException(ex, nameof(GetLobbyPlayers));
-                throw FaultFactory.CreateFault("ServerError", Lang.ExceptionTextErrorOcurred);
+                throw FaultFactory.CreateFault(ERROR_CODE_GENERAL_ERROR, Lang.ExceptionTextErrorOcurred);
             }
         }
 

@@ -16,12 +16,16 @@ namespace TrucoServer.Helpers.Authentication
         private const int MIN_SECURE_CODE = 100000;
         private const int MAX_SECURE_CODE_RANGE = 900000;
         private const string FALLBACK_SECURE_CODE = "000000";
+        private const string ERROR_CODE_DB_ERROR_LOGIN = "ServerDBErrorLogin";
+        private const string ERROR_CODE_GENERAL_ERROR = "ServerError";
+        private const string ERROR_CODE_TIMEOUT_ERROR = "ServerTimeout";
+        private const string ERROR_CODE_TOO_MANY_ATTEMPTS = "TooManyAttempts";
 
         public void ValidateBruteForceStatus(string username)
         {
             if (BruteForceProtector.IsBlocked(username))
             {
-                throw FaultFactory.CreateFault("TooManyAttempts", Lang.ExceptionTextTooManyAttempts);
+                throw FaultFactory.CreateFault(ERROR_CODE_TOO_MANY_ATTEMPTS, Lang.ExceptionTextTooManyAttempts);
             }
         }
 
@@ -50,22 +54,22 @@ namespace TrucoServer.Helpers.Authentication
             catch (SqlException ex)
             {
                 ServerException.HandleException(ex, nameof(AuthenticateUser));
-                throw FaultFactory.CreateFault("ServerDBErrorLogin", Lang.ExceptionTextDBErrorLogin);
+                throw FaultFactory.CreateFault(ERROR_CODE_DB_ERROR_LOGIN, Lang.ExceptionTextDBErrorLogin);
             }
             catch (EntityException ex)
             {
                 ServerException.HandleException(ex, nameof(AuthenticateUser));
-                throw FaultFactory.CreateFault("ServerDBErrorLogin", Lang.ExceptionTextDBErrorLogin);
+                throw FaultFactory.CreateFault(ERROR_CODE_DB_ERROR_LOGIN, Lang.ExceptionTextDBErrorLogin);
             }
             catch (TimeoutException ex)
             {
                 ServerException.HandleException(ex, nameof(AuthenticateUser));
-                throw FaultFactory.CreateFault("ServerTimeout", Lang.ExceptionTextTimeout);
+                throw FaultFactory.CreateFault(ERROR_CODE_TIMEOUT_ERROR, Lang.ExceptionTextTimeout);
             }
             catch (Exception ex)
             {
                 ServerException.HandleException(ex, nameof(AuthenticateUser));
-                throw FaultFactory.CreateFault("ServerError", Lang.ExceptionTextErrorOcurred);
+                throw FaultFactory.CreateFault(ERROR_CODE_GENERAL_ERROR, Lang.ExceptionTextErrorOcurred);
             }
         }
 

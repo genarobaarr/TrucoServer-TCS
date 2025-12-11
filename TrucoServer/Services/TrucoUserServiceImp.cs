@@ -31,9 +31,13 @@ namespace TrucoServer.Services
 {
     public class TrucoUserServiceImp : ITrucoUserService
     {
-        private const int MAX_NAME_CHANGES = 2;
+        private const string ERROR_CODE_DB_ERROR_USER = "ServerDBErrorUser";
+        private const string ERROR_CODE_DB_ERROR_EMAIL = "ServerDBErrorEmail";
+        private const string ERROR_CODE_GENERAL_ERROR = "ServerError";
+        private const string ERROR_CODE_TIMEOUT_ERROR = "ServerTimeout";
         private const string DEFAULT_AVATAR_ID = "avatar_aaa_default";
         private const string DEFAULT_LANG_CODE = "es-MX";
+        private const int MAX_NAME_CHANGES = 2;
 
         private readonly IUserAuthenticationHelper authenticationHelper;
         private readonly IUserSessionManager sessionManager;
@@ -424,22 +428,22 @@ namespace TrucoServer.Services
             catch (SqlException ex)
             {
                 ServerException.HandleException(ex, nameof(UsernameExists));
-                throw FaultFactory.CreateFault("ServerDBErrorUser", Lang.ExceptionTextDBErrorUsernameExists);
+                throw FaultFactory.CreateFault(ERROR_CODE_DB_ERROR_USER, Lang.ExceptionTextDBErrorUsernameExists);
             }
             catch (EntityException ex)
             {
                 ServerException.HandleException(ex, nameof(UsernameExists));
-                throw FaultFactory.CreateFault("ServerDBErrorUser", Lang.ExceptionTextDBErrorUsernameExists);
+                throw FaultFactory.CreateFault(ERROR_CODE_DB_ERROR_USER, Lang.ExceptionTextDBErrorUsernameExists);
             }
             catch (TimeoutException ex)
             {
                 ServerException.HandleException(ex, nameof(UsernameExists));
-                throw FaultFactory.CreateFault("ServerTimeout", Lang.ExceptionTextTimeout);
+                throw FaultFactory.CreateFault(ERROR_CODE_TIMEOUT_ERROR, Lang.ExceptionTextTimeout);
             }
             catch (Exception ex)
             {
                 ServerException.HandleException(ex, nameof(UsernameExists));
-                throw FaultFactory.CreateFault("ServerError", Lang.ExceptionTextErrorOcurred);
+                throw FaultFactory.CreateFault(ERROR_CODE_GENERAL_ERROR, Lang.ExceptionTextErrorOcurred);
             }
         }
 
@@ -457,22 +461,22 @@ namespace TrucoServer.Services
             catch (SqlException ex)
             {
                 ServerException.HandleException(ex, nameof(EmailExists));
-                throw FaultFactory.CreateFault("ServerDBErrorEmail", Lang.ExceptionTextDBErrorUsernameExists);
+                throw FaultFactory.CreateFault(ERROR_CODE_DB_ERROR_EMAIL, Lang.ExceptionTextDBErrorUsernameExists);
             }
             catch (EntityException ex)
             {
                 ServerException.HandleException(ex, nameof(UsernameExists));
-                throw FaultFactory.CreateFault("ServerDBErrorEmail", Lang.ExceptionTextDBErrorUsernameExists);
+                throw FaultFactory.CreateFault(ERROR_CODE_DB_ERROR_EMAIL, Lang.ExceptionTextDBErrorUsernameExists);
             }
             catch (TimeoutException ex)
             {
                 ServerException.HandleException(ex, nameof(EmailExists));
-                throw FaultFactory.CreateFault("ServerTimeout", Lang.ExceptionTextTimeout);
+                throw FaultFactory.CreateFault(ERROR_CODE_TIMEOUT_ERROR, Lang.ExceptionTextTimeout);
             }
             catch (Exception ex)
             {
                 ServerException.HandleException(ex, nameof(EmailExists));
-                throw FaultFactory.CreateFault("ServerError", Lang.ExceptionTextErrorOcurred);
+                throw FaultFactory.CreateFault(ERROR_CODE_GENERAL_ERROR, Lang.ExceptionTextErrorOcurred);
             }
         }
 
@@ -555,7 +559,7 @@ namespace TrucoServer.Services
             catch (Exception ex)
             {
                 ServerException.HandleException(ex, nameof(GetGlobalRanking));
-                throw FaultFactory.CreateFault("ServerError", Lang.ExceptionTextErrorOcurred);
+                throw FaultFactory.CreateFault(ERROR_CODE_GENERAL_ERROR, Lang.ExceptionTextErrorOcurred);
             }
         }
 
@@ -578,7 +582,7 @@ namespace TrucoServer.Services
             catch (Exception ex)
             {
                 ServerException.HandleException(ex, nameof(GetLastMatches));
-                throw FaultFactory.CreateFault("ServerError", Lang.ExceptionTextErrorOcurred);
+                throw FaultFactory.CreateFault(ERROR_CODE_GENERAL_ERROR, Lang.ExceptionTextErrorOcurred);
             }
         }
 

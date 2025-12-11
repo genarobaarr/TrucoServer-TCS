@@ -15,6 +15,12 @@ namespace TrucoServer.Services
 {
     public class TrucoFriendServiceImp : ITrucoFriendService
     {
+        private const string ERROR_CODE_DB_ERROR_GET_FRIENDS = "ServerDBErrorGetFriends";
+        private const string ERROR_CODE_DB_ERROR_FRIEND_REQUEST = "ServerDBErrorFriendRequest";
+        private const string ERROR_CODE_FRIEND_REQUEST_NOT_FOUND = "FriendRequestUserNotFound";
+        private const string ERROR_CODE_FRIEND_ALREADY_EXISTS = "FriendRequestAlreadyFriends";
+        private const string ERROR_CODE_GENERAL_ERROR = "ServerError";
+        private const string ERROR_CODE_TIMEOUT_ERROR = "ServerTimeout";
         private const string STATUS_ACCEPTED = "Accepted";
         private const string STATUS_PENDING = "Pending";
 
@@ -53,7 +59,7 @@ namespace TrucoServer.Services
 
                 if (!lookupResult.Success)
                 {
-                    throw FaultFactory.CreateFault("FriendRequestUserNotFound", string.Format(Lang.ExceptionTextFriendRequestUserNotFound, toUser));
+                    throw FaultFactory.CreateFault(ERROR_CODE_FRIEND_REQUEST_NOT_FOUND, string.Format(Lang.ExceptionTextFriendRequestUserNotFound, toUser));
                 }
 
                 User requester = lookupResult.User1;
@@ -61,7 +67,7 @@ namespace TrucoServer.Services
 
                 if (friendshipRepository.CheckFriendshipExists(requester.userID, target.userID))
                 {
-                    throw FaultFactory.CreateFault("FriendRequestAlreadyFriends", string.Format(Lang.ExceptionTextFriendRequestAlreadyFriends, toUser));
+                    throw FaultFactory.CreateFault(ERROR_CODE_FRIEND_ALREADY_EXISTS, string.Format(Lang.ExceptionTextFriendRequestAlreadyFriends, toUser));
                 }
 
                 var requestDto = new FriendRequest
@@ -84,22 +90,22 @@ namespace TrucoServer.Services
             catch (SqlException ex)
             {
                 ServerException.HandleException(ex, nameof(SendFriendRequest));
-                throw FaultFactory.CreateFault("ServerDBErrorFriendRequest", Lang.ExceptionTextDBErrorFriendRequest);
+                throw FaultFactory.CreateFault(ERROR_CODE_DB_ERROR_FRIEND_REQUEST, Lang.ExceptionTextDBErrorFriendRequest);
             }
             catch (EntityException ex)
             {
                 ServerException.HandleException(ex, nameof(SendFriendRequest));
-                throw FaultFactory.CreateFault("ServerDBErrorFriendRequest", Lang.ExceptionTextDBErrorFriendRequest);
+                throw FaultFactory.CreateFault(ERROR_CODE_DB_ERROR_FRIEND_REQUEST, Lang.ExceptionTextDBErrorFriendRequest);
             }
             catch (TimeoutException ex)
             {
                 ServerException.HandleException(ex, nameof(SendFriendRequest));
-                throw FaultFactory.CreateFault("ServerTimeout", Lang.ExceptionTextTimeout);
+                throw FaultFactory.CreateFault(ERROR_CODE_TIMEOUT_ERROR, Lang.ExceptionTextTimeout);
             }
             catch (Exception ex)
             {
                 ServerException.HandleException(ex, nameof(SendFriendRequest));
-                throw FaultFactory.CreateFault("ServerError", Lang.ExceptionTextErrorOcurred);
+                throw FaultFactory.CreateFault(ERROR_CODE_GENERAL_ERROR, Lang.ExceptionTextErrorOcurred);
             }
         }
 
@@ -253,22 +259,22 @@ namespace TrucoServer.Services
             catch (SqlException ex)
             {
                 ServerException.HandleException(ex, nameof(GetFriends));
-                throw FaultFactory.CreateFault("ServerDBErrorGetFriends", Lang.ExceptionTextDBErrorGetFriends);
+                throw FaultFactory.CreateFault(ERROR_CODE_DB_ERROR_GET_FRIENDS, Lang.ExceptionTextDBErrorGetFriends);
             }
             catch (EntityException ex)
             {
                 ServerException.HandleException(ex, nameof(GetFriends));
-                throw FaultFactory.CreateFault("ServerDBErrorGetFriends", Lang.ExceptionTextDBErrorGetFriends);
+                throw FaultFactory.CreateFault(ERROR_CODE_DB_ERROR_GET_FRIENDS, Lang.ExceptionTextDBErrorGetFriends);
             }
             catch (TimeoutException ex)
             {
                 ServerException.HandleException(ex, nameof(GetFriends));
-                throw FaultFactory.CreateFault("ServerTimeout", Lang.ExceptionTextTimeout);
+                throw FaultFactory.CreateFault(ERROR_CODE_TIMEOUT_ERROR, Lang.ExceptionTextTimeout);
             }
             catch (Exception ex)
             {
                 ServerException.HandleException(ex, nameof(GetFriends));
-                throw FaultFactory.CreateFault("ServerError", Lang.ExceptionTextErrorOcurred);
+                throw FaultFactory.CreateFault(ERROR_CODE_GENERAL_ERROR, Lang.ExceptionTextErrorOcurred);
             }
         }
 
@@ -293,22 +299,22 @@ namespace TrucoServer.Services
             catch (SqlException ex)
             {
                 ServerException.HandleException(ex, nameof(GetPendingFriendRequests));
-                throw FaultFactory.CreateFault("ServerDBErrorGetFriends", Lang.ExceptionTextDBErrorGetFriends);
+                throw FaultFactory.CreateFault(ERROR_CODE_DB_ERROR_GET_FRIENDS, Lang.ExceptionTextDBErrorGetFriends);
             }
             catch (EntityException ex)
             {
                 ServerException.HandleException(ex, nameof(GetPendingFriendRequests));
-                throw FaultFactory.CreateFault("ServerDBErrorGetFriends", Lang.ExceptionTextDBErrorGetFriends);
+                throw FaultFactory.CreateFault(ERROR_CODE_DB_ERROR_GET_FRIENDS, Lang.ExceptionTextDBErrorGetFriends);
             }
             catch (TimeoutException ex)
             {
                 ServerException.HandleException(ex, nameof(GetPendingFriendRequests));
-                throw FaultFactory.CreateFault("ServerTimeout", Lang.ExceptionTextTimeout);
+                throw FaultFactory.CreateFault(ERROR_CODE_TIMEOUT_ERROR, Lang.ExceptionTextTimeout);
             }
             catch (Exception ex)
             {
                 ServerException.HandleException(ex, nameof(GetPendingFriendRequests));
-                throw FaultFactory.CreateFault("ServerError", Lang.ExceptionTextErrorOcurred);
+                throw FaultFactory.CreateFault(ERROR_CODE_GENERAL_ERROR, Lang.ExceptionTextErrorOcurred);
             }
         }
     }

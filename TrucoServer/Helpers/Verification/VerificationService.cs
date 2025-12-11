@@ -3,7 +3,6 @@ using System.Collections.Concurrent;
 using System.Globalization;
 using System.Net;
 using System.Net.Mail;
-using System.ServiceModel;
 using TrucoServer.Data.DTOs;
 using TrucoServer.Helpers.Authentication;
 using TrucoServer.Helpers.Email;
@@ -14,6 +13,8 @@ namespace TrucoServer.Helpers.Verification
 {
     public class VerificationService : IVerificationService
     {
+        private const string ERROR_CODE_SMPT_ERROR = "ServerSmtpError";
+        private const string ERROR_CODE_GENERAL_ERROR = "ServerError";
         private static readonly ConcurrentDictionary<string, string> verificationCodes = new ConcurrentDictionary<string, string>();
         private readonly IUserAuthenticationHelper authenticationHelper;
         private readonly IEmailSender emailSender;
@@ -54,37 +55,37 @@ namespace TrucoServer.Helpers.Verification
             catch (SmtpFailedRecipientsException ex)
             {
                 ServerException.HandleException(ex, nameof(RequestEmailVerification));
-                throw FaultFactory.CreateFault("ServerSmtpError", Lang.ExceptionTextSmtpVerification);
+                throw FaultFactory.CreateFault(ERROR_CODE_SMPT_ERROR, Lang.ExceptionTextSmtpVerification);
             }
             catch (SmtpException ex)
             {
                 ServerException.HandleException(ex, nameof(RequestEmailVerification));
-                throw FaultFactory.CreateFault("ServerSmtpError", Lang.ExceptionTextSmtpVerification);
+                throw FaultFactory.CreateFault(ERROR_CODE_SMPT_ERROR, Lang.ExceptionTextSmtpVerification);
             }
             catch (WebException ex)
             {
                 ServerException.HandleException(ex, nameof(RequestEmailVerification));
-                throw FaultFactory.CreateFault("ServerSmtpError", Lang.ExceptionTextSmtpVerification);
+                throw FaultFactory.CreateFault(ERROR_CODE_SMPT_ERROR, Lang.ExceptionTextSmtpVerification);
             }
             catch (CultureNotFoundException ex)
             {
                 ServerException.HandleException(ex, nameof(RequestEmailVerification));
-                throw FaultFactory.CreateFault("ServerError", Lang.ExceptionTextErrorOcurred);
+                throw FaultFactory.CreateFault(ERROR_CODE_GENERAL_ERROR, Lang.ExceptionTextErrorOcurred);
             }
             catch (FormatException ex)
             { 
                 ServerException.HandleException(ex, nameof(RequestEmailVerification));
-                throw FaultFactory.CreateFault("ServerError", Lang.ExceptionTextErrorOcurred);
+                throw FaultFactory.CreateFault(ERROR_CODE_GENERAL_ERROR, Lang.ExceptionTextErrorOcurred);
             }
             catch (ArgumentNullException ex)
             {
                 ServerException.HandleException(ex, nameof(RequestEmailVerification));
-                throw FaultFactory.CreateFault("ServerError", Lang.ExceptionTextErrorOcurred);
+                throw FaultFactory.CreateFault(ERROR_CODE_GENERAL_ERROR, Lang.ExceptionTextErrorOcurred);
             }
             catch (Exception ex)
             {
                 ServerException.HandleException(ex, nameof(RequestEmailVerification));
-                throw FaultFactory.CreateFault("ServerError", Lang.ExceptionTextErrorOcurred);
+                throw FaultFactory.CreateFault(ERROR_CODE_GENERAL_ERROR, Lang.ExceptionTextErrorOcurred);
             }
         }
 

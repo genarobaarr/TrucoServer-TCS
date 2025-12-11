@@ -12,6 +12,10 @@ namespace TrucoServer.Helpers.Ranking
 {
     public class MatchHistoryService : IMatchHistoryService
     {
+        private const string ERROR_CODE_DB_ERROR_HISTORY = "ServerDBErrorHistory";
+        private const string ERROR_CODE_GENERAL_ERROR = "ServerError";
+        private const string ERROR_CODE_TIMEOUT_ERROR = "ServerTimeout";
+
         public List<MatchScore> GetLastMatches(string username)
         {
             if (!ServerValidator.IsUsernameValid(username))
@@ -49,22 +53,22 @@ namespace TrucoServer.Helpers.Ranking
             catch (SqlException ex)
             {
                 ServerException.HandleException(ex, nameof(GetLastMatches));
-                throw FaultFactory.CreateFault("ServerDBErrorHistory", Lang.ExceptionTextDBErrorHistory);
+                throw FaultFactory.CreateFault(ERROR_CODE_DB_ERROR_HISTORY, Lang.ExceptionTextDBErrorHistory);
             }
             catch (EntityException ex)
             {
                 ServerException.HandleException(ex, nameof(GetLastMatches));
-                throw FaultFactory.CreateFault("ServerDBErrorHistory", Lang.ExceptionTextDBErrorHistory);
+                throw FaultFactory.CreateFault(ERROR_CODE_DB_ERROR_HISTORY, Lang.ExceptionTextDBErrorHistory);
             }
             catch (TimeoutException ex)
             {
                 ServerException.HandleException(ex, nameof(GetLastMatches));
-                throw FaultFactory.CreateFault("ServerTimeout", Lang.ExceptionTextTimeout);
+                throw FaultFactory.CreateFault(ERROR_CODE_TIMEOUT_ERROR, Lang.ExceptionTextTimeout);
             }
             catch (Exception ex)
             {
                 ServerException.HandleException(ex, nameof(GetLastMatches));
-                throw FaultFactory.CreateFault("ServerError", Lang.ExceptionTextErrorOcurred);
+                throw FaultFactory.CreateFault(ERROR_CODE_GENERAL_ERROR, Lang.ExceptionTextErrorOcurred);
             }
         }
     }

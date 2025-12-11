@@ -12,7 +12,7 @@ namespace TrucoServer.Tests.HelpersTests.RankingTests
     {
         private Helpers.Ranking.MatchHistoryService historyService;
 
-        private const int LOBBY_ID = 1;
+        private const int LOBBY_ID = 5;
         private const int VERSION_ID = 1;
         private const int SCORE = 30;
 
