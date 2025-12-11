@@ -176,11 +176,13 @@ namespace TrucoServer.GameLogic
             catch (ArgumentNullException ex)
             {
                 ServerException.HandleException(ex, nameof(GetTrucoValue));
+              
                 return ZERO;
             }
             catch (Exception ex)
             {
                 ServerException.HandleException(ex, nameof(GetTrucoValue));
+               
                 return ZERO;
             }
         }
@@ -207,6 +209,7 @@ namespace TrucoServer.GameLogic
             catch (Exception ex)
             {
                 ServerException.HandleException(ex, nameof(CompareCards));
+               
                 return ZERO;
             }
         }
@@ -245,11 +248,13 @@ namespace TrucoServer.GameLogic
             catch (ArgumentNullException ex)
             {
                 ServerException.HandleException(ex, nameof(CalculateEnvidoScore));
+                
                 return ZERO;
             }
             catch (Exception ex)
             {
                 ServerException.HandleException(ex, nameof(CalculateEnvidoScore));
+                
                 return ZERO;
             }
         }
@@ -269,6 +274,7 @@ namespace TrucoServer.GameLogic
             catch (Exception ex)
             {
                 ServerException.HandleException(ex, nameof(HasFlor));
+                
                 return false;
             }
         }
@@ -289,11 +295,13 @@ namespace TrucoServer.GameLogic
             catch (ArgumentNullException ex)
             {
                 ServerException.HandleException(ex, nameof(CalculateFlorScore));
+               
                 return ZERO;
             }
             catch (Exception ex)
             {
                 ServerException.HandleException(ex, nameof(CalculateFlorScore));
+                
                 return ZERO;
             }
         }
@@ -312,6 +320,7 @@ namespace TrucoServer.GameLogic
             catch (Exception ex)
             {
                 ServerException.HandleException(ex, nameof(GetEnvidoValue));
+                
                 return ZERO;
             }
         }

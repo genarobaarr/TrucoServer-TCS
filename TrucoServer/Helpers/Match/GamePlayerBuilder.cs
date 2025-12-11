@@ -53,6 +53,7 @@ namespace TrucoServer.Helpers.Match
         private void AddRegisteredPlayer(PlayerInfo info, MatchPlayersResult result)
         {
             var user = context.User.FirstOrDefault(u => u.username == info.Username);
+           
             if (user != null && coordinator.TryGetActiveCallbackForPlayer(info.Username, out var callback))
             {
                 result.Players.Add(new PlayerInformation(user.userID, user.username, info.Team));

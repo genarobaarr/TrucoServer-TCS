@@ -45,6 +45,7 @@ namespace TrucoServer.Helpers.Authentication
                     if (user == null || !PasswordHasher.Verify(password, user.passwordHash))
                     {
                         BruteForceProtector.RegisterFailedAttempt(username);
+                        
                         return null;
                     }
 
@@ -92,16 +93,19 @@ namespace TrucoServer.Helpers.Authentication
             catch (CryptographicException ex)
             {
                 ServerException.HandleException(ex, nameof(GenerateSecureNumericCode));
+                
                 return FALLBACK_SECURE_CODE;
             }
             catch (OutOfMemoryException ex)
             {
                 ServerException.HandleException(ex, nameof(GenerateSecureNumericCode));
+                
                 return FALLBACK_SECURE_CODE;
             }
             catch (Exception ex)
             {
                 ServerException.HandleException(ex, nameof(GenerateSecureNumericCode));
+                
                 return FALLBACK_SECURE_CODE;
             }
         }

@@ -117,9 +117,9 @@ namespace TrucoServer.Helpers.Profiles
         {
             var links = new SocialLinks
             {
-                FacebookHandle = (data.FacebookHandle ?? "").Trim(),
-                XHandle = (data.XHandle ?? "").Trim(),
-                InstagramHandle = (data.InstagramHandle ?? "").Trim()
+                FacebookHandle = (data.FacebookHandle ?? string.Empty).Trim(),
+                XHandle = (data.XHandle ?? string.Empty).Trim(),
+                InstagramHandle = (data.InstagramHandle ?? string.Empty).Trim()
             };
 
             string json = JsonConvert.SerializeObject(links);
@@ -146,6 +146,7 @@ namespace TrucoServer.Helpers.Profiles
         public bool ProcessAvatarUpdate(string username, string newAvatarId)
         {
             User user = context.User.FirstOrDefault(u => u.username == username);
+            
             if (user == null)
             {
                 return false;
@@ -166,6 +167,7 @@ namespace TrucoServer.Helpers.Profiles
 
             profile.avatarID = newAvatarId;
             context.SaveChanges();
+           
             return true;
         }
     }

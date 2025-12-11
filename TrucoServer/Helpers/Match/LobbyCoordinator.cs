@@ -62,7 +62,10 @@ namespace TrucoServer.Helpers.Match
 
             if (user == null)
             {
-                return new PlayerInfo { Username = username, Team = TEAM_1 };
+                return new PlayerInfo 
+                { 
+                    Username = username, Team = TEAM_1
+                };
             }
 
             var member = context.LobbyMember.FirstOrDefault(lm =>
@@ -88,8 +91,7 @@ namespace TrucoServer.Helpers.Match
 
                 if (existingCallbackIndex >= 0 && matchCallbackToPlayer.TryGetValue(callback, out _))
                 {
-                    return false;
-                    
+                    return false;             
                 }
 
                 PlayerInfo playerInfo = CreatePlayerInfoForChat(matchCode, player);
@@ -168,21 +170,25 @@ namespace TrucoServer.Helpers.Match
                 {
                     return info;
                 }
+               
                 return null;
             }
             catch (ArgumentNullException ex)
             {
                 ServerException.HandleException(ex, nameof(GetPlayerInfoFromCallback));
+                
                 return null;
             }
             catch (InvalidOperationException ex)
             {
                 ServerException.HandleException(ex, nameof(GetPlayerInfoFromCallback));
+                
                 return null;
             }
             catch (Exception ex)
             {
                 ServerException.HandleException(ex, nameof(GetPlayerInfoFromCallback));
+                
                 return null;
             }
         }
@@ -297,6 +303,7 @@ namespace TrucoServer.Helpers.Match
 
                         return true;
                             }
+                            
                             return false;
                         });
                     }
@@ -390,6 +397,7 @@ namespace TrucoServer.Helpers.Match
             }
 
             var lobby = new LobbyRepository(context).FindLobbyByMatchCode(matchCode, true);
+            
             return lobby?.lobbyID;
             
         }
@@ -451,21 +459,25 @@ namespace TrucoServer.Helpers.Match
                 }
 
                 snapshot = callbacksList.ToArray();
+                
                 return true;
             }
             catch (ArgumentNullException ex)
             {
                 ServerException.HandleException(ex, nameof(TryGetCallbacksSnapshot));
+               
                 return false;
             }
             catch (InvalidOperationException ex)
             {
                 ServerException.HandleException(ex, nameof(TryGetCallbacksSnapshot));
+                
                 return false;
             }
             catch (Exception ex)
             {
                 ServerException.HandleException(ex, nameof(TryGetCallbacksSnapshot));
+               
                 return false;
             }
         }
@@ -473,6 +485,7 @@ namespace TrucoServer.Helpers.Match
         public bool TryGetActiveCallbackForPlayer(string username, out Contracts.ITrucoCallback callback)
         {
             callback = null;
+            
             try
             {
                 if (string.IsNullOrEmpty(username))
@@ -497,26 +510,31 @@ namespace TrucoServer.Helpers.Match
                         matchCallbackToPlayer.TryRemove(cb, out _);
                     }
                 }
+               
                 return false;
             }
             catch (InvalidCastException ex)
             {
                 ServerException.HandleException(ex, nameof(TryGetActiveCallbackForPlayer));
+               
                 return false;
             }
             catch (CommunicationObjectAbortedException ex)
             {
                 ServerException.HandleException(ex, nameof(TryGetActiveCallbackForPlayer));
+                
                 return false;
             }
             catch (ObjectDisposedException ex)
             {
                 ServerException.HandleException(ex, nameof(TryGetActiveCallbackForPlayer));
+                
                 return false;
             }
             catch (Exception ex)
             {
                 ServerException.HandleException(ex, nameof(TryGetActiveCallbackForPlayer));
+               
                 return false;
             }
         }
@@ -529,14 +547,20 @@ namespace TrucoServer.Helpers.Match
 
                 if (!lobbyId.HasValue)
                 {
-                    return new PlayerInfo { Username = player };
+                    return new PlayerInfo 
+                    { 
+                        Username = player 
+                    };
                 }
 
                 var lobby = context.Lobby.Find(lobbyId.Value);
 
                 if (lobby == null)
                 {
-                    return new PlayerInfo { Username = player };
+                    return new PlayerInfo 
+                    { 
+                        Username = player 
+                    };
                 }
 
                 if (player.StartsWith(GUEST_PREFIX))
@@ -547,6 +571,7 @@ namespace TrucoServer.Helpers.Match
                         MatchCode = matchCode,
                         PlayerUsername = player
                     };
+
                     return CreateGuestPlayerInfo(guestContext);
                 }
                 else
@@ -557,28 +582,48 @@ namespace TrucoServer.Helpers.Match
             catch (SqlException ex)
             {
                 ServerException.HandleException(ex, nameof(CreatePlayerInfoForChat));
-                return new PlayerInfo { Username = player };
+                
+                return new PlayerInfo 
+                {
+                    Username = player 
+                };
             }
 
             catch (EntityException ex)
             {
                 ServerException.HandleException(ex, nameof(CreatePlayerInfoForChat));
-                return new PlayerInfo { Username = player };
+                
+                return new PlayerInfo 
+                {
+                    Username = player
+                };
             }
             catch (DataException ex)
             {
                 ServerException.HandleException(ex, nameof(CreatePlayerInfoForChat));
-                return new PlayerInfo { Username = player };
+                
+                return new PlayerInfo 
+                {
+                    Username = player 
+                };
             }
             catch (InvalidOperationException ex)
             {
                 ServerException.HandleException(ex, nameof(CreatePlayerInfoForChat));
-                return new PlayerInfo { Username = player };
+                
+                return new PlayerInfo 
+                { 
+                    Username = player
+                };
             }
             catch (Exception ex)
             {
                 ServerException.HandleException(ex, nameof(CreatePlayerInfoForChat));
-                return new PlayerInfo { Username = player };
+                
+                return new PlayerInfo
+                { 
+                    Username = player 
+                };
             }
         }
 

@@ -16,6 +16,7 @@ namespace TrucoServer.Helpers.Match
             if (!runningGames.TryAdd(matchCode, match))
             {
                 ServerException.HandleException(new Exception($"Failed to add running game {matchCode}"), nameof(TryAddGame));
+               
                 return false;
             }
             return true;

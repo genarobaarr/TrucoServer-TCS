@@ -29,9 +29,9 @@ namespace TrucoServer.Helpers.Mapping
                 Email = user.email,
                 AvatarId = user.UserProfile?.avatarID ?? DEFAULT_AVATAR_ID,
                 NameChangeCount = user.nameChangeCount,
-                FacebookHandle = links?.FacebookHandle ?? "",
-                XHandle = links?.XHandle ?? "",
-                InstagramHandle = links?.InstagramHandle ?? "",
+                FacebookHandle = links?.FacebookHandle ?? string.Empty,
+                XHandle = links?.XHandle ?? string.Empty,
+                InstagramHandle = links?.InstagramHandle ?? string.Empty,
                 LanguageCode = user.UserProfile?.languageCode ?? DEFAULT_LANG_CODE,
                 IsMusicMuted = user.UserProfile?.isMusicMuted ?? false
             };
@@ -43,7 +43,11 @@ namespace TrucoServer.Helpers.Mapping
             {
                 return context.MatchPlayer
                 .Where(mp => mp.userID == userID)
-                .Select(mp => new { MatchPlayer = mp, Match = mp.Match })
+                .Select(mp => new 
+                {
+                    MatchPlayer = mp,
+                    Match = mp.Match 
+                })
                 .Where(join => join.Match.status == "Finished" && join.Match.endedAt.HasValue)
                 .OrderByDescending(join => join.Match.endedAt)
                 .Take(5)

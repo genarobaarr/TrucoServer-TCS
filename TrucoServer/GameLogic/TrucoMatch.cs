@@ -48,6 +48,16 @@ namespace TrucoServer.GameLogic
         private const int MALAS_SCORE = 15;
         private const int CARDS_IN_HAND = 3;
         private const int MAX_ROUNDS = 3;
+        private const int POINTS_TRUCO = 2;
+        private const int POINTS_RETRUCO = 3;
+        private const int POINTS_ENVIDO = 2;
+        private const int POINTS_FLOR = 3;
+        private const int MIN_POINTS_REQUIRED = 1;
+        private const int POINTS_REALENVIDO = 3;
+        private const int POINTS_CONTRAFLOR = 6;
+        private const int POINTS_VALE4 = 4;
+        private const int WINS_TO_WIN_HAND = 2;
+        private const int ROUND_THREE_INDEX = 2;
         private const string TEAM_1 = "Team 1";
         private const string TEAM_2 = "Team 2";
         private const string GUEST_PREFIX = "Guest_";
@@ -127,7 +137,7 @@ namespace TrucoServer.GameLogic
                 this.playedCards = Players.ToDictionary(p => p.PlayerID, p => new List<TrucoCard>());
 
                 this.cardsOnTable = new Dictionary<int, TrucoCard>();
-                this.roundWinners = new string[3];
+                this.roundWinners = new string[MAX_ROUNDS];
                 this.Team1Score = 0;
                 this.Team2Score = 0;
                 this.CurrentState = GameState.Deal;
@@ -246,6 +256,7 @@ namespace TrucoServer.GameLogic
             }
 
             player = GetCurrentTurnPlayer();
+            
             if (player.PlayerID != playerID ||
                (CurrentState != GameState.Truco && CurrentState != GameState.Envido && CurrentState != GameState.Flor))
             {
@@ -258,6 +269,7 @@ namespace TrucoServer.GameLogic
             }
 
             cardToPlay = hand.FirstOrDefault(c => c.FileName == cardFileName);
+          
             return cardToPlay != null;
         }
 
@@ -279,12 +291,14 @@ namespace TrucoServer.GameLogic
             if (Players == null || Players.Count == 0)
             {
                 ServerException.HandleException(new InvalidOperationException("Attempt to advance turn without players"), nameof(AdvanceTurn));
+              
                 return;
             }
 
             if (cardsOnTable == null)
             {
                 ServerException.HandleException(new InvalidOperationException("The list of cards on the table is null"), nameof(AdvanceTurn));
+              
                 return;
             }
 
@@ -360,6 +374,7 @@ namespace TrucoServer.GameLogic
                 }
 
                 var caller = Players.FirstOrDefault(p => p.PlayerID == playerID);
+                
                 if (caller == null)
                 {
                     return false;
@@ -376,12 +391,14 @@ namespace TrucoServer.GameLogic
                 }
 
                 var opponent = GetOpponentToRespond(caller);
+                
                 if (opponent == null)
                 {
                     return false;
                 }
 
                 CurrentState = GameState.Truco;
+                
                 ApplyTrucoCallState(playerID, newBet, opponent.PlayerID);
 
                 NotifyTrucoCall(playerID, betType, opponent.PlayerID);
@@ -466,16 +483,19 @@ namespace TrucoServer.GameLogic
                 {
                     return false;
                 }
+               
                 if (waitingForEnvidoResponseId.HasValue)
                 {
                     return false;
                 }
+               
                 if (CurrentState != GameState.Envido)
                 {
                     return false;
                 }
 
                 var caller = Players.FirstOrDefault(p => p.PlayerID == playerID);
+               
                 if (caller == null)
                 {
                     return false;
@@ -487,6 +507,7 @@ namespace TrucoServer.GameLogic
                 }
 
                 var opponent = GetOpponentToRespond(caller);
+               
                 if (opponent == null)
                 {
                     return false;
@@ -498,7 +519,7 @@ namespace TrucoServer.GameLogic
 
                 if (newBet == EnvidoBet.FaltaEnvido)
                 {
-                    currentEnvidoPoints = 0;
+                    currentEnvidoPoints = CURRENT_ENVIDO_POINT;
                 }
                 else
                 {
@@ -641,6 +662,7 @@ namespace TrucoServer.GameLogic
                 }
 
                 var opponent = GetOpponentToRespond(caller);
+               
                 if (opponent == null)
                 {
                     return false;
@@ -838,6 +860,7 @@ namespace TrucoServer.GameLogic
             if (playerFlorScores[playerID] == -1)
             {
                 LogManager.LogWarn($"[GAME] Player {caller.Username} tried to call Flor without having it.", nameof(CallFlor));
+               
                 return false;
             }
 
@@ -1041,6 +1064,7 @@ namespace TrucoServer.GameLogic
                 else
                 {
                     int comparison = TrucoRules.CompareCards(card, highestCard);
+                   
                     if (comparison > 0)
                     {
                         highestCard = card;
@@ -1052,6 +1076,7 @@ namespace TrucoServer.GameLogic
                     }
                 }
             }
+         
             return roundWinner;
         }
 
@@ -1411,6 +1436,7 @@ namespace TrucoServer.GameLogic
                 if (numPlayers == 2)
                 {
                     int opponentIndex = (callerIndex + 1) % 2;
+                   
                     return Players[opponentIndex];
                 }
 
@@ -1503,6 +1529,7 @@ namespace TrucoServer.GameLogic
                 if (Players != null && Players.Count > 0)
                 {
                     turnIndex = 0;
+                 
                     return Players[0];
                 }
 
@@ -1511,6 +1538,7 @@ namespace TrucoServer.GameLogic
             catch (Exception ex)
             {
                 ServerException.HandleException(ex, nameof(GetCurrentTurnPlayer));
+            
                 return null;
             }
         }
@@ -1713,7 +1741,7 @@ namespace TrucoServer.GameLogic
                 int team1Wins = roundWinners.Count(w => w == TEAM_1);
                 int team2Wins = roundWinners.Count(w => w == TEAM_2);
 
-                if (team1Wins >= 2 || team2Wins >= 2)
+                if (team1Wins >= WINS_TO_WIN_HAND || team2Wins >= WINS_TO_WIN_HAND)
                 {
                     return true;
                 }
@@ -1723,12 +1751,12 @@ namespace TrucoServer.GameLogic
                     return true;
                 }
 
-                if (roundWinners[0] == null && currentRound == 2 && (team1Wins == 1 || team2Wins == 1))
+                if (roundWinners[0] == null && currentRound == ROUND_THREE_INDEX && (team1Wins == 1 || team2Wins == 1))
                 {
                     return true;
                 }
 
-                if (roundWinners[0] != null && roundWinners[1] == null && currentRound == 2)
+                if (roundWinners[0] != null && roundWinners[1] == null && currentRound == ROUND_THREE_INDEX)
                 {
                     return true;
                 }
@@ -1761,6 +1789,7 @@ namespace TrucoServer.GameLogic
             catch (Exception ex)
             {
                 ServerException.HandleException(ex, nameof(CheckMatchEnd));
+                
                 return false;
             }
         }
@@ -1772,11 +1801,11 @@ namespace TrucoServer.GameLogic
                 switch (bet)
                 {
                     case TrucoBet.Truco:
-                        return 2;
+                        return POINTS_TRUCO;
                     case TrucoBet.Retruco:
-                        return 3;
+                        return POINTS_RETRUCO;
                     case TrucoBet.ValeCuatro:
-                        return 4;
+                        return POINTS_VALE4;
                     case TrucoBet.None:
                     default:
                         return 1;
@@ -1785,6 +1814,7 @@ namespace TrucoServer.GameLogic
             catch (Exception ex)
             {
                 ServerException.HandleException(ex, nameof(GetPointsForBet));
+               
                 return 1;
             }
         }
@@ -1796,9 +1826,9 @@ namespace TrucoServer.GameLogic
                 switch (bet)
                 {
                     case EnvidoBet.Envido:
-                        return 2;
+                        return POINTS_ENVIDO;
                     case EnvidoBet.RealEnvido:
-                        return 3;
+                        return POINTS_REALENVIDO;
                     default:
                         return 0;
                 }
@@ -1806,6 +1836,7 @@ namespace TrucoServer.GameLogic
             catch (Exception ex)
             {
                 ServerException.HandleException(ex, nameof(GetPointsForEnvidoBet));
+                
                 return 0;
             }
         }
@@ -1817,9 +1848,9 @@ namespace TrucoServer.GameLogic
                 switch (bet)
                 {
                     case FlorBet.Flor:
-                        return 3;
+                        return POINTS_FLOR;
                     case FlorBet.ContraFlor:
-                        return 6;
+                        return POINTS_CONTRAFLOR;
                     default:
                         return 0;
                 }
@@ -1827,6 +1858,7 @@ namespace TrucoServer.GameLogic
             catch (Exception ex)
             {
                 ServerException.HandleException(ex, nameof(GetPointsForFlorBet));
+                
                 return 0;
             }
         }
@@ -1841,9 +1873,9 @@ namespace TrucoServer.GameLogic
 
             int pointsNeeded = targetScore - winnerCurrentScore;
 
-            if (pointsNeeded < 1)
+            if (pointsNeeded < MIN_POINTS_REQUIRED)
             {
-                pointsNeeded = 1;
+                pointsNeeded = MIN_POINTS_REQUIRED;
             }
 
             return pointsNeeded;

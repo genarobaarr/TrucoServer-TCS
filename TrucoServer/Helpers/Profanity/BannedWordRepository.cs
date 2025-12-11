@@ -24,26 +24,31 @@ namespace TrucoServer.Helpers.Profanity
             catch (SqlException ex)
             {
                 ServerException.HandleException(ex, nameof(GetAllWords));
+                
                 return new List<string>();
             }
             catch (TimeoutException ex)
             {
                 ServerException.HandleException(ex, nameof(GetAllWords));
+               
                 return new List<string>();
             }
             catch (DataException ex)
             {
                 ServerException.HandleException(ex, nameof(GetAllWords));
+              
                 return new List<string>();
             }
             catch (InvalidOperationException ex)
             {
                 ServerException.HandleException(ex, nameof(GetAllWords));
+               
                 return new List<string>();
             }
             catch (Exception ex)
             {
                 ServerException.HandleException(ex, nameof(GetAllWords));
+              
                 return new List<string>();
             }
         }

@@ -46,12 +46,16 @@ namespace TrucoServer.Helpers.Match
             var result = dependencies.ParticipantBuilder.BuildParticipants(playersList);
             gamePlayers = result.Players;
             gameCallbacks = result.Callbacks;
+            
             return result.IsSuccess;
         }
 
         public MatchStartValidation ValidateMatchStart(string matchCode)
         {
-            var result = new MatchStartValidation { IsValid = false };
+            var result = new MatchStartValidation 
+            { 
+                IsValid = false 
+            };
 
             try
             {
@@ -300,6 +304,7 @@ namespace TrucoServer.Helpers.Match
             if (playerInfo.Username.StartsWith(GUEST_PREFIX))
             {
                 playerID = -Math.Abs(playerInfo.Username.GetHashCode());
+                
                 return true;
             }
 
@@ -313,26 +318,31 @@ namespace TrucoServer.Helpers.Match
                 }
 
                 playerID = user.userID;
+                
                 return true;
             }
             catch (SqlException ex)
             {
                 ServerException.HandleException(ex, nameof(GetMatchAndPlayerID));
+                
                 return false;
             }
             catch (DataException ex)
             {
                 ServerException.HandleException(ex, nameof(GetMatchAndPlayerID));
+                
                 return false;
             }
             catch (InvalidOperationException ex)
             {
                 ServerException.HandleException(ex, nameof(GetMatchAndPlayerID));
+               
                 return false;
             }
             catch (Exception ex)
             {
                 ServerException.HandleException(ex, nameof(GetMatchAndPlayerID));
+               
                 return false;
             }
         }
@@ -356,6 +366,7 @@ namespace TrucoServer.Helpers.Match
                 if (user != null)
                 {
                     var profile = dependencies.Context.UserProfile.FirstOrDefault(up => up.userID == user.userID);
+                   
                     return profile?.avatarID ?? DEFAULT_AVATAR_NAME;
                 }
             }
@@ -382,9 +393,11 @@ namespace TrucoServer.Helpers.Match
                 if (dependencies.Coordinator.TryGetLobbyIdFromCode(matchCode, out int lobbyId))
                 {
                     var lobby = dependencies.Context.Lobby.Find(lobbyId);
+                   
                     if (lobby != null)
                     {
                         var owner = dependencies.Context.User.Find(lobby.ownerID);
+                        
                         return owner?.username;
                     }
                 }
@@ -417,6 +430,7 @@ namespace TrucoServer.Helpers.Match
                 }
 
                 var owner = dependencies.Context.User.Find(lobby.ownerID);
+                
                 return owner?.username ?? string.Empty;
             }
             catch (SqlException ex)

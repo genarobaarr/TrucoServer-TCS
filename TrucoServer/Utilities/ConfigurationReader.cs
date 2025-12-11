@@ -17,6 +17,7 @@ namespace TrucoServer.Utilities
                 {
                     LoadConfiguration();
                 }
+                
                 return emailSettings;
             }
         }

@@ -79,6 +79,7 @@ namespace TrucoServer.Helpers.Profanity
                 }
 
                 var tokens = text.Split(' ');
+             
                 return tokens.Any(token => cachedBannedWords.Contains(token));
             }
         }

@@ -89,16 +89,19 @@ namespace TrucoServer.GameLogic
             catch (InvalidOperationException ex)
             {
                 ServerException.HandleException(ex, nameof(DealHand));
+               
                 return new List<TrucoCard>();
             }
             catch (ArgumentOutOfRangeException ex)
             {
                 ServerException.HandleException(ex, nameof(DealHand));
+                
                 return new List<TrucoCard>();
             }
             catch (Exception ex)
             {
                 ServerException.HandleException(ex, nameof(DealHand));
+                
                 return new List<TrucoCard>();
             }
         }
@@ -120,16 +123,19 @@ namespace TrucoServer.GameLogic
             catch (InvalidOperationException ex)
             {
                 ServerException.HandleException(ex, nameof(DrawCard));
+                
                 return null;
             }
             catch (ArgumentOutOfRangeException ex)
             {
                 ServerException.HandleException(ex, nameof(DrawCard));
+                
                 return null;
             }
             catch (Exception ex)
             {
                 ServerException.HandleException(ex, nameof(DrawCard));
+                
                 return null;
             }
         }

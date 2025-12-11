@@ -29,12 +29,16 @@ namespace TrucoServer.Helpers.Match
                 return players;
             }
 
-            return new List<PlayerInformation> { owner, opponent };
+            return new List<PlayerInformation> 
+            { 
+                owner, opponent 
+            };
         }
 
         private static List<PlayerInformation> OrderForTeamMatch(List<PlayerInformation> players, string ownerUsername)
         {
             var owner = players.FirstOrDefault(p => p.Username.Equals(ownerUsername, StringComparison.OrdinalIgnoreCase));
+            
             if (owner == null)
             {
                 return players;

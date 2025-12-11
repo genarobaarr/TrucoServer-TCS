@@ -99,6 +99,7 @@ namespace TrucoServer.Helpers.Verification
             if (verificationCodes.TryGetValue(email, out string storedCode) && storedCode == code)
             {
                 verificationCodes.TryRemove(email, out _);
+                
                 return true;
             }
 

@@ -33,6 +33,7 @@ namespace TrucoServer.Helpers.Sessions
                     if (communicationObject == null)
                     {
                         onlineUsers.TryRemove(username, out _);
+                       
                         return null;
                     }
 

@@ -16,6 +16,8 @@ namespace TrucoServer.Helpers.Ranking
         private const string ERROR_CODE_DB_ERROR_RANKING = "ServerDBErrorRanking";
         private const string ERROR_CODE_GENERAL_ERROR = "ServerError";
         private const string ERROR_CODE_TIMEOUT_ERROR = "ServerTimeout";
+        private const int TOP_RANKING = 10;
+
 
         public List<PlayerStats> GetGlobalRanking()
         {
@@ -25,7 +27,7 @@ namespace TrucoServer.Helpers.Ranking
                 {
                     return context.User
                         .OrderByDescending(u => u.wins)
-                        .Take(10)
+                        .Take(TOP_RANKING)
                         .Select(u => new PlayerStats
                         {
                             PlayerName = u.username,

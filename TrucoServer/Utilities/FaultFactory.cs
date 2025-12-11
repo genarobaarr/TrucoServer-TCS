@@ -12,6 +12,7 @@ namespace TrucoServer.Utilities
                 ErrorCode = errorCode,
                 ErrorMessage = errorMessage
             };
+          
             return new FaultException<CustomFault>(fault, new FaultReason(errorCode));
         }
     }
