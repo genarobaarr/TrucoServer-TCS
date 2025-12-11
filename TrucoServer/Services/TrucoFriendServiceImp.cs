@@ -54,7 +54,12 @@ namespace TrucoServer.Services
 
             try
             {
-                var lookupOptions = new UserLookupOptions { Username1 = fromUser, Username2 = toUser };
+                var lookupOptions = new UserLookupOptions 
+                {
+                    Username1 = fromUser, 
+                    Username2 = toUser 
+                };
+
                 var lookupResult = friendshipRepository.GetUsersFromDatabase(lookupOptions);
 
                 if (!lookupResult.Success)
@@ -118,7 +123,12 @@ namespace TrucoServer.Services
 
             try
             {
-                var lookupOptions = new UserLookupOptions { Username1 = fromUser, Username2 = toUser };
+                var lookupOptions = new UserLookupOptions
+                {
+                    Username1 = fromUser,
+                    Username2 = toUser
+                };
+
                 var lookupResult = friendshipRepository.GetUsersFromDatabase(lookupOptions);
 
                 if (!lookupResult.Success)
@@ -160,36 +170,43 @@ namespace TrucoServer.Services
             catch (SqlException ex)
             {
                 ServerException.HandleException(ex, nameof(AcceptFriendRequest));
+                
                 return false;
             }
             catch (EntityException ex)
             {
                 ServerException.HandleException(ex, nameof(AcceptFriendRequest));
+                
                 return false;
             }
             catch (ArgumentNullException ex)
             {
                 ServerException.HandleException(ex, nameof(AcceptFriendRequest));
+                
                 return false;
             }
             catch (InvalidOperationException ex)
             {
                 ServerException.HandleException(ex, nameof(AcceptFriendRequest));
+                
                 return false;
             }
             catch (TimeoutException ex)
             {
                 ServerException.HandleException(ex, nameof(AcceptFriendRequest));
+                
                 return true;
             }
             catch (CommunicationException ex)
             {
                 ServerException.HandleException(ex, nameof(AcceptFriendRequest));
+                
                 return true;
             }
             catch (Exception ex)
             {
                 ServerException.HandleException(ex, nameof(AcceptFriendRequest));
+                
                 return false;
             }
         }
@@ -203,7 +220,12 @@ namespace TrucoServer.Services
 
             try
             {
-                var lookupOptions = new UserLookupOptions { Username1 = user1, Username2 = user2 };
+                var lookupOptions = new UserLookupOptions 
+                { 
+                    Username1 = user1,
+                    Username2 = user2 
+                };
+
                 var lookupResult = friendshipRepository.GetUsersFromDatabase(lookupOptions);
 
                 if (!lookupResult.Success)
@@ -219,21 +241,25 @@ namespace TrucoServer.Services
             catch (DbUpdateException ex)
             {
                 ServerException.HandleException(ex, nameof(RemoveFriendOrRequest));
+                
                 return false;
             }
             catch (SqlException ex)
             {
                 ServerException.HandleException(ex, nameof(AcceptFriendRequest));
+                
                 return false;
             }
             catch (EntityException ex)
             {
                 ServerException.HandleException(ex, nameof(AcceptFriendRequest));
+                
                 return false;
             }
             catch (Exception ex)
             {
                 ServerException.HandleException(ex, nameof(RemoveFriendOrRequest));
+                
                 return false;
             }
         }

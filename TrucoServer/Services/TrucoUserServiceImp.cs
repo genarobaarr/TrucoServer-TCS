@@ -136,6 +136,7 @@ namespace TrucoServer.Services
                 authenticationHelper.ValidateBruteForceStatus(username);
 
                 User user = authenticationHelper.AuthenticateUser(username, password);
+               
                 if (user == null)
                 {
                     return false;
@@ -156,11 +157,13 @@ namespace TrucoServer.Services
             catch (InvalidOperationException ex) when (ex.Source.Contains("System.ServiceModel"))
             {
                 ServerException.HandleException(ex, nameof(Login));
+               
                 return false;
             }
             catch (Exception ex)
             {
                 ServerException.HandleException(ex, nameof(Login));
+               
                 return false;
             }
         }
@@ -201,21 +204,25 @@ namespace TrucoServer.Services
             catch (DbUpdateException ex)
             {
                 ServerException.HandleException(ex, nameof(Register));
+               
                 return false;
             }
             catch (SqlException ex)
             {
                 ServerException.HandleException(ex, nameof(Register));
+               
                 return false;
             }
             catch (InvalidOperationException ex)
             {
                 ServerException.HandleException(ex, nameof(Register));
+               
                 return false;
             }
             catch (Exception ex)
             {
                 ServerException.HandleException(ex, nameof(Register));
+               
                 return false;
             }
         }
@@ -258,31 +265,37 @@ namespace TrucoServer.Services
                 profileUpdater.UpdateProfileDetails(user, updateOptions);
 
                 context.SaveChanges();
+              
                 return true;
             }
             catch (JsonSerializationException ex)
             {
                 ServerException.HandleException(ex, $"{nameof(SaveUserProfile)} - JSON Serialization Error");
+              
                 return false;
             }
             catch (DbUpdateException ex)
             {
                 ServerException.HandleException(ex, nameof(SaveUserProfile));
+            
                 return false;
             }
             catch (SqlException ex)
             {
                 ServerException.HandleException(ex, nameof(SaveUserProfile));
+             
                 return false;
             }
             catch (InvalidOperationException ex)
             {
                 ServerException.HandleException(ex, nameof(SaveUserProfile));
+             
                 return false;
             }
             catch (Exception ex)
             {
                 ServerException.HandleException(ex, nameof(SaveUserProfile));
+               
                 return false;
             }
         }
@@ -297,6 +310,7 @@ namespace TrucoServer.Services
             try
             {
                 bool result = profileUpdater.ProcessAvatarUpdate(username, newAvatarId);
+               
                 return Task.FromResult(result);
             }
             catch (DbUpdateException ex)
@@ -501,16 +515,19 @@ namespace TrucoServer.Services
             catch (SqlException ex)
             {
                 ServerException.HandleException(ex, nameof(GetUserProfile));
+            
                 return null;
             }
             catch (DataException ex)
             {
                 ServerException.HandleException(ex, nameof(GetUserProfile));
+             
                 return null;
             }
             catch (Exception ex)
             {
                 ServerException.HandleException(ex, nameof(GetUserProfile));
+               
                 return null;
             }
         }

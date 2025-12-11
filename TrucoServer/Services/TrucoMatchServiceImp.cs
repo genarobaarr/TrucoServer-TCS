@@ -165,28 +165,36 @@ namespace TrucoServer.Services
             catch (DbUpdateException ex)
             {
                 ServerException.HandleException(ex, nameof(CreateLobby));
+               
                 return string.Empty;
             }
             catch (SqlException ex)
             {
                 ServerException.HandleException(ex, nameof(CreateLobby));
+                
                 return string.Empty;
             }
             catch (InvalidOperationException ex)
             {
                 ServerException.HandleException(ex, nameof(CreateLobby));
+                
                 return string.Empty;
             }
             catch (Exception ex)
             {
                 ServerException.HandleException(ex, nameof(CreateLobby));
+                
                 return string.Empty;
             }
         }
 
         public int JoinMatch(string matchCode, string player)
         {
-            var contextData = new JoinMatchContext { MatchCode = matchCode, PlayerUsername = player };
+            var contextData = new JoinMatchContext 
+            { 
+                MatchCode = matchCode, 
+                PlayerUsername = player
+            };
 
             if (!IsInputValid(contextData))
             {
@@ -256,12 +264,19 @@ namespace TrucoServer.Services
         {
             if (!string.Equals(lobby.status, STATUS_PRIVATE, StringComparison.OrdinalIgnoreCase))
             {
-                return new AccessMatchResult { IsAllowed = true, UsedInvitation = null };
+                return new AccessMatchResult 
+                { 
+                    IsAllowed = true,
+                    UsedInvitation = null 
+                };
             }
 
             if (data.PlayerUsername.StartsWith(GUEST_PREFIX))
             {
-                return new AccessMatchResult { IsAllowed = false };
+                return new AccessMatchResult
+                {
+                    IsAllowed = false 
+                };
             }
 
             Invitation invite = ValidatePrivateMatchAccess(data.MatchCode, data.PlayerUsername);
@@ -286,6 +301,7 @@ namespace TrucoServer.Services
         private Invitation ValidatePrivateMatchAccess(string matchCode, string username)
         {
             var user = context.User.FirstOrDefault(u => u.username == username);
+            
             if (user == null)
             {
                 return null;
@@ -339,7 +355,11 @@ namespace TrucoServer.Services
                 return;
             }
 
-            var contextData = new LeaveMatchContext { MatchCode = matchCode, PlayerUsername = player };
+            var contextData = new LeaveMatchContext 
+            {
+                MatchCode = matchCode, 
+                PlayerUsername = player 
+            };
 
             try
             {
@@ -387,7 +407,12 @@ namespace TrucoServer.Services
 
             if (ctx.Lobby == null)
             {
-                var criteria = new LobbyLeaveCriteria { MatchCode = ctx.MatchCode, Username = ctx.PlayerUsername };
+                var criteria = new LobbyLeaveCriteria 
+                {
+                    MatchCode = ctx.MatchCode,
+                    Username = ctx.PlayerUsername
+                };
+
                 var result = lobbyRepository.ResolveLobbyForLeave(criteria);
 
                 if (result != null)
@@ -433,7 +458,13 @@ namespace TrucoServer.Services
             {
                 var publicLobbies = context.Lobby
                     .Where(l => l.status == STATUS_PUBLIC)
-                    .Select(l => new { l.lobbyID, l.maxPlayers, l.createdAt, l.ownerID })
+                    .Select(l => new 
+                    { 
+                        l.lobbyID,
+                        l.maxPlayers, 
+                        l.createdAt, 
+                        l.ownerID 
+                    })
                     .ToList();
 
                 var result = new List<PublicLobbyInfo>();
@@ -597,6 +628,7 @@ namespace TrucoServer.Services
             try
             {
                 var callback = OperationContext.Current?.GetCallbackChannel<ITrucoCallback>();
+                
                 if (callback == null)
                 {
                     return;
@@ -645,6 +677,7 @@ namespace TrucoServer.Services
             try
             {
                 var callback = OperationContext.Current?.GetCallbackChannel<ITrucoCallback>();
+              
                 if (callback == null)
                 {
                     return;
@@ -686,6 +719,7 @@ namespace TrucoServer.Services
                     if (shouldBan)
                     {
                         KickAndBanPlayer(matchCode, player);
+                      
                         return;
                     }
 
@@ -822,21 +856,25 @@ namespace TrucoServer.Services
             catch (DbUpdateException ex)
             {
                 ServerException.HandleException(ex, nameof(InviteFriend));
+              
                 return false;
             }
             catch (SqlException ex)
             {
                 ServerException.HandleException(ex, nameof(InviteFriend));
+                
                 return false;
             }
             catch (InvalidOperationException ex)
             { 
                 ServerException.HandleException(ex, nameof(InviteFriend));
+                
                 return false;
             }
             catch (Exception ex)
             {
                 ServerException.HandleException(ex, nameof(InviteFriend));
+               
                 return false;
             }
         }
@@ -853,6 +891,7 @@ namespace TrucoServer.Services
             {
                 sender = senderUser;
                 friend = friendUser;
+               
                 return true;
             }
             return false;
@@ -864,6 +903,7 @@ namespace TrucoServer.Services
             {
                 return context.LobbyMember.Any(lm => lm.lobbyID == lobbyId && lm.userID == friendUserId);
             }
+           
             return false;
         }
 
