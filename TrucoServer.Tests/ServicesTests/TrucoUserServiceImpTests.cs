@@ -420,19 +420,6 @@ namespace TrucoServer.Tests.ServicesTests
         }
 
         [TestMethod]
-        public void TestGetOnlinePlayersThrowsNotImplemented()
-        {
-            Assert.ThrowsException<NotImplementedException>(() => service.GetOnlinePlayers());
-        }
-
-        [TestMethod]
-        public void TestGetUserCallbackReturnsNullOnException()
-        {
-            var result = TrucoUserServiceImp.GetUserCallback(null);
-            Assert.IsNull(result);
-        }
-
-        [TestMethod]
         public void TestGetUserCallbackReturnsNullIfNotFound()
         {
             var result = TrucoUserServiceImp.GetUserCallback("NonExistent");

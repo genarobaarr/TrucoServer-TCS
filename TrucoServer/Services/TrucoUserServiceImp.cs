@@ -582,11 +582,6 @@ namespace TrucoServer.Services
             }
         }
 
-        public List<string> GetOnlinePlayers()
-        {
-            throw new NotImplementedException();
-        }
-
         public static ITrucoCallback GetUserCallback(string username)
         {
             try

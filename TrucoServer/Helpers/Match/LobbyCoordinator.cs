@@ -132,9 +132,14 @@ namespace TrucoServer.Helpers.Match
                         {
                             return ((ICommunicationObject)cb).State == CommunicationState.Opened;
                         }
-                        catch
+                        catch (Exception)
                         {
                             return false;
+                            /**
+                             * If querying the callback state throws, the client is 
+                             * disconnected or the channel is faulted. Return false 
+                             * so this callback is excluded from the active players list.
+                             */
                         }
                     })
                     .Select(cb => GetPlayerInfoFromCallback(cb))
@@ -276,9 +281,9 @@ namespace TrucoServer.Helpers.Match
                                 {
                                     comm.Abort();
                                 }
-                                catch
+                                catch (Exception)
                                 {
-                                    /*
+                                    /**
                                      * Intentionally ignore exceptions during comm.Abort() 
                                      * as this is a best-effort cleanup for inactive callbacks.
                                      * If the communication object is already in a faulted 
@@ -288,9 +293,9 @@ namespace TrucoServer.Helpers.Match
                                      * Since the callback is being removed regardless, silently 
                                      * failing here ensures the cleanup process continues without interruption.
                                      */
-                                }
+                        }
 
-                                return true;
+                        return true;
                             }
                             return false;
                         });
@@ -330,11 +335,9 @@ namespace TrucoServer.Helpers.Match
                     {
                         comm.Abort();
                     }
-                    catch (Exception ex) 
+                    catch (Exception) 
                     {
-
-                        ServerException.HandleException(ex, nameof(ProcessSingleCallbackAsync));
-                        /*
+                        /**
                          * Exceptions during comm.Abort() are intentionally ignored 
                          * as this is a cleanup operation for an already inactive callback.
                          * If the communication object is in a faulted or closed 

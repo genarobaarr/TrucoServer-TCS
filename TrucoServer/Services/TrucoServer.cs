@@ -20,7 +20,7 @@ namespace TrucoServer.Services
             matchService = new TrucoMatchServiceImp();
         }
 
-        // ==================== ITrucoUserService ====================
+
 
         public bool Login(string username, string password, string languageCode)
         {
@@ -92,17 +92,12 @@ namespace TrucoServer.Services
             return userService.GetLastMatches(username);
         }
 
-        public List<string> GetOnlinePlayers()
-        {
-            return userService.GetOnlinePlayers();
-        }
-
         public void LogClientException(string errorMessage, string stackTrace, string clientUsername)
         {
             userService.LogClientException(errorMessage, stackTrace, clientUsername);
         }
 
-        // ==================== ITrucoFriendService ====================
+
 
         public bool SendFriendRequest(string fromUser, string toUser)
         {
@@ -129,7 +124,7 @@ namespace TrucoServer.Services
             return friendService.GetPendingFriendRequests(username);
         }
 
-        // ==================== ITrucoMatchService ====================
+
 
         public string CreateLobby(string hostUsername, int maxPlayers, string privacy)
         {

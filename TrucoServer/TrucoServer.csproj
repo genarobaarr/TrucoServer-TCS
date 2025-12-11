@@ -105,16 +105,13 @@
     <Compile Include="Data\DTOs\UserLookupOptions.cs" />
     <Compile Include="Data\DTOs\UserLookupResult.cs" />
     <Compile Include="Data\DTOs\UsernameUpdateContext.cs" />
-    <Compile Include="Data\Entitites\BannedWordEntity.cs" />
     <Compile Include="GameLogic\IDeckShuffler.cs" />
     <Compile Include="GameLogic\ITrucoDeck.cs" />
     <Compile Include="Contracts\ITrucoFriendService.cs" />
     <Compile Include="Contracts\ITrucoMatchService.cs" />
     <Compile Include="Contracts\ITrucoUserService.cs" />
     <Compile Include="Data\DTOs\AttemptInfo.cs" />
-    <Compile Include="Data\DTOs\EmblemLayer.cs" />
     <Compile Include="Data\DTOs\CustomFault.cs" />
-    <Compile Include="GameLogic\ActiveMatch.cs" />
     <Compile Include="Ban.cs">
       <DependentUpon>baseDatosTruco.tt</DependentUpon>
     </Compile>
@@ -187,13 +184,11 @@
     <Compile Include="Utilities\ConfigurationFileWrapper.cs" />
     <Compile Include="Utilities\ConfigurationReader.cs" />
     <Compile Include="GameLogic\Deck.cs" />
-    <Compile Include="Data\Entitites\EfHelpers.cs" />
     <Compile Include="Utilities\EmailSettings.cs" />
     <Compile Include="Data\DTOs\FriendData.cs" />
     <Compile Include="Friendship.cs">
       <DependentUpon>baseDatosTruco.tt</DependentUpon>
     </Compile>
-    <Compile Include="Data\Entitites\FriendShipMapping.cs" />
     <Compile Include="GameLogic\IGameManager.cs" />
     <Compile Include="Invitation.cs">
       <DependentUpon>baseDatosTruco.tt</DependentUpon>
@@ -218,7 +213,6 @@
     <Compile Include="MatchPlayer.cs">
       <DependentUpon>baseDatosTruco.tt</DependentUpon>
     </Compile>
-    <Compile Include="Data\DTOs\MatchResult.cs" />
     <Compile Include="Data\DTOs\MatchScore.cs" />
     <Compile Include="Utilities\PasswordHasher.cs" />
     <Compile Include="Data\DTOs\PlayerInfo.cs" />
@@ -239,7 +233,6 @@
       <DependentUpon>baseDatosTruco.tt</DependentUpon>
     </Compile>
     <Compile Include="Data\DTOs\UserProfileData.cs" />
-    <Compile Include="Data\DTOs\ValidatedLobbyData.cs" />
     <Compile Include="Utilities\ServerException.cs" />
     <Compile Include="Utilities\ServerValidator.cs" />
     <Compile Include="Utilities\FaultFactory.cs" />

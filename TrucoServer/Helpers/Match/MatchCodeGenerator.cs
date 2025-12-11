@@ -1,6 +1,4 @@
 ﻿using System;
-using TrucoServer.Utilities;
-using System.Runtime.Remoting;
 using System.Security.Cryptography;
 
 namespace TrucoServer.Helpers.Match
@@ -8,6 +6,10 @@ namespace TrucoServer.Helpers.Match
     public class MatchCodeGenerator : IMatchCodeGenerator
     {
         private const int MATCH_CODE_LENGTH = 6;
+        private const int INITIAL_HASH_VALUE = 17;
+        private const int HASH_MULTIPLIER = 31;
+        private const int MAX_NUMERIC_CODE = 999999;
+
         private const string CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 
         public string GenerateMatchCode()
@@ -55,12 +57,14 @@ namespace TrucoServer.Helpers.Match
         {
             unchecked
             {
-                int hash = 17;
+                int hash = INITIAL_HASH_VALUE;
+
                 foreach (char c in code)
                 {
-                    hash = hash * 31 + c;
+                    hash = (hash * HASH_MULTIPLIER) + c;
                 }
-                return Math.Abs(hash % 999999);
+
+                return Math.Abs(hash % MAX_NUMERIC_CODE);
             }
         }
     }

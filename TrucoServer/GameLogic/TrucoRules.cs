@@ -10,7 +10,7 @@ namespace TrucoServer.GameLogic
         private const int ONE = 1;
         private const int TWO = 2;
         private const int THREE = 3;
-        private const int FOUR = 4; 
+        private const int FOUR = 4;
         private const int FIVE = 5;
         private const int SIX = 6;
         private const int SEVEN = 7;
@@ -21,135 +21,136 @@ namespace TrucoServer.GameLogic
         private const int TWELVE = 12;
         private const int THIRTEEN = 13;
         private const int FOURTEEN = 14;
+
         private const int FLOR_POINTS = 20;
+        private const int ENVIDO_BONUS = 20;
+
+        private const int ZERO = 0;
+        private const int TWO_CARDS = 2;
+        private const int THREE_CARDS = 3;
+
+        private const int ENVIDO_RANK_LIMIT = 10;
 
         private static readonly Dictionary<(Rank, Suit), int> trucoValueMap = new Dictionary<(Rank, Suit), int>
         {
-            
             { 
                 (Rank.Uno, Suit.Sword), FOURTEEN 
-            }, 
-            { 
-                (Rank.Uno, Suit.Club), THIRTEEN
-            },  
-            { 
-                (Rank.Siete, Suit.Sword), TWELVE
             },
             { 
-                (Rank.Siete, Suit.Gold), ELEVEN
-            },                
-            
+                (Rank.Uno, Suit.Club), THIRTEEN 
+            },
+            { 
+                (Rank.Siete, Suit.Sword), TWELVE 
+            },
+            { 
+                (Rank.Siete, Suit.Gold), ELEVEN 
+            },
             { 
                 (Rank.Tres, Suit.Sword), TEN 
-            }, 
-            { 
-                (Rank.Tres, Suit.Club), TEN
             },
             { 
-                (Rank.Tres, Suit.Cup), TEN
-            }, 
-            { 
-                (Rank.Tres, Suit.Gold), TEN
-            },
-            
-            { 
-                (Rank.Dos, Suit.Sword), NINE
-            }, 
-            { 
-                (Rank.Dos, Suit.Club), NINE
+                (Rank.Tres, Suit.Club), TEN 
             },
             { 
-                (Rank.Dos, Suit.Cup), NINE
-            }, 
-            { 
-                (Rank.Dos, Suit.Gold), NINE
-            }, 
-            
-            { 
-                (Rank.Uno, Suit.Cup), EIGHT
-            }, 
-            { 
-                (Rank.Uno, Suit.Gold), EIGHT
-            }, 
-            { 
-                (Rank.Doce, Suit.Sword), SEVEN
-            }, 
-            { 
-                (Rank.Doce, Suit.Club), SEVEN
+                (Rank.Tres, Suit.Cup), TEN 
             },
             { 
-                (Rank.Doce, Suit.Cup), SEVEN
-            }, 
+                (Rank.Tres, Suit.Gold), TEN 
+            },
+            { 
+                (Rank.Dos, Suit.Sword), NINE 
+            },
+            { 
+                (Rank.Dos, Suit.Club), NINE 
+            },
+            {
+                (Rank.Dos, Suit.Cup), NINE 
+            },
+            { 
+                (Rank.Dos, Suit.Gold), NINE 
+            },
+            { 
+                (Rank.Uno, Suit.Cup), EIGHT 
+            },
+            { 
+                (Rank.Uno, Suit.Gold), EIGHT 
+            },
+            { 
+                (Rank.Doce, Suit.Sword), SEVEN 
+            },
+            { 
+                (Rank.Doce, Suit.Club), SEVEN 
+            },
+            { 
+                (Rank.Doce, Suit.Cup), SEVEN 
+            },
             { 
                 (Rank.Doce, Suit.Gold), SEVEN
-            }, 
-            { 
-                (Rank.Once, Suit.Sword), SIX
-            }, 
-            { 
-                (Rank.Once, Suit.Club), SIX
             },
             { 
-                (Rank.Once, Suit.Cup), SIX
-            }, 
-            { 
+                (Rank.Once, Suit.Sword), SIX 
+            },
+            {
+                (Rank.Once, Suit.Club), SIX 
+            },
+            {
+                (Rank.Once, Suit.Cup), SIX 
+            },
+            {
                 (Rank.Once, Suit.Gold), SIX
             },
-            { 
+            {
                 (Rank.Diez, Suit.Sword), FIVE
-            }, 
-            { 
-                (Rank.Diez, Suit.Club), FIVE
+            },
+            {
+                (Rank.Diez, Suit.Club), FIVE 
             },
             { 
-                (Rank.Diez, Suit.Cup), FIVE
-            }, 
+                (Rank.Diez, Suit.Cup), FIVE 
+            },
             { 
-                (Rank.Diez, Suit.Gold), FIVE
-            }, 
-            
+                (Rank.Diez, Suit.Gold), FIVE 
+            },
             { 
                 (Rank.Siete, Suit.Club), FOUR
-            }, 
-            { 
-                (Rank.Siete, Suit.Cup), FOUR
-            }, 
-            
-            { 
-                (Rank.Seis, Suit.Sword), THREE 
-            }, 
-            { 
-                (Rank.Seis, Suit.Club), THREE
             },
             { 
-                (Rank.Seis, Suit.Cup), THREE
-            }, 
+                (Rank.Siete, Suit.Cup), FOUR
+            },
+            { 
+                (Rank.Seis, Suit.Sword), THREE 
+            },
+            { 
+                (Rank.Seis, Suit.Club), THREE 
+            },
+            { 
+                (Rank.Seis, Suit.Cup), THREE 
+            },
             { 
                 (Rank.Seis, Suit.Gold), THREE
-            }, 
-            
+            },
             { 
-                (Rank.Cinco, Suit.Sword), TWO
-            }, 
+                (Rank.Cinco, Suit.Sword), TWO 
+            },
             { 
                 (Rank.Cinco, Suit.Club), TWO 
             },
             { 
                 (Rank.Cinco, Suit.Cup), TWO
-            }, 
+            },
             { 
                 (Rank.Cinco, Suit.Gold), TWO 
-            }, 
+            },
             { 
-                (Rank.Cuatro, Suit.Sword), ONE
-            }, 
+                (Rank.Cuatro, Suit.Sword), ONE 
+            },
             { 
-                (Rank.Cuatro, Suit.Club), ONE
+                (Rank.Cuatro, Suit.Club), ONE 
             },
             { 
                 (Rank.Cuatro, Suit.Cup), ONE
-            }, 
-            { 
+            },
+            {
                 (Rank.Cuatro, Suit.Gold), ONE
             }
         };
@@ -170,17 +171,17 @@ namespace TrucoServer.GameLogic
 
                 ServerException.HandleException(new InvalidOperationException($"Unmapped card: {card.FileName}"), nameof(GetTrucoValue));
 
-                return 0;
+                return ZERO;
             }
             catch (ArgumentNullException ex)
             {
                 ServerException.HandleException(ex, nameof(GetTrucoValue));
-                return 0;
+                return ZERO;
             }
             catch (Exception ex)
             {
                 ServerException.HandleException(ex, nameof(GetTrucoValue));
-                return 0;
+                return ZERO;
             }
         }
 
@@ -193,20 +194,20 @@ namespace TrucoServer.GameLogic
 
                 if (valueA > valueB)
                 {
-                    return 1;
+                    return ONE;
                 }
 
                 if (valueB > valueA)
                 {
-                    return -1;
+                    return -ONE;
                 }
 
-                return 0;
+                return ZERO;
             }
             catch (Exception ex)
             {
                 ServerException.HandleException(ex, nameof(CompareCards));
-                return 0;
+                return ZERO;
             }
         }
 
@@ -222,30 +223,34 @@ namespace TrucoServer.GameLogic
                 var groups = hand.GroupBy(card => card.CardSuit);
                 var bestGroup = groups.OrderByDescending(g => g.Count()).FirstOrDefault();
 
-                if (bestGroup == null || bestGroup.Count() < 2)
+                if (bestGroup == null || bestGroup.Count() < TWO_CARDS)
                 {
                     if (!hand.Any())
                     {
-                        return 0;
+                        return ZERO;
                     }
                     return hand.Max(card => GetEnvidoValue(card));
                 }
                 else
                 {
-                    var twoHighest = bestGroup.OrderByDescending(card => GetEnvidoValue(card)).Take(2).ToList();
+                    var twoHighest = bestGroup.OrderByDescending(card => GetEnvidoValue(card))
+                                              .Take(TWO_CARDS)
+                                              .ToList();
 
-                    return GetEnvidoValue(twoHighest[0]) + GetEnvidoValue(twoHighest[1]) + 20;
+                    return GetEnvidoValue(twoHighest[0]) +
+                           GetEnvidoValue(twoHighest[1]) +
+                           ENVIDO_BONUS;
                 }
             }
             catch (ArgumentNullException ex)
             {
                 ServerException.HandleException(ex, nameof(CalculateEnvidoScore));
-                return 0;
+                return ZERO;
             }
             catch (Exception ex)
             {
                 ServerException.HandleException(ex, nameof(CalculateEnvidoScore));
-                return 0;
+                return ZERO;
             }
         }
 
@@ -253,12 +258,13 @@ namespace TrucoServer.GameLogic
         {
             try
             {
-                if (hand == null || hand.Count < 3)
+                if (hand == null || hand.Count < THREE_CARDS)
                 {
                     return false;
                 }
 
-                return hand.GroupBy(card => card.CardSuit).Any(g => g.Count() >= 3);
+                return hand.GroupBy(card => card.CardSuit)
+                           .Any(g => g.Count() >= THREE_CARDS);
             }
             catch (Exception ex)
             {
@@ -273,7 +279,7 @@ namespace TrucoServer.GameLogic
             {
                 if (!HasFlor(hand))
                 {
-                    return 0;
+                    return ZERO;
                 }
 
                 int sumValues = hand.Sum(card => GetEnvidoValue(card));
@@ -283,12 +289,12 @@ namespace TrucoServer.GameLogic
             catch (ArgumentNullException ex)
             {
                 ServerException.HandleException(ex, nameof(CalculateFlorScore));
-                return 0;
+                return ZERO;
             }
             catch (Exception ex)
             {
                 ServerException.HandleException(ex, nameof(CalculateFlorScore));
-                return 0;
+                return ZERO;
             }
         }
 
@@ -296,9 +302,9 @@ namespace TrucoServer.GameLogic
         {
             try
             {
-                if ((int)card.CardRank >= 10)
+                if ((int)card.CardRank >= ENVIDO_RANK_LIMIT)
                 {
-                    return 0;
+                    return ZERO;
                 }
 
                 return (int)card.CardRank;
@@ -306,7 +312,7 @@ namespace TrucoServer.GameLogic
             catch (Exception ex)
             {
                 ServerException.HandleException(ex, nameof(GetEnvidoValue));
-                return 0;
+                return ZERO;
             }
         }
     }

@@ -12,6 +12,11 @@ namespace TrucoServer.Helpers.Authentication
 {
     public class UserAuthenticationHelper : IUserAuthenticationHelper
     {
+        private const int RANDOM_BUFFER_SIZE = 4;
+        private const int MIN_SECURE_CODE = 100000;
+        private const int MAX_SECURE_CODE_RANGE = 900000;
+        private const string FALLBACK_SECURE_CODE = "000000";
+
         public void ValidateBruteForceStatus(string username)
         {
             if (BruteForceProtector.IsBlocked(username))
@@ -70,12 +75,12 @@ namespace TrucoServer.Helpers.Authentication
             {
                 using (var rng = new RNGCryptoServiceProvider())
                 {
-                    byte[] buffer = new byte[4];
+                    byte[] buffer = new byte[RANDOM_BUFFER_SIZE];
 
                     rng.GetBytes(buffer);
                     uint value = BitConverter.ToUInt32(buffer, 0);
 
-                    string secureCode = (value % 900000 + 100000).ToString();
+                    string secureCode = (value % MAX_SECURE_CODE_RANGE + MIN_SECURE_CODE).ToString();
 
                     return secureCode;
                 }
@@ -83,17 +88,17 @@ namespace TrucoServer.Helpers.Authentication
             catch (CryptographicException ex)
             {
                 ServerException.HandleException(ex, nameof(GenerateSecureNumericCode));
-                return "000000";
+                return FALLBACK_SECURE_CODE;
             }
             catch (OutOfMemoryException ex)
             {
                 ServerException.HandleException(ex, nameof(GenerateSecureNumericCode));
-                return "000000";
+                return FALLBACK_SECURE_CODE;
             }
             catch (Exception ex)
             {
                 ServerException.HandleException(ex, nameof(GenerateSecureNumericCode));
-                return "000000";
+                return FALLBACK_SECURE_CODE;
             }
         }
     }

@@ -30,6 +30,7 @@ namespace TrucoServer.Services
         private const string STATUS_PENDING = "Pending";
         private const string STATUS_EXPIRED = "Expired";
         private const string GUEST_PREFIX = "Guest_";
+        private const int MILLISECONDS_DELAY = 100;
 
         private readonly IGameRegistry gameRegistry;
         private readonly IJoinService joinService;
@@ -602,7 +603,7 @@ namespace TrucoServer.Services
 
                 if (isNew)
                 {
-                    Task.Delay(100).ContinueWith(_ =>
+                    Task.Delay(MILLISECONDS_DELAY).ContinueWith(_ =>
                     {
                         try
                         {
@@ -701,10 +702,9 @@ namespace TrucoServer.Services
                         { 
                             cb.OnChatMessage(matchCode, player, message); 
                         }
-                        catch (Exception ex)
+                        catch (Exception)
                         {
-                            ServerException.HandleException(ex, nameof(SendChatMessage));
-                            /*
+                            /**
                              * Exceptions from individual client callbacks are 
                              * intentionally ignored here to prevent a single failure
                              * from halting the broadcast to other clients in the match. 
@@ -904,13 +904,13 @@ namespace TrucoServer.Services
                     {
                         bannedUserCallback.OnForcedLogout();
                     }
-                    catch(Exception ex)
+                    catch (Exception)
                     {
-                        ServerException.HandleException(ex, nameof(KickAndBanPlayer));
-                        /* 
+                        /** 
                          * Callback may fail if user is already 
                          * disconnected; ignore to continue 
-                         * banning workflow */
+                         * banning workflow 
+                         */
                     }
                 }
                 if (gameRegistry.TryGetGame(matchCode, out _))

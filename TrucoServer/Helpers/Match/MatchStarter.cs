@@ -17,6 +17,7 @@ namespace TrucoServer.Helpers.Match
     {
         private const string GUEST_PREFIX = "Guest_";
         private const string DEFAULT_AVATAR_NAME = "avatar_aaa_default";
+        private const int MILLISECONDS_DELAY = 500;
 
         private readonly MatchStarterDependencies dependencies;
 
@@ -125,7 +126,7 @@ namespace TrucoServer.Helpers.Match
             NotifyMatchStart(matchCode, players);
             HandleMatchStartupCleanup(matchCode);
 
-            Task.Delay(500).ContinueWith(_ =>
+            Task.Delay(MILLISECONDS_DELAY).ContinueWith(_ =>
             {
                 if (dependencies.GameRegistry.TryGetGame(matchCode, out var match))
                 {

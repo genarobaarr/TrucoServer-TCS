@@ -111,7 +111,7 @@ namespace TrucoServer.Helpers.Profanity
                 }
                 catch (Exception)
                 {
-                    /*
+                    /**
                      * The error is intentionally ignored in 
                      * order to attempt to process the next word
                      */

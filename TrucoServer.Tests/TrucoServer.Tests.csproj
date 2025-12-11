@@ -76,10 +76,6 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="DataTests\EntititesTests\BannedWordEntityTests.cs" />
-    <Compile Include="DataTests\EntititesTests\EfHelpersTests.cs" />
-    <Compile Include="DataTests\EntititesTests\FriendShipMappingTests.cs" />
-    <Compile Include="GameLogicTests\ActiveMatchTests.cs" />
     <Compile Include="GameLogicTests\DeckTests.cs" />
     <Compile Include="GameLogicTests\DefaultDeckShufflerTests.cs" />
     <Compile Include="GameLogicTests\TrucoCardTests.cs" />

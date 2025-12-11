@@ -45,9 +45,10 @@ namespace TrucoServer.Helpers.Sessions
                     {
                         communicationObject.Abort();
                     }
-                    catch
+                    catch (Exception)
                     {
-                        /* Intentionally ignoring exceptions during cleanup. 
+                        /**
+                         * Intentionally ignoring exceptions during cleanup. 
                          * If Abort() fails, we still need to remove the 
                          * invalid user from the dictionary without 
                          * interrupting the flow.
@@ -110,9 +111,15 @@ namespace TrucoServer.Helpers.Sessions
                    
                     return true;
                 }
-                catch
+                catch (Exception)
                 {
                     return false;
+                    /**
+                     * A Ping() exception means the callback is no longer 
+                     * reachable (faulted, closed, or disconnected). 
+                     * Returning false is correct because the method
+                     * only needs to determine availability.
+                     */
                 }
             }
 
