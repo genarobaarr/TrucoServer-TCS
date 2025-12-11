@@ -98,6 +98,7 @@ namespace TrucoServer.Helpers.Friends
 
             context.Friendship.RemoveRange(toRemove);
             context.SaveChanges();
+            
             return true;
         }
 

@@ -22,6 +22,9 @@ namespace TrucoServer.Helpers.Match
         private const string MATCH_2V2 = "2v2";
         private const string ROLE_OWNER = "Owner";
         private const string DEFAULT_AVATAR_ID = "avatar_aaa_default";
+        private const int MAX_PLAYERS_1V1 = 2;
+        private const int MAX_PLAYERS_2V2 = 4;
+        private const int VERSION_ID_IS_ZERO = 0;
 
         private readonly baseDatosTrucoEntities context;
 
@@ -35,27 +38,30 @@ namespace TrucoServer.Helpers.Match
             try
             {
                 int versionId = context.Versions
-                    .Where(v => v.configuration.Contains(maxPlayers == 2 ? MATCH_1V1 : MATCH_2V2))
+                    .Where(v => v.configuration.Contains(maxPlayers == MAX_PLAYERS_1V1 ? MATCH_1V1 : MATCH_2V2))
                     .Select(v => v.versionID)
                     .FirstOrDefault();
 
-                return versionId == 0 && context.Versions.Any()
+                return versionId == VERSION_ID_IS_ZERO && context.Versions.Any()
                     ? context.Versions.First().versionID
                     : versionId;
             }
             catch (SqlException ex)
             {
                 ServerException.HandleException(ex, nameof(ResolveVersionId));
+               
                 return 0;
             }
             catch (InvalidOperationException ex)
             {
                 ServerException.HandleException(ex, nameof(ResolveVersionId));
+                
                 return 0;
             }
             catch (Exception ex)
             {
                 ServerException.HandleException(ex, nameof(ResolveVersionId));
+                
                 return 0;
             }
         }
@@ -68,6 +74,7 @@ namespace TrucoServer.Helpers.Match
                 {
                     throw new ArgumentNullException(nameof(options));
                 }
+                
                 if (options.Host == null)
                 {
                     throw new InvalidOperationException("Host cannot be null");
@@ -84,26 +91,31 @@ namespace TrucoServer.Helpers.Match
 
                 context.Lobby.Add(newLobby);
                 context.SaveChanges();
+                
                 return newLobby;
             }
             catch (InvalidOperationException ex)
             {
                 ServerException.HandleException(ex, nameof(CreateNewLobby));
+                
                 return null;
             }
             catch (DbUpdateException ex)
             {
                 ServerException.HandleException(ex, nameof(CreateNewLobby));
+                
                 return null;
             }
             catch (SqlException ex)
             {
                 ServerException.HandleException(ex, nameof(CreateNewLobby));
+                
                 return null;
             }
             catch (Exception ex)
             {
                 ServerException.HandleException(ex, nameof(CreateNewLobby));
+                
                 return null;
             }
         }
@@ -167,16 +179,19 @@ namespace TrucoServer.Helpers.Match
             catch (FormatException ex)
             {
                 ServerException.HandleException(ex, nameof(ResolveLobbyForJoin));
+               
                 return null;
             }
             catch (SqlException ex)
             {
                 ServerException.HandleException(ex, nameof(ResolveLobbyForJoin));
+                
                 return null;
             }
             catch (Exception ex)
             {
                 ServerException.HandleException(ex, nameof(ResolveLobbyForJoin));
+               
                 return null;
             }
         }
@@ -208,11 +223,13 @@ namespace TrucoServer.Helpers.Match
             catch (SqlException ex)
             {
                 ServerException.HandleException(ex, nameof(ResolveLobbyForLeave));
+                
                 return null;
             }
             catch (Exception ex)
             {
                 ServerException.HandleException(ex, nameof(ResolveLobbyForLeave));
+                
                 return null;
             }
         }
@@ -241,16 +258,19 @@ namespace TrucoServer.Helpers.Match
             catch (FormatException ex)
             {
                 ServerException.HandleException(ex, nameof(FindLobbyByMatchCode));
+                
                 return null;
             }
             catch (SqlException ex)
             {
                 ServerException.HandleException(ex, nameof(FindLobbyByMatchCode));
+                
                 return null;
             }
             catch (Exception ex)
             {
                 ServerException.HandleException(ex, nameof(FindLobbyByMatchCode));
+                
                 return null;
             }
         }
@@ -272,16 +292,19 @@ namespace TrucoServer.Helpers.Match
             catch (FormatException ex)
             {
                 ServerException.HandleException(ex, nameof(GetLobbyByMapping));
+                
                 return null;
             }
             catch (SqlException ex)
             {
                 ServerException.HandleException(ex, nameof(GetLobbyByMapping));
+                
                 return null;
             }
             catch (Exception ex)
             {
                 ServerException.HandleException(ex, nameof(GetLobbyByMapping));
+                
                 return null;
             }
         }
@@ -302,11 +325,13 @@ namespace TrucoServer.Helpers.Match
             catch (SqlException ex)
             {
                 ServerException.HandleException(ex, nameof(GetLobbyByOwner));
+               
                 return null;
             }
             catch (Exception ex)
             {
                 ServerException.HandleException(ex, nameof(GetLobbyByOwner));
+                
                 return null;
             }
         }
@@ -336,16 +361,19 @@ namespace TrucoServer.Helpers.Match
             catch (SqlException ex)
             {
                 ServerException.HandleException(ex, nameof(GetDatabasePlayers));
+                
                 return new List<PlayerInfo>();
             }
             catch (DataException ex)
             {
                 ServerException.HandleException(ex, nameof(GetDatabasePlayers));
+                
                 return new List<PlayerInfo>();
             }
             catch (Exception ex)
             {
                 ServerException.HandleException(ex, nameof(GetDatabasePlayers));
+               
                 return new List<PlayerInfo>();
             }
         }
@@ -359,11 +387,13 @@ namespace TrucoServer.Helpers.Match
             catch (SqlException ex)
             {
                 ServerException.HandleException(ex, nameof(GetLobbyOwnerName));
+                
                 return null;
             }
             catch (Exception ex)
             {
                 ServerException.HandleException(ex, nameof(GetLobbyOwnerName));
+                
                 return null;
             }
         }
@@ -373,6 +403,7 @@ namespace TrucoServer.Helpers.Match
             try
             {
                 var lobby = context.Lobby.FirstOrDefault(l => l.lobbyID == lobbyId);
+                
                 if (lobby == null)
                 {
                     return false;
@@ -383,21 +414,25 @@ namespace TrucoServer.Helpers.Match
                     lobby.status = STATUS_CLOSED;
                     context.SaveChanges();
                 }
+               
                 return true;
             }
             catch (DbUpdateException ex)
             {
                 ServerException.HandleException(ex, nameof(CloseLobbyById));
+                
                 return false;
             }
             catch (SqlException ex)
             {
                 ServerException.HandleException(ex, nameof(CloseLobbyById));
+                
                 return false;
             }
             catch (Exception ex)
             {
                 ServerException.HandleException(ex, nameof(CloseLobbyById));
+                
                 return false;
             }
         }
@@ -422,26 +457,31 @@ namespace TrucoServer.Helpers.Match
                 }
 
                 context.SaveChanges();
+                
                 return true;
             }
             catch (FormatException ex)
             {
                 ServerException.HandleException(ex, nameof(ExpireInvitationByMatchCode));
+                
                 return false;
             }
             catch (DbUpdateException ex)
             {
                 ServerException.HandleException(ex, nameof(ExpireInvitationByMatchCode));
+                
                 return false;
             }
             catch (SqlException ex)
             {
                 ServerException.HandleException(ex, nameof(ExpireInvitationByMatchCode));
+                
                 return false;
             }
             catch (Exception ex)
             {
                 ServerException.HandleException(ex, nameof(ExpireInvitationByMatchCode));
+               
                 return false;
             }
         }
@@ -465,16 +505,19 @@ namespace TrucoServer.Helpers.Match
             catch (DbUpdateException ex)
             {
                 ServerException.HandleException(ex, nameof(RemoveLobbyMembersById));
+               
                 return false;
             }
             catch (SqlException ex)
             {
                 ServerException.HandleException(ex, nameof(RemoveLobbyMembersById));
+                
                 return false;
             }
             catch (Exception ex)
             {
                 ServerException.HandleException(ex, nameof(RemoveLobbyMembersById));
+               
                 return false;
             }
         }
@@ -489,7 +532,11 @@ namespace TrucoServer.Helpers.Match
             int t1 = context.LobbyMember.Count(lm => lm.lobbyID == lobbyId && lm.team == TEAM_1);
             int t2 = context.LobbyMember.Count(lm => lm.lobbyID == lobbyId && lm.team == TEAM_2);
 
-            return new TeamCountsResult { Team1Count = t1, Team2Count = t2 };
+            return new TeamCountsResult 
+            {
+                Team1Count = t1, 
+                Team2Count = t2
+            };
         }
 
         public void AddMember(LobbyMemberDetails memberDetails)

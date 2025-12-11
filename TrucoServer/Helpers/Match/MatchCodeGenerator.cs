@@ -34,21 +34,25 @@ namespace TrucoServer.Helpers.Match
             catch (CryptographicException ex)
             {
                 Utilities.ServerException.HandleException(ex, nameof(GenerateMatchCode));
+                
                 return string.Empty;
             }
             catch (DivideByZeroException ex)
             {
                 Utilities.ServerException.HandleException(ex, nameof(GenerateMatchCode));
+              
                 return string.Empty;
             }
             catch (IndexOutOfRangeException ex)
             {
                 Utilities.ServerException.HandleException(ex, nameof(GenerateMatchCode));
+             
                 return string.Empty;
             }
             catch (Exception ex)
             {
                 Utilities.ServerException.HandleException(ex, nameof(GenerateMatchCode));
+              
                 return string.Empty;
             }
         }

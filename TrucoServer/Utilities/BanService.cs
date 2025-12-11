@@ -118,26 +118,31 @@ namespace TrucoServer.Helpers.Security
             catch (SqlException ex)
             { 
                 ServerException.HandleException(ex, nameof(IsUserBanned));
+               
                 return false;
             }
             catch (TimeoutException ex)
             {
                 ServerException.HandleException(ex, nameof(IsUserBanned));
+               
                 return false;
             }
             catch (DataException ex)
             {
                 ServerException.HandleException(ex, nameof(IsUserBanned));
+               
                 return false;
             }
             catch (InvalidOperationException ex)
             {
                 ServerException.HandleException(ex, nameof(IsUserBanned));
+               
                 return false;
             }
             catch (Exception ex)
             {
                 ServerException.HandleException(ex, nameof(IsUserBanned));
+               
                 return false;
             }
         }

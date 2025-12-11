@@ -15,6 +15,8 @@ namespace TrucoServer.Helpers.Ranking
         private const string ERROR_CODE_DB_ERROR_HISTORY = "ServerDBErrorHistory";
         private const string ERROR_CODE_GENERAL_ERROR = "ServerError";
         private const string ERROR_CODE_TIMEOUT_ERROR = "ServerTimeout";
+        private const string MATCH_FINISHED = "Finished";
+        private const int HISTORY_MATCH_LIMIT = 5;
 
         public List<MatchScore> GetLastMatches(string username)
         {
@@ -36,10 +38,13 @@ namespace TrucoServer.Helpers.Ranking
 
                     return context.MatchPlayer
                         .Where(mp => mp.userID == user.userID)
-                        .Select(mp => new { MatchPlayer = mp, Match = mp.Match })
-                        .Where(join => join.Match.status == "Finished" && join.Match.endedAt.HasValue)
+                        .Select(mp => new 
+                        {
+                            MatchPlayer = mp, Match = mp.Match 
+                        })
+                        .Where(join => join.Match.status == MATCH_FINISHED && join.Match.endedAt.HasValue)
                         .OrderByDescending(join => join.Match.endedAt)
-                        .Take(5)
+                        .Take(HISTORY_MATCH_LIMIT)
                         .Select(join => new MatchScore
                         {
                             MatchID = join.Match.matchID.ToString(),

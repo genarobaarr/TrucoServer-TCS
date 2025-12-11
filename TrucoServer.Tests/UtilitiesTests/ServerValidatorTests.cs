@@ -30,7 +30,7 @@ namespace TrucoServer.Tests.UtilitiesTests
         [TestMethod]
         public void TestIsUsernameValidReturnsFalseForEmptyString()
         {
-            string empty = "";
+            string empty = string.Empty;
             bool result = ServerValidator.IsUsernameValid(empty);
             Assert.IsFalse(result);
         }

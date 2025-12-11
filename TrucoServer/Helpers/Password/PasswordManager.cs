@@ -50,26 +50,31 @@ namespace TrucoServer.Helpers.Password
             catch (DbUpdateException ex)
             {
                 ServerException.HandleException(ex, context.CallingMethod);
+               
                 return false;
             }
             catch (SqlException ex)
             {
                 ServerException.HandleException(ex, context.CallingMethod);
+                
                 return false;
             }
             catch (SmtpException ex)
             {
                 ServerException.HandleException(ex, context.CallingMethod);
+              
                 return false;
             }
             catch (InvalidOperationException ex)
             {
                 ServerException.HandleException(ex, context.CallingMethod);
+               
                 return false;
             }
             catch (Exception ex)
             {
                 ServerException.HandleException(ex, context.CallingMethod);
+               
                 return false;
             }
         }

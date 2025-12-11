@@ -86,6 +86,7 @@ namespace TrucoServer.GameLogic
                 }
 
                 var match = context.Match.Find(matchId);
+               
                 if (match == null) 
                 {
                     return;
@@ -100,6 +101,7 @@ namespace TrucoServer.GameLogic
                 {
                     UpdateMatchPlayerResult(mp, outcome);
 
+                    userStatsService.UpdateUserStats(mp.userID, mp.isWinner);
                     userStatsService.UpdateUserStats(mp.userID, mp.isWinner);
                 }
 

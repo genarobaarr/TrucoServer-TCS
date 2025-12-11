@@ -12,7 +12,7 @@ namespace HostServer
             {
                 host.Open();
 
-                Console.WriteLine("Servidor iniciado en net.tcp://localhost:8091/TrucoServiceBase  http://localhost:8080/TrucoServiceBase");
+                Console.WriteLine("Servidor iniciado en net.tcp://172.20.10.3:8091/TrucoServiceBase  http://172.20.10.3:8080/TrucoServiceBase");
                 Console.ReadLine();
             }
         }

@@ -15,6 +15,7 @@ namespace TrucoServer.Helpers.Ranking
         public void UpdateUserStats(int userId, bool isWinner)
         {
             var user = context.User.FirstOrDefault(u => u.userID == userId);
+            
             if (user != null)
             {
                 if (isWinner)

@@ -16,6 +16,7 @@ namespace TrucoServer.Helpers.Match
         private const string ROLE_PLAYER = "Player";
         private const string STATUS_CLOSED = "Closed";
         private const string STATUS_PUBLIC = "Public";
+        private const int MAX_PLAYERS_1V1 = 2;
 
         private readonly ILobbyCoordinator coordinator;
         private readonly ILobbyRepository lobbyRepository;
@@ -47,6 +48,7 @@ namespace TrucoServer.Helpers.Match
                     MatchCode = matchCode,
                     PlayerUsername = player
                 };
+              
                 return TryJoinAsGuest(guestOptions);
             }
             else
@@ -95,6 +97,7 @@ namespace TrucoServer.Helpers.Match
             }
 
             AddPlayerToLobby(lobby, playerUser);
+           
             return true;
         }
 
@@ -123,21 +126,25 @@ namespace TrucoServer.Helpers.Match
             catch (SqlException ex)
             {
                 ServerException.HandleException(ex, nameof(ValidateJoinConditions));
+                
                 return false;
             }
             catch (DataException ex)
             {
                 ServerException.HandleException(ex, nameof(ValidateJoinConditions));
+                
                 return false;
             }
             catch (InvalidOperationException ex)
             {
                 ServerException.HandleException(ex, nameof(ValidateJoinConditions));
+                
                 return false;
             }
             catch (Exception ex)
             {
                 ServerException.HandleException(ex, nameof(ValidateJoinConditions));
+                
                 return false;
             }
         }
@@ -207,7 +214,7 @@ namespace TrucoServer.Helpers.Match
                 throw new ArgumentNullException(nameof(options));
             }
 
-            if (options.MaxPlayers == 2)
+            if (options.MaxPlayers == MAX_PLAYERS_1V1)
             {
                 if (options.Team1Count == 0 && options.Team2Count == 0)
                 {
@@ -231,9 +238,11 @@ namespace TrucoServer.Helpers.Match
                 if (guestInfo != null)
                 {
                     string newTeam = (guestInfo.Team == TEAM_1) ? TEAM_2 : TEAM_1;
+                    
                     if (CanJoinTeam(matchCode, newTeam))
                     {
                         guestInfo.Team = newTeam;
+                        
                         return true;
                     }
                 }
@@ -246,7 +255,7 @@ namespace TrucoServer.Helpers.Match
         {
             var lobby = new LobbyRepository(context).FindLobbyByMatchCode(matchCode, true);
                 
-            if (lobby == null || lobby.maxPlayers == 2)
+            if (lobby == null || lobby.maxPlayers == MAX_PLAYERS_1V1)
             {
                 return false;
             }
@@ -271,6 +280,7 @@ namespace TrucoServer.Helpers.Match
             {
                 member.team = newTeam;
                 context.SaveChanges();
+                
                 return true;
             }
 
@@ -291,10 +301,12 @@ namespace TrucoServer.Helpers.Match
 
             if (coordinator.TryGetCallbacksSnapshot(matchCode, out var snapshot))
             {
-                memCount = snapshot.Select(cb => coordinator.GetPlayerInfoFromCallback(cb)).Count(info => info != null && info.Username.StartsWith(GUEST_PREFIX) && info.Team == targetTeam);
+                memCount = snapshot.Select(cb => 
+                    coordinator.GetPlayerInfoFromCallback(cb)).Count(info => info != null && 
+                    info.Username.StartsWith(GUEST_PREFIX) && info.Team == targetTeam);
             }
 
-            return (dbCount + memCount) < (lobby.maxPlayers / 2);
+            return (dbCount + memCount) < (lobby.maxPlayers / MAX_PLAYERS_1V1);
         }
     }
 }
