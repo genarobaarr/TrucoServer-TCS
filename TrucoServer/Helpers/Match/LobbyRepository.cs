@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Data.Entity.Infrastructure;
 using System.Data.SqlClient;
+using System.Globalization;
 using System.Linq;
 using TrucoServer.Data.DTOs;
 using TrucoServer.Utilities;
@@ -22,8 +23,9 @@ namespace TrucoServer.Helpers.Match
         private const string MATCH_2V2 = "2v2";
         private const string ROLE_OWNER = "Owner";
         private const string DEFAULT_AVATAR_ID = "avatar_aaa_default";
+        private const string INVALID_OPERATION_LOBBY_OR_HOST_NULL = "Lobby or Host cannot be null";
+        private const string INVALID_OPERATION_HOST_NULL = "Host cannot be null";
         private const int MAX_PLAYERS_1V1 = 2;
-        private const int MAX_PLAYERS_2V2 = 4;
         private const int VERSION_ID_IS_ZERO = 0;
 
         private readonly baseDatosTrucoEntities context;
@@ -77,7 +79,7 @@ namespace TrucoServer.Helpers.Match
                 
                 if (options.Host == null)
                 {
-                    throw new InvalidOperationException("Host cannot be null");
+                    throw new InvalidOperationException(INVALID_OPERATION_HOST_NULL);
                 }
 
                 var newLobby = new Lobby
@@ -126,7 +128,7 @@ namespace TrucoServer.Helpers.Match
             {
                 if (lobby == null || host == null)
                 {
-                    throw new InvalidOperationException("Lobby or Host is null");
+                    throw new InvalidOperationException(INVALID_OPERATION_LOBBY_OR_HOST_NULL);
                 }
 
                 context.LobbyMember.Add(new LobbyMember

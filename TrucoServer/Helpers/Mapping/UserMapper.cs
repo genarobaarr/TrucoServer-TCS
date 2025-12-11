@@ -12,6 +12,7 @@ namespace TrucoServer.Helpers.Mapping
     {
         private const string DEFAULT_AVATAR_ID = "avatar_aaa_default";
         private const string DEFAULT_LANG_CODE = "es-MX";
+        private const string STATUS_FINISHED = "Finished";
 
         public UserProfileData MapUserToProfileData(User user)
         {
@@ -48,7 +49,7 @@ namespace TrucoServer.Helpers.Mapping
                     MatchPlayer = mp,
                     Match = mp.Match 
                 })
-                .Where(join => join.Match.status == "Finished" && join.Match.endedAt.HasValue)
+                .Where(join => join.Match.status == STATUS_FINISHED && join.Match.endedAt.HasValue)
                 .OrderByDescending(join => join.Match.endedAt)
                 .Take(5)
                 .Select(join => new MatchScore

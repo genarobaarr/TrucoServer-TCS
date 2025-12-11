@@ -16,6 +16,8 @@ namespace TrucoServer.Helpers.Match
         private const string ROLE_PLAYER = "Player";
         private const string STATUS_CLOSED = "Closed";
         private const string STATUS_PUBLIC = "Public";
+        private const string TEXT_INVALID_OPERATION_LOBBY_USER_NULL = "Lobby or User cannot be null";
+        private const string TEXT_INVALID_OPERATION_LOBBY_NULL = "Lobby cannot be null";
         private const int MAX_PLAYERS_1V1 = 2;
 
         private readonly ILobbyCoordinator coordinator;
@@ -66,7 +68,7 @@ namespace TrucoServer.Helpers.Match
 
             if (options.Lobby == null)
             {
-                throw new InvalidOperationException("Lobby cannot be null");
+                throw new InvalidOperationException(TEXT_INVALID_OPERATION_LOBBY_NULL);
             }
 
             if (!options.Lobby.status.Equals(STATUS_PUBLIC, StringComparison.OrdinalIgnoreCase))
@@ -153,7 +155,7 @@ namespace TrucoServer.Helpers.Match
         {
             if (lobby == null || playerUser == null)
             {
-                throw new InvalidOperationException("Lobby or User cannot be null");
+                throw new InvalidOperationException(TEXT_INVALID_OPERATION_LOBBY_USER_NULL);
             }
 
             try

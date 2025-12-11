@@ -15,7 +15,6 @@ using TrucoServer.Helpers.Match;
 using TrucoServer.Helpers.Profanity;
 using TrucoServer.Helpers.Ranking;
 using TrucoServer.Helpers.Security;
-using TrucoServer.Helpers.Sessions;
 using TrucoServer.Langs;
 using TrucoServer.Utilities;
 
@@ -35,6 +34,9 @@ namespace TrucoServer.Services
         private const string STATUS_PENDING = "Pending";
         private const string STATUS_EXPIRED = "Expired";
         private const string GUEST_PREFIX = "Guest_";
+        private const string BAN_REASON_TOXICITY = "Toxicity in chat (5 ofenses)";
+        private const string UNKNOWKN_MATCH_CODE = "(unknown)";
+        private const int MINUTES_INVITATION_VALIDITY = 30;
         private const int MILLISECONDS_DELAY_JOIN = 100;
 
         private readonly IGameRegistry gameRegistry;
@@ -474,7 +476,7 @@ namespace TrucoServer.Services
                     int currentPlayers = context.LobbyMember.Count(lm => lm.lobbyID == lobby.lobbyID);
                     var owner = context.User.FirstOrDefault(u => u.userID == lobby.ownerID);
 
-                    string matchCode = lobbyCoordinator.GetMatchCodeFromLobbyId(lobby.lobbyID) ?? "(unknown)";
+                    string matchCode = lobbyCoordinator.GetMatchCodeFromLobbyId(lobby.lobbyID) ?? UNKNOWKN_MATCH_CODE;
 
                     result.Add(new PublicLobbyInfo
                     {
@@ -925,13 +927,13 @@ namespace TrucoServer.Services
                     receiverEmail = friendEmail,
                     code = numericCode,
                     status = STATUS_PENDING,
-                    expiresAt = DateTime.Now.AddMinutes(30)
+                    expiresAt = DateTime.Now.AddMinutes(MINUTES_INVITATION_VALIDITY)
                 };
                 context.Invitation.Add(invitation);
             }
             else
             {
-                existingInv.expiresAt = DateTime.Now.AddMinutes(30);
+                existingInv.expiresAt = DateTime.Now.AddMinutes(MINUTES_INVITATION_VALIDITY);
             }
 
             context.SaveChanges();
@@ -941,7 +943,7 @@ namespace TrucoServer.Services
         {
             try
             {
-                banService.BanUser(username, "Toxicity in chat (5 ofenses)");
+                banService.BanUser(username, BAN_REASON_TOXICITY);
 
                 if (lobbyCoordinator.TryGetActiveCallbackForPlayer(username, out var bannedUserCallback))
                 {

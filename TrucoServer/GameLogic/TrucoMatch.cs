@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Data.SqlClient;
 using System.Linq;
-using System.Runtime.Remoting.Contexts;
 using System.ServiceModel;
 using TrucoServer.Contracts;
 using TrucoServer.Data.DTOs;
@@ -46,27 +45,33 @@ namespace TrucoServer.GameLogic
     {
         private const int MAX_SCORE = 30;
         private const int MALAS_SCORE = 15;
-        private const int CARDS_IN_HAND = 3;
         private const int MAX_ROUNDS = 3;
+
         private const int POINTS_TRUCO = 2;
         private const int POINTS_RETRUCO = 3;
         private const int POINTS_ENVIDO = 2;
         private const int POINTS_FLOR = 3;
-        private const int MIN_POINTS_REQUIRED = 1;
         private const int POINTS_REALENVIDO = 3;
         private const int POINTS_CONTRAFLOR = 6;
         private const int POINTS_VALE4 = 4;
+        private const int MIN_POINTS_REQUIRED = 1;
+        private const int NO_FLOR_SCORE = -1;
+
         private const int WINS_TO_WIN_HAND = 2;
         private const int ROUND_THREE_INDEX = 2;
+        private const int CARDS_IN_HAND = 3;
         private const string TEAM_1 = "Team 1";
         private const string TEAM_2 = "Team 2";
         private const string GUEST_PREFIX = "Guest_";
+        private const string OPONENT_DEFAULT_NAME = "Oponent";
         private const string DRAW_STATUS = "Draw";
         private const string NO_QUIERO_STATUS = "NoQuiero";
         private const string QUIERO_STATUS = "Quiero";
         private const string AL_MAZO = "Me voy al mazo";
         private const string FLOR_BET = "Flor";
         private const string CONTRA_FLOR_BET = "ContraFlor";
+        private const string TEXT_ADVANCE_TURN_NO_PLAYERS = "Attempt to advance turn without players";
+        private const string TEXT_ADVANCE_TURN_NO_CARDS_ON_TABLE = "Attempt to advance turn with no cards on table";
 
         private const int CURRENT_ROUND = 0;
         private const int CURRENT_ENVIDO_POINT = 0;
@@ -290,14 +295,14 @@ namespace TrucoServer.GameLogic
         {
             if (Players == null || Players.Count == 0)
             {
-                ServerException.HandleException(new InvalidOperationException("Attempt to advance turn without players"), nameof(AdvanceTurn));
+                ServerException.HandleException(new InvalidOperationException(TEXT_ADVANCE_TURN_NO_PLAYERS), nameof(AdvanceTurn));
               
                 return;
             }
 
             if (cardsOnTable == null)
             {
-                ServerException.HandleException(new InvalidOperationException("The list of cards on the table is null"), nameof(AdvanceTurn));
+                ServerException.HandleException(new InvalidOperationException(TEXT_ADVANCE_TURN_NO_CARDS_ON_TABLE), nameof(AdvanceTurn));
               
                 return;
             }
@@ -595,7 +600,7 @@ namespace TrucoServer.GameLogic
             try
             {
                 PlayerInformation envidoWinner = null;
-                int highestScore = -1;
+                int highestScore = NO_FLOR_SCORE;
 
                 for (int i = 0; i < Players.Count; i++)
                 {
@@ -668,7 +673,7 @@ namespace TrucoServer.GameLogic
                     return false;
                 }
 
-                bool opponentHasFlor = playerFlorScores[opponent.PlayerID] > -1;
+                bool opponentHasFlor = playerFlorScores[opponent.PlayerID] > NO_FLOR_SCORE;
 
                 if (opponentHasFlor)
                 {
@@ -754,7 +759,7 @@ namespace TrucoServer.GameLogic
             try
             {
                 PlayerInformation florWinner = null;
-                int highestScore = -1;
+                int highestScore = NO_FLOR_SCORE;
 
                 for (int i = 0; i < Players.Count; i++)
                 {
@@ -857,10 +862,8 @@ namespace TrucoServer.GameLogic
                 return false;
             }
 
-            if (playerFlorScores[playerID] == -1)
+            if (playerFlorScores[playerID] == NO_FLOR_SCORE)
             {
-                LogManager.LogWarn($"[GAME] Player {caller.Username} tried to call Flor without having it.", nameof(CallFlor));
-               
                 return false;
             }
 
@@ -1220,7 +1223,7 @@ namespace TrucoServer.GameLogic
                 p => p.PlayerID,
                 p => TrucoRules.HasFlor(playerHands[p.PlayerID])
                     ? TrucoRules.CalculateFlorScore(playerHands[p.PlayerID])
-                    : -1
+                    : NO_FLOR_SCORE
             );
         }
 
@@ -1721,7 +1724,7 @@ namespace TrucoServer.GameLogic
             int loserScore = (winnerTeam == TEAM_1) ? Team2Score : Team1Score;
 
             var winnerPlayer = Players.FirstOrDefault(p => p.Team == winnerTeam);
-            string matchWinnerName = winnerPlayer != null ? winnerPlayer.Username : "Oponent";
+            string matchWinnerName = winnerPlayer != null ? winnerPlayer.Username : OPONENT_DEFAULT_NAME;
 
             var outcome = new MatchOutcome
             {

@@ -7,6 +7,7 @@ namespace TrucoServer.Helpers.Friends
 {
     public class FriendRepository : IFriendRepository
     {
+        private const string TEXT_INVALID_OPERATION_REQUEST_NULL = "Request cannot be null";
         private readonly baseDatosTrucoEntities context;
 
         public FriendRepository(baseDatosTrucoEntities context)
@@ -69,7 +70,7 @@ namespace TrucoServer.Helpers.Friends
 
             if (options.Request == null)
             {
-                throw new InvalidOperationException("Request cannot be null");
+                throw new InvalidOperationExceptionTEXT_INVALID_OPERATION_REQUEST_NULL);
             }
 
             options.Request.status = options.StatusAccepted;

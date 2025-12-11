@@ -10,6 +10,8 @@ namespace TrucoServer.Helpers.Email
 {
     public class EmailSender : IEmailSender
     {
+        private const string TEXT_INVALID_OPERATION_USER_NULL = "User cannot be null";
+        private const string TEXT_INVALID_OPERATION_FRIEND_EMAIL_DATA_NULL = "Friend email data cannot be null";
         public void SendEmail(EmailFormatOptions emailOptions)
         {
             try
@@ -82,7 +84,7 @@ namespace TrucoServer.Helpers.Email
                 {
                     if (user == null)
                     {
-                        throw new InvalidOperationException("User cannot be null");
+                        throw new InvalidOperationException(TEXT_INVALID_OPERATION_USER_NULL);
                     }
 
                     var emailOptions = new EmailFormatOptions
@@ -118,7 +120,7 @@ namespace TrucoServer.Helpers.Email
                 {
                     if (friendEmailData?.FriendUser == null || friendEmailData?.SenderUser == null)
                     {
-                        throw new InvalidOperationException("Friend email data cannot be null");
+                        throw new InvalidOperationException(TEXT_INVALID_OPERATION_FRIEND_EMAIL_DATA_NULL);
                     }
 
                     var emailOptions = new EmailFormatOptions

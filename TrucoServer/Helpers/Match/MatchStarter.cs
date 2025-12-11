@@ -17,6 +17,8 @@ namespace TrucoServer.Helpers.Match
     {
         private const string GUEST_PREFIX = "Guest_";
         private const string DEFAULT_AVATAR_NAME = "avatar_aaa_default";
+        private const string INVALID_OPERATION_COORDINATOR_DEP_NULL = "Coordinator dependency cannot be null";
+        private const string INVALID_OPERATION_CONTEXT_DEP_NULL = "Context dependency cannot be null";
         private const int MILLISECONDS_DELAY = 500;
 
         private readonly MatchStarterDependencies dependencies;
@@ -30,12 +32,12 @@ namespace TrucoServer.Helpers.Match
 
             if (dependencies.Context == null)
             {
-                throw new InvalidOperationException("Context dependency cannot be null");
+                throw new InvalidOperationException(INVALID_OPERATION_CONTEXT_DEP_NULL);
             }
 
             if (dependencies.Coordinator == null)
             {
-                throw new InvalidOperationException("Coordinator dependency cannot be null");
+                throw new InvalidOperationException(INVALID_OPERATION_COORDINATOR_DEP_NULL);
             }
 
             this.dependencies = dependencies;

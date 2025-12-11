@@ -7,13 +7,15 @@ namespace TrucoServer.GameLogic
 {
     public class DefaultDeckShuffler : IDeckShuffler
     {
+        private const string TEXT_ARGUMENT_EXCEPTION_LIST_NULL = "The provided list cannot be null.";
+
         public void Shuffle<T>(IList<T> list)
         {
             try
             {
                 if (list == null)
                 {
-                    throw new ArgumentNullException(nameof(list), "The list to be shuffled cannot be null.");
+                    throw new ArgumentNullException(nameof(list), TEXT_ARGUMENT_EXCEPTION_LIST_NULL);
                 }
 
                 using (var rng = new RNGCryptoServiceProvider())

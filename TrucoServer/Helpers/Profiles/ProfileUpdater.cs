@@ -11,6 +11,7 @@ namespace TrucoServer.Helpers.Profiles
     {
         private const string DEFAULT_LANGUAGE = "es-MX";
         private const string DEAULT_AVATAR_ID = "avatar_aaa_default";
+        private const string INVALID_OPERATION_PROFILE_DATA_NULL = "Profile data cannot be null";
 
         private readonly baseDatosTrucoEntities context;
 
@@ -82,7 +83,7 @@ namespace TrucoServer.Helpers.Profiles
 
             if (options.ProfileData == null)
             {
-                throw new InvalidOperationException("Profile data cannot be null");
+                throw new InvalidOperationException(INVALID_OPERATION_PROFILE_DATA_NULL);
             }
 
             EnsureUserProfileExists(user, options);

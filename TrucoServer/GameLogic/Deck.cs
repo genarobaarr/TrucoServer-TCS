@@ -9,6 +9,8 @@ namespace TrucoServer.GameLogic
     {
         private const int HAND_SIZE = 3;
         private const int FIRST_CARD_INDEX = 0;
+        private const string TEXT_INVALID_OPERATION_DEAL_HAND = "There are not enough cards to deal a hand.";
+        private const string TEXT_INVALID_OPERATION_DRAW_CARD = "The deck is empty.";
 
         private readonly List<TrucoCard> cards;
         private readonly IDeckShuffler shuffler;
@@ -78,7 +80,7 @@ namespace TrucoServer.GameLogic
             {
                 if (cards.Count < HAND_SIZE)
                 {
-                    throw new InvalidOperationException("There are not enough cards to deal a hand.");
+                    throw new InvalidOperationException(TEXT_INVALID_OPERATION_DEAL_HAND);
                 }
                 
                 var hand = cards.Take(HAND_SIZE).ToList();
@@ -112,7 +114,7 @@ namespace TrucoServer.GameLogic
             {
                 if (cards.Count == 0)
                 {
-                    throw new InvalidOperationException("The deck is empty.");
+                    throw new InvalidOperationException(TEXT_INVALID_OPERATION_DRAW_CARD);
                 }
 
                 var card = cards[FIRST_CARD_INDEX];
