@@ -225,5 +225,10 @@ namespace TrucoServer.Services
         {
             return matchService.GetBannedWords();
         }
+
+        public void ReportActivity(string matchCode, string currentTurnPlayerName)
+        {
+            matchService.ReportActivity(matchCode, currentTurnPlayerName);
+        }
     }
 }

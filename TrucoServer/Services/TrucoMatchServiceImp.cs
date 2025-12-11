@@ -7,7 +7,6 @@ using System.Data.SqlClient;
 using System.Linq;
 using System.ServiceModel;
 using System.Threading.Tasks;
-using System.Web.UI.WebControls.WebParts;
 using TrucoServer.Contracts;
 using TrucoServer.Data.DTOs;
 using TrucoServer.GameLogic;
@@ -16,6 +15,7 @@ using TrucoServer.Helpers.Match;
 using TrucoServer.Helpers.Profanity;
 using TrucoServer.Helpers.Ranking;
 using TrucoServer.Helpers.Security;
+using TrucoServer.Helpers.Sessions;
 using TrucoServer.Langs;
 using TrucoServer.Utilities;
 
@@ -35,7 +35,8 @@ namespace TrucoServer.Services
         private const string STATUS_PENDING = "Pending";
         private const string STATUS_EXPIRED = "Expired";
         private const string GUEST_PREFIX = "Guest_";
-        private const int MILLISECONDS_DELAY = 100;
+        private const int MILLISECONDS_DELAY_JOIN = 100;
+        private const int MILLISECONDS_DELAY_FOR_PING = 30000;
 
         private readonly IGameRegistry gameRegistry;
         private readonly IJoinService joinService;
@@ -46,6 +47,7 @@ namespace TrucoServer.Services
         private readonly IMatchStarter matchStarter;
         private readonly IProfanityServerService profanityService;
         private readonly BanService banService;
+        private readonly UserSessionManager userSessionManager;
 
         private readonly baseDatosTrucoEntities context;
 
@@ -95,6 +97,7 @@ namespace TrucoServer.Services
             this.emailSender = dependencies.EmailSender;
 
             this.banService = new BanService(context);
+            this.userSessionManager = new UserSessionManager();
             this.profanityService.LoadBannedWords();
         }
 
@@ -608,7 +611,7 @@ namespace TrucoServer.Services
 
                 if (isNew)
                 {
-                    Task.Delay(MILLISECONDS_DELAY).ContinueWith(_ =>
+                    Task.Delay(MILLISECONDS_DELAY_JOIN).ContinueWith(_ =>
                     {
                         try
                         {
@@ -1013,6 +1016,29 @@ namespace TrucoServer.Services
             catch (Exception ex)
             {
                 ServerException.HandleException(ex, callerName);
+            }
+        }
+
+        public void ReportActivity(string matchCode, string currentTurnPlayerName)
+        {
+            if (ServerValidator.IsUsernameValid(currentTurnPlayerName))
+            {
+                Task.Delay(MILLISECONDS_DELAY_FOR_PING).ContinueWith(_ => 
+                {
+                    try
+                    {
+                        lobbyCoordinator.TryGetActiveCallbackForPlayer(currentTurnPlayerName, out var callback);
+
+                        if (!userSessionManager.IsCallbackActive(callback))
+                        {
+                            LeaveMatchChat(matchCode, currentTurnPlayerName);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        ServerException.HandleException(ex, nameof(ReportActivity));
+                    }
+                });
             }
         }
     }
