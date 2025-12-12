@@ -11,7 +11,7 @@ using TrucoServer.Helpers.Ranking;
 namespace TrucoServer.Tests.HelpersTests.RankingTests
 {
     [TestClass]
-    public class UserStatsServiceTests
+    public class UserStatisticsServiceTests
     {
         private Mock<baseDatosTrucoEntities> mockContext;
         private UserStatisticsService service;
