@@ -29,7 +29,7 @@ namespace TrucoServer.GameLogic
             this.userStatsService = userStatsService ?? throw new ArgumentNullException(nameof(userStatsService));
         }
 
-        public int SaveMatchToDatabase(string matchCode, int lobbyId, List<PlayerInformation> players)
+        public int SaveMatchToDatabase(string matchCode, int lobbyId, List<PlayerInformationWithConstructor> players)
         {
             try
             {
@@ -155,7 +155,7 @@ namespace TrucoServer.GameLogic
             return match;
         }
 
-        private void AddPlayersToMatch(int matchId, List<PlayerInformation> players)
+        private void AddPlayersToMatch(int matchId, List<PlayerInformationWithConstructor> players)
         {
             foreach (var p in players)
             {

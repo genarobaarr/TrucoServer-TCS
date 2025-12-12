@@ -3,7 +3,7 @@
 namespace TrucoServer.Data.DTOs
 {
     [DataContract]
-    public class PublicLobbyInfo
+    public class PublicLobbyInformation
     {
         [DataMember] public string MatchName { get; set; }
 

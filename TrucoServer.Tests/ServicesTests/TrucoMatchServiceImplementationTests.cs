@@ -16,7 +16,7 @@ using TrucoServer.Services;
 namespace TrucoServer.Tests.ServicesTests
 {
     [TestClass]
-    public class TrucoMatchServiceImpTests
+    public class TrucoMatchServiceImplementationTests
     {
         private Mock<baseDatosTrucoEntities> mockContext;
         private Mock<IGameRegistry> mockRegistry;
@@ -33,7 +33,7 @@ namespace TrucoServer.Tests.ServicesTests
         private Mock<DbSet<LobbyMember>> mockMemberSet;
         private Mock<DbSet<Invitation>> mockInvitationSet;
 
-        private TrucoMatchServiceImp service;
+        private TrucoMatchServiceImplementation service;
 
         [TestInitialize]
         public void Setup()
@@ -70,7 +70,7 @@ namespace TrucoServer.Tests.ServicesTests
                 EmailSender = mockEmail.Object
             };
 
-            service = new TrucoMatchServiceImp(mockContext.Object, dependencies);
+            service = new TrucoMatchServiceImplementation(mockContext.Object, dependencies);
         }
 
         private const int MAX_PLAYERS = 2;
@@ -255,8 +255,8 @@ namespace TrucoServer.Tests.ServicesTests
             mockLobbySet.As<IQueryable<Lobby>>().Setup(m => m.GetEnumerator()).Returns(data.GetEnumerator());
 
             mockRepo.Setup(r => r.GetLobbyOwnerName(9)).Returns("Owner");
-            mockRepo.Setup(r => r.GetDatabasePlayers(lobby, "Owner")).Returns(new List<PlayerInfo>());
-            mockCoordinator.Setup(c => c.GetGuestPlayersFromMemory("CODE", "Owner")).Returns(new List<PlayerInfo>());
+            mockRepo.Setup(r => r.GetDatabasePlayers(lobby, "Owner")).Returns(new List<PlayerInformation>());
+            mockCoordinator.Setup(c => c.GetGuestPlayersFromMemory("CODE", "Owner")).Returns(new List<PlayerInformation>());
 
             var result = service.GetLobbyPlayers("CODE");
             Assert.AreEqual(0, result.Count);
@@ -272,7 +272,7 @@ namespace TrucoServer.Tests.ServicesTests
                         });
 
             service.StartMatch("CODE");
-            mockStarter.Verify(s => s.InitiateMatchSequence(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<List<PlayerInfo>>()), Times.Never);
+            mockStarter.Verify(s => s.InitiateMatchSequence(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<List<PlayerInformation>>()), Times.Never);
         }
 
         [TestMethod]

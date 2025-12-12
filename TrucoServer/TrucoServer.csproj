@@ -110,7 +110,7 @@
     <Compile Include="Contracts\ITrucoFriendService.cs" />
     <Compile Include="Contracts\ITrucoMatchService.cs" />
     <Compile Include="Contracts\ITrucoUserService.cs" />
-    <Compile Include="Data\DTOs\AttemptInfo.cs" />
+    <Compile Include="Data\DTOs\AttemptInformation.cs" />
     <Compile Include="Data\DTOs\CustomFault.cs" />
     <Compile Include="Ban.cs">
       <DependentUpon>baseDatosTruco.tt</DependentUpon>
@@ -176,9 +176,9 @@
     <Compile Include="Helpers\Sessions\UserSessionManager.cs" />
     <Compile Include="Helpers\Verification\IVerificationService.cs" />
     <Compile Include="Helpers\Verification\VerificationService.cs" />
-    <Compile Include="Services\TrucoFriendServiceImp.cs" />
-    <Compile Include="Services\TrucoMatchServiceImp.cs" />
-    <Compile Include="Services\TrucoUserServiceImp.cs" />
+    <Compile Include="Services\TrucoFriendServiceImplementation.cs" />
+    <Compile Include="Services\TrucoMatchServiceImplementation.cs" />
+    <Compile Include="Services\TrucoUserServiceImplementation.cs" />
     <Compile Include="Utilities\BanService.cs" />
     <Compile Include="Utilities\BruteForceProtector.cs" />
     <Compile Include="Utilities\ConfigurationFileWrapper.cs" />
@@ -215,11 +215,11 @@
     </Compile>
     <Compile Include="Data\DTOs\MatchScore.cs" />
     <Compile Include="Utilities\PasswordHasher.cs" />
-    <Compile Include="Data\DTOs\PlayerInfo.cs" />
     <Compile Include="Data\DTOs\PlayerInformation.cs" />
+    <Compile Include="Data\DTOs\PlayerInformationWithConstructor.cs" />
     <Compile Include="Data\DTOs\PlayerStats.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Data\DTOs\PublicLobbyInfo.cs" />
+    <Compile Include="Data\DTOs\PublicLobbyInformation.cs" />
     <Compile Include="Data\DTOs\SocialLinks.cs" />
     <Compile Include="GameLogic\TrucoCard.cs" />
     <Compile Include="GameLogic\TrucoGameManager.cs" />

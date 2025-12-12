@@ -8,12 +8,12 @@ namespace TrucoServer.Security
     {
         private const int MAX_ATTEMPTS = 5;
         private const int BAN_MINUTES = 5;
-        private static readonly ConcurrentDictionary<string, AttemptInfo> attempts
-            = new ConcurrentDictionary<string, AttemptInfo>();
+        private static readonly ConcurrentDictionary<string, AttemptInformation> attempts
+            = new ConcurrentDictionary<string, AttemptInformation>();
 
         public static bool IsBlocked(string identifier)
         {
-            if (attempts.TryGetValue(identifier, out AttemptInfo info) && info.BlockedUntil > DateTime.UtcNow)
+            if (attempts.TryGetValue(identifier, out AttemptInformation info) && info.BlockedUntil > DateTime.UtcNow)
             {
                 return true;
             }
@@ -23,7 +23,7 @@ namespace TrucoServer.Security
 
         public static void RegisterFailedAttempt(string identifier)
         {
-            var record = attempts.GetOrAdd(identifier, _ => new AttemptInfo());
+            var record = attempts.GetOrAdd(identifier, _ => new AttemptInformation());
             record.FailedCount++;
 
             if (record.FailedCount >= MAX_ATTEMPTS)

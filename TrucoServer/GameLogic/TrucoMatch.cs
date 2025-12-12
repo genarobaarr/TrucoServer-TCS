@@ -83,7 +83,7 @@ namespace TrucoServer.GameLogic
         public string MatchCode { get; private set; }
         public int DbMatchId { get; private set; }
         public int LobbyID { get; private set; }
-        public List<PlayerInformation> Players { get; private set; }
+        public List<PlayerInformationWithConstructor> Players { get; private set; }
         public Dictionary<int, ITrucoCallback> PlayerCallbacks { get; private set; }
         public int Team1Score { get; private set; }
         public int Team2Score { get; private set; }
@@ -210,7 +210,7 @@ namespace TrucoServer.GameLogic
         {
             try
             {
-                if (!IsValidPlay(playerID, cardFileName, out TrucoCard cardToPlay, out PlayerInformation player))
+                if (!IsValidPlay(playerID, cardFileName, out TrucoCard cardToPlay, out PlayerInformationWithConstructor player))
                 {
                     return false;
                 }
@@ -250,7 +250,7 @@ namespace TrucoServer.GameLogic
             }
         }
 
-        private bool IsValidPlay(int playerID, string cardFileName, out TrucoCard cardToPlay, out PlayerInformation player)
+        private bool IsValidPlay(int playerID, string cardFileName, out TrucoCard cardToPlay, out PlayerInformationWithConstructor player)
         {
             cardToPlay = null;
             player = null;
@@ -285,7 +285,7 @@ namespace TrucoServer.GameLogic
             cardsOnTable.Add(playerID, card);
         }
 
-        private void NotifyCardPlayed(PlayerInformation player, string cardFileName)
+        private void NotifyCardPlayed(PlayerInformationWithConstructor player, string cardFileName)
         {
             bool isLastCardOfRound = (playedCards[player.PlayerID].Count == CARDS_IN_HAND);
             NotifyAll(callback => callback.NotifyCardPlayed(player.Username, cardFileName, isLastCardOfRound));
@@ -599,7 +599,7 @@ namespace TrucoServer.GameLogic
         {
             try
             {
-                PlayerInformation envidoWinner = null;
+                PlayerInformationWithConstructor envidoWinner = null;
                 int highestScore = NO_FLOR_SCORE;
 
                 for (int i = 0; i < Players.Count; i++)
@@ -758,7 +758,7 @@ namespace TrucoServer.GameLogic
         {
             try
             {
-                PlayerInformation florWinner = null;
+                PlayerInformationWithConstructor florWinner = null;
                 int highestScore = NO_FLOR_SCORE;
 
                 for (int i = 0; i < Players.Count; i++)
@@ -837,7 +837,7 @@ namespace TrucoServer.GameLogic
             }
         }
 
-        private bool CanCallFlor(int playerID, out PlayerInformation caller)
+        private bool CanCallFlor(int playerID, out PlayerInformationWithConstructor caller)
         {
             caller = Players.FirstOrDefault(p => p.PlayerID == playerID);
 
@@ -870,7 +870,7 @@ namespace TrucoServer.GameLogic
             return true;
         }
 
-        private void ProcessFlorDirectWin(PlayerInformation caller)
+        private void ProcessFlorDirectWin(PlayerInformationWithConstructor caller)
         {
             AwardFlorPoints(caller.Team, POINTS_FLOR_DIRECT);
 
@@ -897,7 +897,7 @@ namespace TrucoServer.GameLogic
             NotifyFlorCallHelper(playerID, FLOR_BET, opponentID);
         }
 
-        private void HandleEnvidoNoQuiero(PlayerInformation caller)
+        private void HandleEnvidoNoQuiero(PlayerInformationWithConstructor caller)
         {
             int pointsToAward;
 
@@ -920,7 +920,7 @@ namespace TrucoServer.GameLogic
             ResetEnvidoState();
         }
 
-        private void HandleEnvidoQuiero(PlayerInformation caller)
+        private void HandleEnvidoQuiero(PlayerInformationWithConstructor caller)
         {
             NotifyResponse(QUIERO_STATUS, caller.Username, TrucoBetValue.ToString());
             ResolveEnvido();
@@ -1049,9 +1049,9 @@ namespace TrucoServer.GameLogic
                 ServerException.HandleException(ex, nameof(EndHandWithPoints));
             }
         }
-        private PlayerInformation DetermineRoundWinner()
+        private PlayerInformationWithConstructor DetermineRoundWinner()
         {
-            PlayerInformation roundWinner = null;
+            PlayerInformationWithConstructor roundWinner = null;
             TrucoCard highestCard = null;
 
             foreach (var entry in cardsOnTable)
@@ -1083,7 +1083,7 @@ namespace TrucoServer.GameLogic
             return roundWinner;
         }
 
-        private void ProcessRoundCompletion(PlayerInformation roundWinner)
+        private void ProcessRoundCompletion(PlayerInformationWithConstructor roundWinner)
         {
             string winnerTeam = (roundWinner == null) ? null : roundWinner.Team;
 
@@ -1419,7 +1419,7 @@ namespace TrucoServer.GameLogic
             }
         }
 
-        private PlayerInformation GetOpponentToRespond(PlayerInformation caller)
+        private PlayerInformationWithConstructor GetOpponentToRespond(PlayerInformationWithConstructor caller)
         {
             try
             {
@@ -1519,7 +1519,7 @@ namespace TrucoServer.GameLogic
             }
         }
 
-        private PlayerInformation GetCurrentTurnPlayer()
+        private PlayerInformationWithConstructor GetCurrentTurnPlayer()
         {
             try
             {

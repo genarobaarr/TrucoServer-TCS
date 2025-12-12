@@ -43,7 +43,7 @@ namespace TrucoServer.Helpers.Match
             this.dependencies = dependencies;
         }
 
-        public bool BuildGamePlayersAndCallbacks(List<PlayerInfo> playersList, out List<PlayerInformation> gamePlayers, out Dictionary<int, ITrucoCallback> gameCallbacks)
+        public bool BuildGamePlayersAndCallbacks(List<PlayerInformation> playersList, out List<PlayerInformationWithConstructor> gamePlayers, out Dictionary<int, ITrucoCallback> gameCallbacks)
         {
             var result = dependencies.ParticipantBuilder.BuildParticipants(playersList);
             gamePlayers = result.Players;
@@ -111,7 +111,7 @@ namespace TrucoServer.Helpers.Match
             return result;
         }
 
-        public void InitiateMatchSequence(string matchCode, int lobbyId, List<PlayerInfo> players)
+        public void InitiateMatchSequence(string matchCode, int lobbyId, List<PlayerInformation> players)
         {
             var participantsResult = dependencies.ParticipantBuilder.BuildParticipants(players);
 
@@ -176,15 +176,15 @@ namespace TrucoServer.Helpers.Match
             }
         }
 
-        public void NotifyMatchStart(string matchCode, List<PlayerInfo> players)
+        public void NotifyMatchStart(string matchCode, List<PlayerInformation> players)
         {
             try
             {
-                List<PlayerInfo> playersToNotify;
+                List<PlayerInformation> playersToNotify;
 
                 if (dependencies.GameRegistry.TryGetGame(matchCode, out var match))
                 {
-                    playersToNotify = match.Players.Select(p => new PlayerInfo
+                    playersToNotify = match.Players.Select(p => new PlayerInformation
                     {
                         Username = p.Username,
                         Team = p.Team,
@@ -254,7 +254,7 @@ namespace TrucoServer.Helpers.Match
             }
         }
 
-        private TrucoMatch CreateMatchInstance(GameInitializationOptions options, List<PlayerInformation> orderedPlayers)
+        private TrucoMatch CreateMatchInstance(GameInitializationOptions options, List<PlayerInformationWithConstructor> orderedPlayers)
         {
             var newDeck = new Deck(dependencies.Shuffler);
 

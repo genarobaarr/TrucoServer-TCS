@@ -338,13 +338,13 @@ namespace TrucoServer.Helpers.Match
             }
         }
 
-        public List<PlayerInfo> GetDatabasePlayers(Lobby lobby, string ownerUsername)
+        public List<PlayerInformation> GetDatabasePlayers(Lobby lobby, string ownerUsername)
         {
             try
             {
                 if (lobby == null)
                 {
-                    return new List<PlayerInfo>();
+                    return new List<PlayerInformation>();
                 }
 
                 return (from lm in context.LobbyMember
@@ -352,7 +352,7 @@ namespace TrucoServer.Helpers.Match
                         join up in context.UserProfile on u.userID equals up.userID into upj
                         from up in upj.DefaultIfEmpty()
                         where lm.lobbyID == lobby.lobbyID
-                        select new PlayerInfo
+                        select new PlayerInformation
                         {
                             Username = u.username,
                             AvatarId = up != null ? up.avatarID : DEFAULT_AVATAR_ID,
@@ -364,19 +364,19 @@ namespace TrucoServer.Helpers.Match
             {
                 ServerException.HandleException(ex, nameof(GetDatabasePlayers));
                 
-                return new List<PlayerInfo>();
+                return new List<PlayerInformation>();
             }
             catch (DataException ex)
             {
                 ServerException.HandleException(ex, nameof(GetDatabasePlayers));
                 
-                return new List<PlayerInfo>();
+                return new List<PlayerInformation>();
             }
             catch (Exception ex)
             {
                 ServerException.HandleException(ex, nameof(GetDatabasePlayers));
                
-                return new List<PlayerInfo>();
+                return new List<PlayerInformation>();
             }
         }
 

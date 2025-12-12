@@ -18,7 +18,7 @@ namespace TrucoServer.Helpers.Match
         private readonly ConcurrentDictionary<string, int> matchCodeToLobbyId = new ConcurrentDictionary<string, int>();
         private readonly ConcurrentDictionary<int, object> lobbyLocks = new ConcurrentDictionary<int, object>();
         private readonly ConcurrentDictionary<string, List<Contracts.ITrucoCallback>> matchCallbacks = new ConcurrentDictionary<string, List<Contracts.ITrucoCallback>>();
-        private static readonly ConcurrentDictionary<Contracts.ITrucoCallback, PlayerInfo> matchCallbackToPlayer = new ConcurrentDictionary<Contracts.ITrucoCallback, PlayerInfo>();
+        private static readonly ConcurrentDictionary<Contracts.ITrucoCallback, PlayerInformation> matchCallbackToPlayer = new ConcurrentDictionary<Contracts.ITrucoCallback, PlayerInformation>();
 
         private const string GUEST_PREFIX = "Guest_";
         private const string TEAM_1 = "Team 1";
@@ -56,13 +56,13 @@ namespace TrucoServer.Helpers.Match
             return matchCodeToLobbyId.FirstOrDefault(x => x.Value == lobbyId).Key;
         }
 
-        private PlayerInfo GetRegisteredPlayerInfo(int lobbyId, string username)
+        private PlayerInformation GetRegisteredPlayerInfo(int lobbyId, string username)
         {
             var user = context.User.FirstOrDefault(u => u.username == username);
 
             if (user == null)
             {
-                return new PlayerInfo 
+                return new PlayerInformation 
                 { 
                     Username = username, Team = TEAM_1
                 };
@@ -71,7 +71,7 @@ namespace TrucoServer.Helpers.Match
             var member = context.LobbyMember.FirstOrDefault(lm =>
                 lm.lobbyID == lobbyId && lm.userID == user.userID);
 
-            return new PlayerInfo
+            return new PlayerInformation
             {
                 Username = username,
                 Team = member?.team ?? TEAM_1
@@ -94,7 +94,7 @@ namespace TrucoServer.Helpers.Match
                     return false;             
                 }
 
-                PlayerInfo playerInfo = CreatePlayerInfoForChat(matchCode, player);
+                PlayerInformation playerInfo = CreatePlayerInfoForChat(matchCode, player);
 
                 if (existingCallbackIndex < 0)
                 {
@@ -118,11 +118,11 @@ namespace TrucoServer.Helpers.Match
             }
         }
 
-        public List<PlayerInfo> GetGuestPlayersFromMemory(string matchCode, string ownerUsername = null)
+        public List<PlayerInformation> GetGuestPlayersFromMemory(string matchCode, string ownerUsername = null)
         {
             if (!matchCallbacks.TryGetValue(matchCode, out var callbacks))
             {
-                return new List<PlayerInfo>();
+                return new List<PlayerInformation>();
             }
 
             lock (matchCallbacks)
@@ -146,7 +146,7 @@ namespace TrucoServer.Helpers.Match
                     })
                     .Select(cb => GetPlayerInfoFromCallback(cb))
                     .Where(info => info != null && info.Username.StartsWith(GUEST_PREFIX))
-                    .Select(g => new PlayerInfo
+                    .Select(g => new PlayerInformation
                     {
                         Username = g.Username,
                         AvatarId = DEFAULT_AVATAR_ID,
@@ -157,7 +157,7 @@ namespace TrucoServer.Helpers.Match
             }
         }
 
-        public PlayerInfo GetPlayerInfoFromCallback(Contracts.ITrucoCallback callback)
+        public PlayerInformation GetPlayerInfoFromCallback(Contracts.ITrucoCallback callback)
         {
             try
             {
@@ -166,7 +166,7 @@ namespace TrucoServer.Helpers.Match
                     return null;
                 }
 
-                if (matchCallbackToPlayer.TryGetValue(callback, out PlayerInfo info))
+                if (matchCallbackToPlayer.TryGetValue(callback, out PlayerInformation info))
                 {
                     return info;
                 }
@@ -193,7 +193,7 @@ namespace TrucoServer.Helpers.Match
             }
         }
 
-        public void AddMatchCallbackMapping(Contracts.ITrucoCallback callback, PlayerInfo info)
+        public void AddMatchCallbackMapping(Contracts.ITrucoCallback callback, PlayerInformation info)
         {
             matchCallbackToPlayer[callback] = info;
         }
@@ -539,7 +539,7 @@ namespace TrucoServer.Helpers.Match
             }
         }
 
-        private PlayerInfo CreatePlayerInfoForChat(string matchCode, string player)
+        private PlayerInformation CreatePlayerInfoForChat(string matchCode, string player)
         {
             try
             {
@@ -547,7 +547,7 @@ namespace TrucoServer.Helpers.Match
 
                 if (!lobbyId.HasValue)
                 {
-                    return new PlayerInfo 
+                    return new PlayerInformation 
                     { 
                         Username = player 
                     };
@@ -557,7 +557,7 @@ namespace TrucoServer.Helpers.Match
 
                 if (lobby == null)
                 {
-                    return new PlayerInfo 
+                    return new PlayerInformation 
                     { 
                         Username = player 
                     };
@@ -583,7 +583,7 @@ namespace TrucoServer.Helpers.Match
             {
                 ServerException.HandleException(ex, nameof(CreatePlayerInfoForChat));
                 
-                return new PlayerInfo 
+                return new PlayerInformation 
                 {
                     Username = player 
                 };
@@ -593,7 +593,7 @@ namespace TrucoServer.Helpers.Match
             {
                 ServerException.HandleException(ex, nameof(CreatePlayerInfoForChat));
                 
-                return new PlayerInfo 
+                return new PlayerInformation 
                 {
                     Username = player
                 };
@@ -602,7 +602,7 @@ namespace TrucoServer.Helpers.Match
             {
                 ServerException.HandleException(ex, nameof(CreatePlayerInfoForChat));
                 
-                return new PlayerInfo 
+                return new PlayerInformation 
                 {
                     Username = player 
                 };
@@ -611,7 +611,7 @@ namespace TrucoServer.Helpers.Match
             {
                 ServerException.HandleException(ex, nameof(CreatePlayerInfoForChat));
                 
-                return new PlayerInfo 
+                return new PlayerInformation 
                 { 
                     Username = player
                 };
@@ -620,14 +620,14 @@ namespace TrucoServer.Helpers.Match
             {
                 ServerException.HandleException(ex, nameof(CreatePlayerInfoForChat));
                 
-                return new PlayerInfo
+                return new PlayerInformation
                 { 
                     Username = player 
                 };
             }
         }
 
-        private PlayerInfo CreateGuestPlayerInfo(GuestCreationContext creationContext)
+        private PlayerInformation CreateGuestPlayerInfo(GuestCreationContext creationContext)
         {
             var lobby = creationContext.Lobby;
             var matchCode = creationContext.MatchCode;
@@ -688,7 +688,7 @@ namespace TrucoServer.Helpers.Match
                 ServerException.HandleException(ex, nameof(CreateGuestPlayerInfo));
             }
 
-            return new PlayerInfo
+            return new PlayerInformation
             {
                 Username = player,
                 Team = assignedTeam,

@@ -70,7 +70,7 @@ namespace TrucoServer.Contracts
         /// <returns>A list of player information objects.</returns>
         [OperationContract]
         [FaultContract(typeof(CustomFault))]
-        List<PlayerInfo> GetLobbyPlayers(string matchCode);
+        List<PlayerInformation> GetLobbyPlayers(string matchCode);
 
         /// <summary>
         /// Retrieves a list of available public lobbies.
@@ -78,7 +78,7 @@ namespace TrucoServer.Contracts
         /// <returns>A list containing information about public lobbies.</returns>
         [OperationContract]
         [FaultContract(typeof(CustomFault))]
-        List<PublicLobbyInfo> GetPublicLobbies();
+        List<PublicLobbyInformation> GetPublicLobbies();
 
         /// <summary>
         /// Allows a player to switch teams within the lobby.

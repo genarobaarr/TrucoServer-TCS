@@ -19,7 +19,7 @@ namespace TrucoServer.Helpers.Match
             this.coordinator = coordinator;
         }
 
-        public MatchPlayersResult BuildParticipants(List<PlayerInfo> playersList)
+        public MatchPlayersResult BuildParticipants(List<PlayerInformation> playersList)
         {
             var result = new MatchPlayersResult();
 
@@ -37,7 +37,7 @@ namespace TrucoServer.Helpers.Match
             return result;
         }
 
-        private void AddGuestPlayer(PlayerInfo info, MatchPlayersResult result)
+        private void AddGuestPlayer(PlayerInformation info, MatchPlayersResult result)
         {
             if (coordinator.TryGetActiveCallbackForPlayer(info.Username, out var callback))
             {
@@ -45,18 +45,18 @@ namespace TrucoServer.Helpers.Match
                 var registeredInfo = coordinator.GetPlayerInfoFromCallback(callback);
                 string team = registeredInfo?.Team ?? info.Team ?? TEAM_1;
 
-                result.Players.Add(new PlayerInformation(guestId, info.Username, team));
+                result.Players.Add(new PlayerInformationWithConstructor(guestId, info.Username, team));
                 result.Callbacks[guestId] = callback;
             }
         }
 
-        private void AddRegisteredPlayer(PlayerInfo info, MatchPlayersResult result)
+        private void AddRegisteredPlayer(PlayerInformation info, MatchPlayersResult result)
         {
             var user = context.User.FirstOrDefault(u => u.username == info.Username);
            
             if (user != null && coordinator.TryGetActiveCallbackForPlayer(info.Username, out var callback))
             {
-                result.Players.Add(new PlayerInformation(user.userID, user.username, info.Team));
+                result.Players.Add(new PlayerInformationWithConstructor(user.userID, user.username, info.Team));
                 result.Callbacks[user.userID] = callback;
             }
         }

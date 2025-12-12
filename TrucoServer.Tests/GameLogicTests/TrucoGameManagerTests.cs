@@ -60,7 +60,7 @@ namespace TrucoServer.Tests.GameLogic
         public void TestSaveMatchToDatabaseNewMatchReturnsNewId()
         {
             var manager = new TrucoGameManager(mockContext.Object, mockStats.Object);
-            var players = new List<PlayerInformation>();
+            var players = new List<PlayerInformationWithConstructor>();
             int lobbyId = LOBBY_ID;
             var matchList = new List<Match>();
             

@@ -26,7 +26,7 @@ namespace TrucoServer.Tests.HelpersTests.MatchTests
             registry = new GameRegistry();
             var mockGm = new Mock<IGameManager>();
             var mockDeck = new Mock<ITrucoDeck>();
-            var players = new List<PlayerInformation>();
+            var players = new List<PlayerInformationWithConstructor>();
             var callbacks = new Dictionary<int, ITrucoCallback>();
 
             var context = new TrucoMatchContext

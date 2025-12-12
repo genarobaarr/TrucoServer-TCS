@@ -21,7 +21,7 @@ using TrucoServer.Utilities;
 namespace TrucoServer.Services
 {
     [ServiceBehavior(InstanceContextMode = InstanceContextMode.Single, ConcurrencyMode = ConcurrencyMode.Multiple)]
-    public class TrucoMatchServiceImp : ITrucoMatchService
+    public class TrucoMatchServiceImplementation : ITrucoMatchService
     {
         private const string ERROR_CODE_DB_ERROR_JOIN = "ServerDBErrorJoin";
         private const string ERROR_CODE_DB_ERROR_GET_PUBLIC_LOBBIES = "ServerDBErrorGetPublicLobbies";
@@ -454,7 +454,7 @@ namespace TrucoServer.Services
             matchStarter.HandleMatchStartupCleanup(matchCode);
         }
 
-        public List<PublicLobbyInfo> GetPublicLobbies()
+        public List<PublicLobbyInformation> GetPublicLobbies()
         {
             try
             {
@@ -469,7 +469,7 @@ namespace TrucoServer.Services
                     })
                     .ToList();
 
-                var result = new List<PublicLobbyInfo>();
+                var result = new List<PublicLobbyInformation>();
 
                 foreach (var lobby in publicLobbies)
                 {
@@ -478,7 +478,7 @@ namespace TrucoServer.Services
 
                     string matchCode = lobbyCoordinator.GetMatchCodeFromLobbyId(lobby.lobbyID) ?? UNKNOWKN_MATCH_CODE;
 
-                    result.Add(new PublicLobbyInfo
+                    result.Add(new PublicLobbyInformation
                     {
                         MatchCode = matchCode,
                         MatchName = $"{owner?.username ?? "Host"} - {lobby.maxPlayers}P",
@@ -510,18 +510,18 @@ namespace TrucoServer.Services
             }
         }
 
-        public List<PlayerInfo> GetLobbyPlayers(string matchCode)
+        public List<PlayerInformation> GetLobbyPlayers(string matchCode)
         {
             if (!ServerValidator.IsMatchCodeValid(matchCode))
             {
-                return new List<PlayerInfo>();
+                return new List<PlayerInformation>();
             }
 
             try
             {
                 if (gameRegistry.TryGetGame(matchCode, out var match))
                 {
-                    return match.Players.Select(p => new PlayerInfo
+                    return match.Players.Select(p => new PlayerInformation
                     {
                         Username = p.Username,
                         Team = p.Team,
@@ -593,7 +593,7 @@ namespace TrucoServer.Services
                     return;
                 }
 
-                List<PlayerInfo> playersList = GetLobbyPlayers(matchCode);
+                List<PlayerInformation> playersList = GetLobbyPlayers(matchCode);
 
                 if (playersList.Count != validation.ExpectedPlayers)
                 {

@@ -103,9 +103,9 @@
     <Compile Include="HelpersTests\RankingTests\UserStatsServiceTests.cs" />
     <Compile Include="HelpersTests\SessionsTests\UserSessionManagerTests.cs" />
     <Compile Include="HelpersTests\VerificationTests\VerificationServiceTests.cs" />
-    <Compile Include="ServicesTests\TrucoFriendServiceImpTests.cs" />
-    <Compile Include="ServicesTests\TrucoMatchServiceImpTests.cs" />
-    <Compile Include="ServicesTests\TrucoUserServiceImpTests.cs" />
+    <Compile Include="ServicesTests\TrucoFriendServiceImplementationTests.cs" />
+    <Compile Include="ServicesTests\TrucoMatchServiceImplementationTests.cs" />
+    <Compile Include="ServicesTests\TrucoUserServiceImplementationTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="UtilitiesTests\BruteForceProtectorTests.cs" />
     <Compile Include="UtilitiesTests\ConfigurationFileWrapperTests.cs" />

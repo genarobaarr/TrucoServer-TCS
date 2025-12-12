@@ -146,7 +146,7 @@ namespace TrucoServer.Services
             matchService.StartMatch(matchCode);
         }
 
-        public List<PublicLobbyInfo> GetPublicLobbies()
+        public List<PublicLobbyInformation> GetPublicLobbies()
         {
             return matchService.GetPublicLobbies();
         }
@@ -216,7 +216,7 @@ namespace TrucoServer.Services
             return matchService.InviteFriend(inviteContext);
         }
 
-        public List<PlayerInfo> GetLobbyPlayers(string matchCode)
+        public List<PlayerInformation> GetLobbyPlayers(string matchCode)
         {
             return matchService.GetLobbyPlayers(matchCode);
         }

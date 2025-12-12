@@ -13,7 +13,7 @@ using TrucoServer.Utilities;
 
 namespace TrucoServer.Services
 {
-    public class TrucoFriendServiceImp : ITrucoFriendService
+    public class TrucoFriendServiceImplementation : ITrucoFriendService
     {
         private const string ERROR_CODE_DB_ERROR_GET_FRIENDS = "ServerDBErrorGetFriends";
         private const string ERROR_CODE_DB_ERROR_FRIEND_REQUEST = "ServerDBErrorFriendRequest";
@@ -29,14 +29,14 @@ namespace TrucoServer.Services
 
         private readonly baseDatosTrucoEntities context;
 
-        public TrucoFriendServiceImp()
+        public TrucoFriendServiceImplementation()
         {
             this.context = new baseDatosTrucoEntities();
             this.friendshipRepository = new FriendRepository(context);
             this.notificationService = new FriendNotifier();
         }
 
-        public TrucoFriendServiceImp(baseDatosTrucoEntities context, IFriendRepository friendshipRepository, IFriendNotifier notificationService)
+        public TrucoFriendServiceImplementation(baseDatosTrucoEntities context, IFriendRepository friendshipRepository, IFriendNotifier notificationService)
         {
             this.context = context;
             this.friendshipRepository = friendshipRepository;

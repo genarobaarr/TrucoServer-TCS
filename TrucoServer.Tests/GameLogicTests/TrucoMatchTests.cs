@@ -17,7 +17,7 @@ namespace TrucoServer.Tests.GameLogic
         private Mock<IGameManager> mockGameManager;
         private Mock<ITrucoDeck> mockDeck;
         private TrucoMatchContext context;
-        private List<PlayerInformation> players;
+        private List<PlayerInformationWithConstructor> players;
         private Dictionary<int, ITrucoCallback> callbacks;
 
         private const int LOBBY_ID = 1;
@@ -30,10 +30,10 @@ namespace TrucoServer.Tests.GameLogic
             mockGameManager = new Mock<IGameManager>();
             mockDeck = new Mock<ITrucoDeck>();
             
-            players = new List<PlayerInformation>
+            players = new List<PlayerInformationWithConstructor>
             {
-                new PlayerInformation(PLAYER_INFORMATION_1, "P1", "Team 1"),
-                new PlayerInformation(PLAYER_INFORMATION_2, "P2", "Team 2")
+                new PlayerInformationWithConstructor(PLAYER_INFORMATION_1, "P1", "Team 1"),
+                new PlayerInformationWithConstructor(PLAYER_INFORMATION_2, "P2", "Team 2")
             };
             
             callbacks = new Dictionary<int, ITrucoCallback>
@@ -49,7 +49,7 @@ namespace TrucoServer.Tests.GameLogic
                 }
             };
 
-            mockGameManager.Setup(gm => gm.SaveMatchToDatabase(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<List<PlayerInformation>>()))
+            mockGameManager.Setup(gm => gm.SaveMatchToDatabase(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<List<PlayerInformationWithConstructor>>()))
                             .Returns(100);
 
             context = new TrucoMatchContext

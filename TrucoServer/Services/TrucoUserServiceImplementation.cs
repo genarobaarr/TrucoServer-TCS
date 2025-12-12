@@ -29,7 +29,7 @@ using TrucoServer.Utilities;
 
 namespace TrucoServer.Services
 {
-    public class TrucoUserServiceImp : ITrucoUserService
+    public class TrucoUserServiceImplementation : ITrucoUserService
     {
         private const string ERROR_CODE_DB_ERROR_USER = "ServerDBErrorUser";
         private const string ERROR_CODE_DB_ERROR_EMAIL = "ServerDBErrorEmail";
@@ -53,7 +53,7 @@ namespace TrucoServer.Services
 
         private static readonly IUserSessionManager sessionManagerStatic = new UserSessionManager();
 
-        public TrucoUserServiceImp()
+        public TrucoUserServiceImplementation()
         {
             this.context = new baseDatosTrucoEntities();
 
@@ -95,7 +95,7 @@ namespace TrucoServer.Services
             this.banService = dependencies.BanService;
         }
 
-        public TrucoUserServiceImp(baseDatosTrucoEntities context, TrucoUserServiceDependencies dependencies)
+        public TrucoUserServiceImplementation(baseDatosTrucoEntities context, TrucoUserServiceDependencies dependencies)
         {
             if (dependencies == null)
             {

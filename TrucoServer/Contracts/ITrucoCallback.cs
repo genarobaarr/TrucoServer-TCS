@@ -51,7 +51,7 @@ namespace TrucoServer.Contracts
         /// <param name="matchCode">The unique code of the match.</param>
         /// <param name="players">The list of players in the match.</param>
         [OperationContract(IsOneWay = true)]
-        void OnMatchStarted(string matchCode, List<PlayerInfo> players);
+        void OnMatchStarted(string matchCode, List<PlayerInformation> players);
 
         /// <summary>
         /// Notifies that the match has ended and announces the winner.

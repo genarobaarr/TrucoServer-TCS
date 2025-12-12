@@ -14,7 +14,7 @@ namespace TrucoServer.Helpers.Match
         Lobby ResolveLobbyForJoin(string matchCode);
         LobbyLeaveResult ResolveLobbyForLeave(LobbyLeaveCriteria criteria);
         Lobby FindLobbyByMatchCode(string matchCode, bool onlyOpen = true);
-        List<PlayerInfo> GetDatabasePlayers(Lobby lobby, string ownerUsername);
+        List<PlayerInformation> GetDatabasePlayers(Lobby lobby, string ownerUsername);
         string GetLobbyOwnerName(int ownerId);
         bool CloseLobbyById(int lobbyId);
         bool ExpireInvitationByMatchCode(string matchCode);

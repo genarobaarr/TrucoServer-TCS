@@ -13,12 +13,12 @@ using TrucoServer.Services;
 namespace TrucoServer.Tests.ServicesTests
 {
     [TestClass]
-    public class TrucoFriendServiceImpTests
+    public class TrucoFriendServiceImplementationTests
     {
         private Mock<baseDatosTrucoEntities> mockContext;
         private Mock<IFriendRepository> mockRepo;
         private Mock<IFriendNotifier> mockNotifier;
-        private TrucoFriendServiceImp service;
+        private TrucoFriendServiceImplementation service;
 
         [TestInitialize]
         public void Setup()
@@ -29,7 +29,7 @@ namespace TrucoServer.Tests.ServicesTests
             var emptyUsers = GetMockDbSet(new List<User>());
             mockContext.Setup(c => c.User).Returns(emptyUsers.Object);
 
-            service = new TrucoFriendServiceImp(mockContext.Object, mockRepo.Object, mockNotifier.Object);
+            service = new TrucoFriendServiceImplementation(mockContext.Object, mockRepo.Object, mockNotifier.Object);
         }
 
         private static Mock<DbSet<T>> GetMockDbSet<T>(List<T> sourceList) where T : class

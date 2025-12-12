@@ -20,7 +20,7 @@ using TrucoServer.Helpers.Security;
 namespace TrucoServer.Tests.ServicesTests
 {
     [TestClass]
-    public class TrucoUserServiceImpTests
+    public class TrucoUserServiceImplementationTests
     {
         private Mock<baseDatosTrucoEntities> mockContext;
         private Mock<IUserAuthenticationHelper> mockAuth;
@@ -35,7 +35,7 @@ namespace TrucoServer.Tests.ServicesTests
         private Mock<DbSet<User>> mockUserSet;
         private Mock<DbSet<UserProfile>> mockUserProfileSet;
 
-        private TrucoUserServiceImp service;
+        private TrucoUserServiceImplementation service;
 
         [TestInitialize]
         public void Setup()
@@ -70,7 +70,7 @@ namespace TrucoServer.Tests.ServicesTests
                 BanService = new BanService(mockContext.Object)
             };
 
-            service = new TrucoUserServiceImp(mockContext.Object, dependencies);
+            service = new TrucoUserServiceImplementation(mockContext.Object, dependencies);
         }
 
         private static Mock<DbSet<T>> GetMockDbSet<T>(List<T> sourceList) where T : class
@@ -422,7 +422,7 @@ namespace TrucoServer.Tests.ServicesTests
         [TestMethod]
         public void TestGetUserCallbackReturnsNullIfNotFound()
         {
-            var result = TrucoUserServiceImp.GetUserCallback("NonExistent");
+            var result = TrucoUserServiceImplementation.GetUserCallback("NonExistent");
             Assert.IsNull(result);
         }
 

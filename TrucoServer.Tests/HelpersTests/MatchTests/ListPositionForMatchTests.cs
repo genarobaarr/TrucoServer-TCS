@@ -15,7 +15,7 @@ namespace TrucoServer.Tests.HelpersTests.MatchTests
         [TestMethod]
         public void TestDetermineTurnOrderReturnsEmptyListIfInputIsEmpty()
         {
-            var emptyList = new List<PlayerInformation>();
+            var emptyList = new List<PlayerInformationWithConstructor>();
             var result = ListPositionService.DetermineTurnOrder(emptyList, "Host");
             Assert.AreEqual(0, result.Count);
         }
@@ -23,10 +23,10 @@ namespace TrucoServer.Tests.HelpersTests.MatchTests
         [TestMethod]
         public void TestDetermineTurnOrderSetsHostFirstForDuel()
         {
-            var player1 = new PlayerInformation(1, "Host", "Team 1");
-            var player2 = new PlayerInformation(2, "Guest", "Team 2");
+            var player1 = new PlayerInformationWithConstructor(1, "Host", "Team 1");
+            var player2 = new PlayerInformationWithConstructor(2, "Guest", "Team 2");
            
-            var players = new List<PlayerInformation> 
+            var players = new List<PlayerInformationWithConstructor> 
             {
                 player2,
                 player1 
@@ -39,10 +39,10 @@ namespace TrucoServer.Tests.HelpersTests.MatchTests
         [TestMethod]
         public void TestDetermineTurnOrderSetsGuestSecondForDuel()
         {
-            var player1 = new PlayerInformation(1, "Host", "Team 1");
-            var player2 = new PlayerInformation(2, "Guest", "Team 2");
+            var player1 = new PlayerInformationWithConstructor(1, "Host", "Team 1");
+            var player2 = new PlayerInformationWithConstructor(2, "Guest", "Team 2");
            
-            var players = new List<PlayerInformation> 
+            var players = new List<PlayerInformationWithConstructor> 
             {
                 player2, 
                 player1 
@@ -55,12 +55,12 @@ namespace TrucoServer.Tests.HelpersTests.MatchTests
         [TestMethod]
         public void TestDetermineTurnOrderSetsHostFirstForTeamMatch()
         {
-            var host = new PlayerInformation(1, "Host", "Team 1");
-            var mate = new PlayerInformation(2, "Teammate", "Team 1");
-            var enemy1 = new PlayerInformation(3, "Hazard", "Team 2");
-            var enemy2 = new PlayerInformation(4, "Pablo", "Team 2");
+            var host = new PlayerInformationWithConstructor(1, "Host", "Team 1");
+            var mate = new PlayerInformationWithConstructor(2, "Teammate", "Team 1");
+            var enemy1 = new PlayerInformationWithConstructor(3, "Hazard", "Team 2");
+            var enemy2 = new PlayerInformationWithConstructor(4, "Pablo", "Team 2");
 
-            var players = new List<PlayerInformation> 
+            var players = new List<PlayerInformationWithConstructor> 
             {
                 mate,
                 enemy2, 
@@ -75,12 +75,12 @@ namespace TrucoServer.Tests.HelpersTests.MatchTests
         [TestMethod]
         public void TestDetermineTurnOrderSetsRivalSecondForTeamMatch()
         {
-            var host = new PlayerInformation(1, "Host", "Team 1");
-            var mate = new PlayerInformation(2, "Teammate", "Team 1");
-            var enemy1 = new PlayerInformation(3, "Hazard", "Team 2");
-            var enemy2 = new PlayerInformation(4, "Pablo", "Team 2");
+            var host = new PlayerInformationWithConstructor(1, "Host", "Team 1");
+            var mate = new PlayerInformationWithConstructor(2, "Teammate", "Team 1");
+            var enemy1 = new PlayerInformationWithConstructor(3, "Hazard", "Team 2");
+            var enemy2 = new PlayerInformationWithConstructor(4, "Pablo", "Team 2");
 
-            var players = new List<PlayerInformation> 
+            var players = new List<PlayerInformationWithConstructor> 
             {
                 mate,
                 enemy2, 
