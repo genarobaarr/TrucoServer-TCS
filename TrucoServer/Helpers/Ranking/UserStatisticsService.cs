@@ -3,11 +3,11 @@ using System.Linq;
 
 namespace TrucoServer.Helpers.Ranking
 {
-    public class UserStatsService : IUserStatsService
+    public class UserStatisticsService : IUserStatisticsService
     {
         private readonly baseDatosTrucoEntities context;
 
-        public UserStatsService(baseDatosTrucoEntities context)
+        public UserStatisticsService(baseDatosTrucoEntities context)
         {
             this.context = context ?? throw new ArgumentNullException(nameof(context));
         }

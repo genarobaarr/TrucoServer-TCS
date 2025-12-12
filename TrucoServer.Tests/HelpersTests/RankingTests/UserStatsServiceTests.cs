@@ -14,7 +14,7 @@ namespace TrucoServer.Tests.HelpersTests.RankingTests
     public class UserStatsServiceTests
     {
         private Mock<baseDatosTrucoEntities> mockContext;
-        private UserStatsService service;
+        private UserStatisticsService service;
 
         private const int USER_ID = 1;
         private const int WINS = 10;
@@ -26,7 +26,7 @@ namespace TrucoServer.Tests.HelpersTests.RankingTests
         public void Setup()
         {
             mockContext = new Mock<baseDatosTrucoEntities>();
-            service = new UserStatsService(mockContext.Object);
+            service = new UserStatisticsService(mockContext.Object);
         }
 
         [TestMethod]

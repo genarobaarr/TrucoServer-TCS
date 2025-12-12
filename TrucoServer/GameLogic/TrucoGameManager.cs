@@ -20,10 +20,10 @@ namespace TrucoServer.GameLogic
         private const int VERSION_1V1 = 1;
         private const int VERSION_2V2 = 2;
 
-        private readonly IUserStatsService userStatsService;
+        private readonly IUserStatisticsService userStatsService;
         private readonly baseDatosTrucoEntities context;
 
-        public TrucoGameManager(baseDatosTrucoEntities context, IUserStatsService userStatsService)
+        public TrucoGameManager(baseDatosTrucoEntities context, IUserStatisticsService userStatsService)
         {
             this.context = context ?? throw new ArgumentNullException(nameof(context));
             this.userStatsService = userStatsService ?? throw new ArgumentNullException(nameof(userStatsService));

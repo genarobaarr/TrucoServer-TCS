@@ -1,6 +1,6 @@
 ﻿namespace TrucoServer.Helpers.Ranking
 {
-    public interface IUserStatsService
+    public interface IUserStatisticsService
     {
         void UpdateUserStats(int userId, bool isWinner);
     }

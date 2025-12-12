@@ -11,7 +11,7 @@ namespace TrucoServer.Helpers.Friends
         {
             try
             {
-                var callback = TrucoUserServiceImp.GetUserCallback(targetUsername);
+                var callback = TrucoUserServiceImplementation.GetUserCallback(targetUsername);
 
                 if (callback != null)
                 {
@@ -36,7 +36,7 @@ namespace TrucoServer.Helpers.Friends
         {
             try
             {
-                var callback = TrucoUserServiceImp.GetUserCallback(targetUsername);
+                var callback = TrucoUserServiceImplementation.GetUserCallback(targetUsername);
 
                 if (callback != null)
                 {

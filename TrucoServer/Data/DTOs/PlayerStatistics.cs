@@ -3,7 +3,7 @@
 namespace TrucoServer.Data.DTOs
 {
     [DataContract]
-    public class PlayerStats
+    public class PlayerStatistics
     {
         [DataMember] public string PlayerName { get; set; }
         [DataMember] public int Wins { get; set; }

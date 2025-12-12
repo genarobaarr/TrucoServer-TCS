@@ -15,9 +15,9 @@ namespace TrucoServer.Services
 
         public TrucoServer()
         {
-            userService = new TrucoUserServiceImp();
-            friendService = new TrucoFriendServiceImp();
-            matchService = new TrucoMatchServiceImp();
+            userService = new TrucoUserServiceImplementation();
+            friendService = new TrucoFriendServiceImplementation();
+            matchService = new TrucoMatchServiceImplementation();
         }
 
 
@@ -82,7 +82,7 @@ namespace TrucoServer.Services
             return userService.ConfirmEmailVerification(email, code);
         }
 
-        public List<PlayerStats> GetGlobalRanking()
+        public List<PlayerStatistics> GetGlobalRanking()
         {
             return userService.GetGlobalRanking();
         }

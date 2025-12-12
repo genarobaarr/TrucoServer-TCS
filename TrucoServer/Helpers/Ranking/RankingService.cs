@@ -19,7 +19,7 @@ namespace TrucoServer.Helpers.Ranking
         private const int TOP_RANKING = 10;
 
 
-        public List<PlayerStats> GetGlobalRanking()
+        public List<PlayerStatistics> GetGlobalRanking()
         {
             try
             {
@@ -28,7 +28,7 @@ namespace TrucoServer.Helpers.Ranking
                     return context.User
                         .OrderByDescending(u => u.wins)
                         .Take(TOP_RANKING)
-                        .Select(u => new PlayerStats
+                        .Select(u => new PlayerStatistics
                         {
                             PlayerName = u.username,
                             Wins = u.wins,

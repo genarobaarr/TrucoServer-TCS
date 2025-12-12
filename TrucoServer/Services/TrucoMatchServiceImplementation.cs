@@ -51,14 +51,14 @@ namespace TrucoServer.Services
 
         private readonly baseDatosTrucoEntities context;
 
-        public TrucoMatchServiceImp()
+        public TrucoMatchServiceImplementation()
         {
             this.context = new baseDatosTrucoEntities();
             var coordinator = new LobbyCoordinator(context);
             var registry = new GameRegistry();
             var repository = new LobbyRepository(context);
             var bannedWordRepository = new BannedWordRepository();
-            var statsService = new UserStatsService(context);
+            var statsService = new UserStatisticsService(context);
             var gameManager = new TrucoGameManager(context, statsService);
             var shuffler = new DefaultDeckShuffler();
             var participantBuilder = new GamePlayerBuilder(context, coordinator);
@@ -100,7 +100,7 @@ namespace TrucoServer.Services
             this.profanityService.LoadBannedWords();
         }
 
-        public TrucoMatchServiceImp(baseDatosTrucoEntities context, TrucoMatchServiceDependencies dependencies)
+        public TrucoMatchServiceImplementation(baseDatosTrucoEntities context, TrucoMatchServiceDependencies dependencies)
         {
             if (dependencies == null)
             {

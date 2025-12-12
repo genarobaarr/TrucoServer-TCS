@@ -375,9 +375,9 @@ namespace TrucoServer.Tests.ServicesTests
         [TestMethod]
         public void TestGetGlobalRankingReturnsListOnSuccess()
         {
-            var list = new List<PlayerStats>
+            var list = new List<PlayerStatistics>
             {
-                new PlayerStats 
+                new PlayerStatistics 
                 { 
                     PlayerName = "Angel"
                 }

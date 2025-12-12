@@ -5,6 +5,6 @@ namespace TrucoServer.Helpers.Ranking
 {
     public interface IRankingService
     {
-        List<PlayerStats> GetGlobalRanking();
+        List<PlayerStatistics> GetGlobalRanking();
     }
 }

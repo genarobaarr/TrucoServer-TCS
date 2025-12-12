@@ -92,7 +92,7 @@ namespace TrucoServer.Contracts
         /// <returns>A list of player statistics ordered by wins.</returns>
         [OperationContract]
         [FaultContract(typeof(CustomFault))]
-        List<PlayerStats> GetGlobalRanking();
+        List<PlayerStatistics> GetGlobalRanking();
 
         /// <summary>
         /// Retrieves the history of the last matches played by a user.

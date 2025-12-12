@@ -16,7 +16,7 @@ namespace TrucoServer.Tests.GameLogic
     public class TrucoGameManagerTests
     {
         private Mock<baseDatosTrucoEntities> mockContext;
-        private Mock<IUserStatsService> mockStats;
+        private Mock<IUserStatisticsService> mockStats;
         private Mock<DbSet<User>> mockUserSet;
 
         private const int LOBBY_ID = 1;
@@ -30,7 +30,7 @@ namespace TrucoServer.Tests.GameLogic
         public void Setup()
         {
             mockContext = new Mock<baseDatosTrucoEntities>();
-            mockStats = new Mock<IUserStatsService>();
+            mockStats = new Mock<IUserStatisticsService>();
             mockUserSet = new Mock<DbSet<User>>();
             mockContext.Setup(m => m.User).Returns(mockUserSet.Object);
         }

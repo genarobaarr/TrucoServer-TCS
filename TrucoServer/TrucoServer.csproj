@@ -168,10 +168,10 @@
     <Compile Include="Helpers\Profiles\ProfileUpdater.cs" />
     <Compile Include="Helpers\Ranking\IMatchHistoryService.cs" />
     <Compile Include="Helpers\Ranking\IRankingService.cs" />
-    <Compile Include="Helpers\Ranking\IUserStatsService.cs" />
+    <Compile Include="Helpers\Ranking\IUserStatisticsService.cs" />
     <Compile Include="Helpers\Ranking\MatchHistoryService.cs" />
     <Compile Include="Helpers\Ranking\RankingService.cs" />
-    <Compile Include="Helpers\Ranking\UserStatsService.cs" />
+    <Compile Include="Helpers\Ranking\UserStatisticsService.cs" />
     <Compile Include="Helpers\Sessions\IUserSessionManager.cs" />
     <Compile Include="Helpers\Sessions\UserSessionManager.cs" />
     <Compile Include="Helpers\Verification\IVerificationService.cs" />
@@ -217,7 +217,7 @@
     <Compile Include="Utilities\PasswordHasher.cs" />
     <Compile Include="Data\DTOs\PlayerInformation.cs" />
     <Compile Include="Data\DTOs\PlayerInformationWithConstructor.cs" />
-    <Compile Include="Data\DTOs\PlayerStats.cs" />
+    <Compile Include="Data\DTOs\PlayerStatistics.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Data\DTOs\PublicLobbyInformation.cs" />
     <Compile Include="Data\DTOs\SocialLinks.cs" />

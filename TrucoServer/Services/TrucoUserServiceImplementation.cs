@@ -562,7 +562,7 @@ namespace TrucoServer.Services
             }
         }
 
-        public List<PlayerStats> GetGlobalRanking()
+        public List<PlayerStatistics> GetGlobalRanking()
         {
             try
             {
