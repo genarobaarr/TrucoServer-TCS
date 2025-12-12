@@ -100,7 +100,7 @@
     <Compile Include="HelpersTests\ProfilesTests\ProfileUpdaterTests.cs" />
     <Compile Include="HelpersTests\RankingTests\MatchHistoryServiceTests.cs" />
     <Compile Include="HelpersTests\RankingTests\RankingServiceTests.cs" />
-    <Compile Include="HelpersTests\RankingTests\UserStatsServiceTests.cs" />
+    <Compile Include="HelpersTests\RankingTests\UserStatisticsServiceTests.cs" />
     <Compile Include="HelpersTests\SessionsTests\UserSessionManagerTests.cs" />
     <Compile Include="HelpersTests\VerificationTests\VerificationServiceTests.cs" />
     <Compile Include="ServicesTests\TrucoFriendServiceImplementationTests.cs" />
