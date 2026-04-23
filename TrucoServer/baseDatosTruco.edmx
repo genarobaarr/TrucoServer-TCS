@@ -84,6 +84,38 @@
           <Property Name="score" Type="int" Nullable="false" />
           <Property Name="isWinner" Type="bit" Nullable="false" />
         </EntityType>
+        <EntityType Name="TournamentBrackets">
+          <Key>
+            <PropertyRef Name="Id" />
+          </Key>
+          <Property Name="Id" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+          <Property Name="TournamentId" Type="int" Nullable="false" />
+          <Property Name="Round" Type="int" Nullable="false" />
+          <Property Name="Position" Type="int" Nullable="false" />
+          <Property Name="Player1Id" Type="int" />
+          <Property Name="Player2Id" Type="int" />
+          <Property Name="WinnerId" Type="int" />
+          <Property Name="MatchId" Type="nvarchar" MaxLength="100" />
+        </EntityType>
+        <EntityType Name="TournamentParticipants">
+          <Key>
+            <PropertyRef Name="Id" />
+          </Key>
+          <Property Name="Id" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+          <Property Name="TournamentId" Type="int" Nullable="false" />
+          <Property Name="UserId" Type="int" Nullable="false" />
+          <Property Name="SeedPosition" Type="int" Nullable="false" />
+        </EntityType>
+        <EntityType Name="Tournaments">
+          <Key>
+            <PropertyRef Name="Id" />
+          </Key>
+          <Property Name="Id" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+          <Property Name="Name" Type="nvarchar" MaxLength="100" Nullable="false" />
+          <Property Name="Capacity" Type="int" Nullable="false" />
+          <Property Name="Status" Type="nvarchar" MaxLength="50" Nullable="false" />
+          <Property Name="CreationDate" Type="datetime" Nullable="false" />
+        </EntityType>
         <EntityType Name="User">
           <Key>
             <PropertyRef Name="userID" />
@@ -271,6 +303,82 @@
             </Dependent>
           </ReferentialConstraint>
         </Association>
+        <Association Name="FK_TournamentBrackets_Player1">
+          <End Role="User" Type="Self.User" Multiplicity="0..1" />
+          <End Role="TournamentBrackets" Type="Self.TournamentBrackets" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="User">
+              <PropertyRef Name="userID" />
+            </Principal>
+            <Dependent Role="TournamentBrackets">
+              <PropertyRef Name="Player1Id" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_TournamentBrackets_Player2">
+          <End Role="User" Type="Self.User" Multiplicity="0..1" />
+          <End Role="TournamentBrackets" Type="Self.TournamentBrackets" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="User">
+              <PropertyRef Name="userID" />
+            </Principal>
+            <Dependent Role="TournamentBrackets">
+              <PropertyRef Name="Player2Id" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_TournamentBrackets_Tournament">
+          <End Role="Tournaments" Type="Self.Tournaments" Multiplicity="1">
+            <OnDelete Action="Cascade" />
+          </End>
+          <End Role="TournamentBrackets" Type="Self.TournamentBrackets" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="Tournaments">
+              <PropertyRef Name="Id" />
+            </Principal>
+            <Dependent Role="TournamentBrackets">
+              <PropertyRef Name="TournamentId" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_TournamentBrackets_Winner">
+          <End Role="User" Type="Self.User" Multiplicity="0..1" />
+          <End Role="TournamentBrackets" Type="Self.TournamentBrackets" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="User">
+              <PropertyRef Name="userID" />
+            </Principal>
+            <Dependent Role="TournamentBrackets">
+              <PropertyRef Name="WinnerId" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_TournamentParticipants_Tournament">
+          <End Role="Tournaments" Type="Self.Tournaments" Multiplicity="1">
+            <OnDelete Action="Cascade" />
+          </End>
+          <End Role="TournamentParticipants" Type="Self.TournamentParticipants" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="Tournaments">
+              <PropertyRef Name="Id" />
+            </Principal>
+            <Dependent Role="TournamentParticipants">
+              <PropertyRef Name="TournamentId" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_TournamentParticipants_User">
+          <End Role="User" Type="Self.User" Multiplicity="1" />
+          <End Role="TournamentParticipants" Type="Self.TournamentParticipants" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="User">
+              <PropertyRef Name="userID" />
+            </Principal>
+            <Dependent Role="TournamentParticipants">
+              <PropertyRef Name="UserId" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
         <Association Name="FK_UserProfile_User">
           <End Role="User" Type="Self.User" Multiplicity="1" />
           <End Role="UserProfile" Type="Self.UserProfile" Multiplicity="0..1" />
@@ -292,6 +400,9 @@
           <EntitySet Name="LobbyMember" EntityType="Self.LobbyMember" Schema="dbo" store:Type="Tables" />
           <EntitySet Name="Match" EntityType="Self.Match" Schema="dbo" store:Type="Tables" />
           <EntitySet Name="MatchPlayer" EntityType="Self.MatchPlayer" Schema="dbo" store:Type="Tables" />
+          <EntitySet Name="TournamentBrackets" EntityType="Self.TournamentBrackets" Schema="dbo" store:Type="Tables" />
+          <EntitySet Name="TournamentParticipants" EntityType="Self.TournamentParticipants" Schema="dbo" store:Type="Tables" />
+          <EntitySet Name="Tournaments" EntityType="Self.Tournaments" Schema="dbo" store:Type="Tables" />
           <EntitySet Name="User" EntityType="Self.User" Schema="dbo" store:Type="Tables" />
           <EntitySet Name="UserProfile" EntityType="Self.UserProfile" Schema="dbo" store:Type="Tables" />
           <EntitySet Name="Versions" EntityType="Self.Versions" Schema="dbo" store:Type="Tables" />
@@ -342,6 +453,30 @@
           <AssociationSet Name="FK_MatchPlayer_User" Association="Self.FK_MatchPlayer_User">
             <End Role="User" EntitySet="User" />
             <End Role="MatchPlayer" EntitySet="MatchPlayer" />
+          </AssociationSet>
+          <AssociationSet Name="FK_TournamentBrackets_Player1" Association="Self.FK_TournamentBrackets_Player1">
+            <End Role="User" EntitySet="User" />
+            <End Role="TournamentBrackets" EntitySet="TournamentBrackets" />
+          </AssociationSet>
+          <AssociationSet Name="FK_TournamentBrackets_Player2" Association="Self.FK_TournamentBrackets_Player2">
+            <End Role="User" EntitySet="User" />
+            <End Role="TournamentBrackets" EntitySet="TournamentBrackets" />
+          </AssociationSet>
+          <AssociationSet Name="FK_TournamentBrackets_Tournament" Association="Self.FK_TournamentBrackets_Tournament">
+            <End Role="Tournaments" EntitySet="Tournaments" />
+            <End Role="TournamentBrackets" EntitySet="TournamentBrackets" />
+          </AssociationSet>
+          <AssociationSet Name="FK_TournamentBrackets_Winner" Association="Self.FK_TournamentBrackets_Winner">
+            <End Role="User" EntitySet="User" />
+            <End Role="TournamentBrackets" EntitySet="TournamentBrackets" />
+          </AssociationSet>
+          <AssociationSet Name="FK_TournamentParticipants_Tournament" Association="Self.FK_TournamentParticipants_Tournament">
+            <End Role="Tournaments" EntitySet="Tournaments" />
+            <End Role="TournamentParticipants" EntitySet="TournamentParticipants" />
+          </AssociationSet>
+          <AssociationSet Name="FK_TournamentParticipants_User" Association="Self.FK_TournamentParticipants_User">
+            <End Role="User" EntitySet="User" />
+            <End Role="TournamentParticipants" EntitySet="TournamentParticipants" />
           </AssociationSet>
           <AssociationSet Name="FK_UserProfile_User" Association="Self.FK_UserProfile_User">
             <End Role="User" EntitySet="User" />
@@ -465,6 +600,10 @@
           <NavigationProperty Name="LobbyMember" Relationship="Self.FK_LobbyMember_User" FromRole="User" ToRole="LobbyMember" />
           <NavigationProperty Name="MatchPlayer" Relationship="Self.FK_MatchPlayer_User" FromRole="User" ToRole="MatchPlayer" />
           <NavigationProperty Name="UserProfile" Relationship="Self.FK_UserProfile_User" FromRole="User" ToRole="UserProfile" />
+          <NavigationProperty Name="TournamentBrackets" Relationship="baseDatosTrucoModel.FK_TournamentBrackets_Player1" FromRole="User" ToRole="TournamentBrackets" />
+          <NavigationProperty Name="TournamentBrackets1" Relationship="baseDatosTrucoModel.FK_TournamentBrackets_Player2" FromRole="User" ToRole="TournamentBrackets" />
+          <NavigationProperty Name="TournamentBrackets2" Relationship="baseDatosTrucoModel.FK_TournamentBrackets_Winner" FromRole="User" ToRole="TournamentBrackets" />
+          <NavigationProperty Name="TournamentParticipants" Relationship="baseDatosTrucoModel.FK_TournamentParticipants_User" FromRole="User" ToRole="TournamentParticipants" />
         </EntityType>
         <EntityType Name="UserProfile">
           <Key>
@@ -720,7 +859,150 @@
             <End Role="User" EntitySet="User" />
             <End Role="UserProfile" EntitySet="UserProfile" />
           </AssociationSet>
+          <EntitySet Name="TournamentBrackets" EntityType="baseDatosTrucoModel.TournamentBrackets" />
+          <EntitySet Name="TournamentParticipants" EntityType="baseDatosTrucoModel.TournamentParticipants" />
+          <EntitySet Name="Tournaments" EntityType="baseDatosTrucoModel.Tournaments" />
+          <AssociationSet Name="FK_TournamentBrackets_Player1" Association="baseDatosTrucoModel.FK_TournamentBrackets_Player1">
+            <End Role="User" EntitySet="User" />
+            <End Role="TournamentBrackets" EntitySet="TournamentBrackets" />
+          </AssociationSet>
+          <AssociationSet Name="FK_TournamentBrackets_Player2" Association="baseDatosTrucoModel.FK_TournamentBrackets_Player2">
+            <End Role="User" EntitySet="User" />
+            <End Role="TournamentBrackets" EntitySet="TournamentBrackets" />
+          </AssociationSet>
+          <AssociationSet Name="FK_TournamentBrackets_Tournament" Association="baseDatosTrucoModel.FK_TournamentBrackets_Tournament">
+            <End Role="Tournaments" EntitySet="Tournaments" />
+            <End Role="TournamentBrackets" EntitySet="TournamentBrackets" />
+          </AssociationSet>
+          <AssociationSet Name="FK_TournamentBrackets_Winner" Association="baseDatosTrucoModel.FK_TournamentBrackets_Winner">
+            <End Role="User" EntitySet="User" />
+            <End Role="TournamentBrackets" EntitySet="TournamentBrackets" />
+          </AssociationSet>
+          <AssociationSet Name="FK_TournamentParticipants_Tournament" Association="baseDatosTrucoModel.FK_TournamentParticipants_Tournament">
+            <End Role="Tournaments" EntitySet="Tournaments" />
+            <End Role="TournamentParticipants" EntitySet="TournamentParticipants" />
+          </AssociationSet>
+          <AssociationSet Name="FK_TournamentParticipants_User" Association="baseDatosTrucoModel.FK_TournamentParticipants_User">
+            <End Role="User" EntitySet="User" />
+            <End Role="TournamentParticipants" EntitySet="TournamentParticipants" />
+          </AssociationSet>
         </EntityContainer>
+        <EntityType Name="TournamentBrackets">
+          <Key>
+            <PropertyRef Name="Id" />
+          </Key>
+          <Property Name="Id" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+          <Property Name="TournamentId" Type="Int32" Nullable="false" />
+          <Property Name="Round" Type="Int32" Nullable="false" />
+          <Property Name="Position" Type="Int32" Nullable="false" />
+          <Property Name="Player1Id" Type="Int32" />
+          <Property Name="Player2Id" Type="Int32" />
+          <Property Name="WinnerId" Type="Int32" />
+          <Property Name="MatchId" Type="String" MaxLength="100" FixedLength="false" Unicode="true" />
+          <NavigationProperty Name="User" Relationship="baseDatosTrucoModel.FK_TournamentBrackets_Player1" FromRole="TournamentBrackets" ToRole="User" />
+          <NavigationProperty Name="User1" Relationship="baseDatosTrucoModel.FK_TournamentBrackets_Player2" FromRole="TournamentBrackets" ToRole="User" />
+          <NavigationProperty Name="Tournaments" Relationship="baseDatosTrucoModel.FK_TournamentBrackets_Tournament" FromRole="TournamentBrackets" ToRole="Tournaments" />
+          <NavigationProperty Name="User2" Relationship="baseDatosTrucoModel.FK_TournamentBrackets_Winner" FromRole="TournamentBrackets" ToRole="User" />
+        </EntityType>
+        <EntityType Name="TournamentParticipants">
+          <Key>
+            <PropertyRef Name="Id" />
+          </Key>
+          <Property Name="Id" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+          <Property Name="TournamentId" Type="Int32" Nullable="false" />
+          <Property Name="UserId" Type="Int32" Nullable="false" />
+          <Property Name="SeedPosition" Type="Int32" Nullable="false" />
+          <NavigationProperty Name="Tournaments" Relationship="baseDatosTrucoModel.FK_TournamentParticipants_Tournament" FromRole="TournamentParticipants" ToRole="Tournaments" />
+          <NavigationProperty Name="User" Relationship="baseDatosTrucoModel.FK_TournamentParticipants_User" FromRole="TournamentParticipants" ToRole="User" />
+        </EntityType>
+        <EntityType Name="Tournaments">
+          <Key>
+            <PropertyRef Name="Id" />
+          </Key>
+          <Property Name="Id" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+          <Property Name="Name" Type="String" Nullable="false" MaxLength="100" FixedLength="false" Unicode="true" />
+          <Property Name="Capacity" Type="Int32" Nullable="false" />
+          <Property Name="Status" Type="String" Nullable="false" MaxLength="50" FixedLength="false" Unicode="true" />
+          <Property Name="CreationDate" Type="DateTime" Nullable="false" Precision="3" />
+          <NavigationProperty Name="TournamentBrackets" Relationship="baseDatosTrucoModel.FK_TournamentBrackets_Tournament" FromRole="Tournaments" ToRole="TournamentBrackets" />
+          <NavigationProperty Name="TournamentParticipants" Relationship="baseDatosTrucoModel.FK_TournamentParticipants_Tournament" FromRole="Tournaments" ToRole="TournamentParticipants" />
+        </EntityType>
+        <Association Name="FK_TournamentBrackets_Player1">
+          <End Type="baseDatosTrucoModel.User" Role="User" Multiplicity="0..1" />
+          <End Type="baseDatosTrucoModel.TournamentBrackets" Role="TournamentBrackets" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="User">
+              <PropertyRef Name="userID" />
+            </Principal>
+            <Dependent Role="TournamentBrackets">
+              <PropertyRef Name="Player1Id" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_TournamentBrackets_Player2">
+          <End Type="baseDatosTrucoModel.User" Role="User" Multiplicity="0..1" />
+          <End Type="baseDatosTrucoModel.TournamentBrackets" Role="TournamentBrackets" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="User">
+              <PropertyRef Name="userID" />
+            </Principal>
+            <Dependent Role="TournamentBrackets">
+              <PropertyRef Name="Player2Id" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_TournamentBrackets_Tournament">
+          <End Type="baseDatosTrucoModel.Tournaments" Role="Tournaments" Multiplicity="1">
+            <OnDelete Action="Cascade" />
+          </End>
+          <End Type="baseDatosTrucoModel.TournamentBrackets" Role="TournamentBrackets" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="Tournaments">
+              <PropertyRef Name="Id" />
+            </Principal>
+            <Dependent Role="TournamentBrackets">
+              <PropertyRef Name="TournamentId" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_TournamentBrackets_Winner">
+          <End Type="baseDatosTrucoModel.User" Role="User" Multiplicity="0..1" />
+          <End Type="baseDatosTrucoModel.TournamentBrackets" Role="TournamentBrackets" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="User">
+              <PropertyRef Name="userID" />
+            </Principal>
+            <Dependent Role="TournamentBrackets">
+              <PropertyRef Name="WinnerId" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_TournamentParticipants_Tournament">
+          <End Type="baseDatosTrucoModel.Tournaments" Role="Tournaments" Multiplicity="1">
+            <OnDelete Action="Cascade" />
+          </End>
+          <End Type="baseDatosTrucoModel.TournamentParticipants" Role="TournamentParticipants" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="Tournaments">
+              <PropertyRef Name="Id" />
+            </Principal>
+            <Dependent Role="TournamentParticipants">
+              <PropertyRef Name="TournamentId" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_TournamentParticipants_User">
+          <End Type="baseDatosTrucoModel.User" Role="User" Multiplicity="1" />
+          <End Type="baseDatosTrucoModel.TournamentParticipants" Role="TournamentParticipants" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="User">
+              <PropertyRef Name="userID" />
+            </Principal>
+            <Dependent Role="TournamentParticipants">
+              <PropertyRef Name="UserId" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
       </Schema>
     </edmx:ConceptualModels>
     <!-- C-S mapping content -->
@@ -841,6 +1123,41 @@
               <MappingFragment StoreEntitySet="Versions">
                 <ScalarProperty Name="versionID" ColumnName="versionID" />
                 <ScalarProperty Name="configuration" ColumnName="configuration" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="TournamentBrackets">
+            <EntityTypeMapping TypeName="baseDatosTrucoModel.TournamentBrackets">
+              <MappingFragment StoreEntitySet="TournamentBrackets">
+                <ScalarProperty Name="MatchId" ColumnName="MatchId" />
+                <ScalarProperty Name="WinnerId" ColumnName="WinnerId" />
+                <ScalarProperty Name="Player2Id" ColumnName="Player2Id" />
+                <ScalarProperty Name="Player1Id" ColumnName="Player1Id" />
+                <ScalarProperty Name="Position" ColumnName="Position" />
+                <ScalarProperty Name="Round" ColumnName="Round" />
+                <ScalarProperty Name="TournamentId" ColumnName="TournamentId" />
+                <ScalarProperty Name="Id" ColumnName="Id" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="TournamentParticipants">
+            <EntityTypeMapping TypeName="baseDatosTrucoModel.TournamentParticipants">
+              <MappingFragment StoreEntitySet="TournamentParticipants">
+                <ScalarProperty Name="SeedPosition" ColumnName="SeedPosition" />
+                <ScalarProperty Name="UserId" ColumnName="UserId" />
+                <ScalarProperty Name="TournamentId" ColumnName="TournamentId" />
+                <ScalarProperty Name="Id" ColumnName="Id" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="Tournaments">
+            <EntityTypeMapping TypeName="baseDatosTrucoModel.Tournaments">
+              <MappingFragment StoreEntitySet="Tournaments">
+                <ScalarProperty Name="CreationDate" ColumnName="CreationDate" />
+                <ScalarProperty Name="Status" ColumnName="Status" />
+                <ScalarProperty Name="Capacity" ColumnName="Capacity" />
+                <ScalarProperty Name="Name" ColumnName="Name" />
+                <ScalarProperty Name="Id" ColumnName="Id" />
               </MappingFragment>
             </EntityTypeMapping>
           </EntitySetMapping>

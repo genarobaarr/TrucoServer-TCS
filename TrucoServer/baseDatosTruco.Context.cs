@@ -36,5 +36,8 @@ namespace TrucoServer
         public virtual DbSet<User> User { get; set; }
         public virtual DbSet<UserProfile> UserProfile { get; set; }
         public virtual DbSet<Versions> Versions { get; set; }
+        public virtual DbSet<TournamentBrackets> TournamentBrackets { get; set; }
+        public virtual DbSet<TournamentParticipants> TournamentParticipants { get; set; }
+        public virtual DbSet<Tournaments> Tournaments { get; set; }
     }
 }

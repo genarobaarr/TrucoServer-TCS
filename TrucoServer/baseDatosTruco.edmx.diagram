@@ -4,7 +4,7 @@
   <edmx:Designer xmlns="http://schemas.microsoft.com/ado/2009/11/edmx">
     <!-- Diagram content (shape and connector positions) -->
     <edmx:Diagrams>
-      <Diagram DiagramId="fba58a03636e4655b58c87c857a77055" Name="Diagram1" ZoomLevel="98">
+      <Diagram DiagramId="fba58a03636e4655b58c87c857a77055" Name="Diagram1" ZoomLevel="57">
         <EntityTypeShape EntityType="baseDatosTrucoModel.Ban" Width="1.5" PointX="0.625" PointY="2.5" IsExpanded="true" />
         <EntityTypeShape EntityType="baseDatosTrucoModel.BannedWord" Width="1.5" PointX="0.625" PointY="0.5" IsExpanded="true" />
         <EntityTypeShape EntityType="baseDatosTrucoModel.Friendship" Width="1.5" PointX="0.5" PointY="6.5" IsExpanded="true" />
@@ -31,6 +31,15 @@
         <AssociationConnector Association="baseDatosTrucoModel.FK_MatchPlayer_Match" ManuallyRouted="false" />
         <AssociationConnector Association="baseDatosTrucoModel.FK_MatchPlayer_User" ManuallyRouted="false" />
         <AssociationConnector Association="baseDatosTrucoModel.FK_UserProfile_User" ManuallyRouted="false" />
+        <EntityTypeShape EntityType="baseDatosTrucoModel.TournamentBrackets" Width="1.5" PointX="11.375" PointY="4.875" />
+        <EntityTypeShape EntityType="baseDatosTrucoModel.TournamentParticipants" Width="1.5" PointX="8.25" PointY="8.75" />
+        <EntityTypeShape EntityType="baseDatosTrucoModel.Tournaments" Width="1.5" PointX="11.375" PointY="8.875" />
+        <AssociationConnector Association="baseDatosTrucoModel.FK_TournamentBrackets_Player1" />
+        <AssociationConnector Association="baseDatosTrucoModel.FK_TournamentBrackets_Player2" />
+        <AssociationConnector Association="baseDatosTrucoModel.FK_TournamentBrackets_Tournament" />
+        <AssociationConnector Association="baseDatosTrucoModel.FK_TournamentBrackets_Winner" />
+        <AssociationConnector Association="baseDatosTrucoModel.FK_TournamentParticipants_Tournament" />
+        <AssociationConnector Association="baseDatosTrucoModel.FK_TournamentParticipants_User" />
       </Diagram>
     </edmx:Diagrams>
   </edmx:Designer>

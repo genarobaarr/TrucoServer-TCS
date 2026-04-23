@@ -24,6 +24,10 @@ namespace TrucoServer
             this.Lobby = new HashSet<Lobby>();
             this.LobbyMember = new HashSet<LobbyMember>();
             this.MatchPlayer = new HashSet<MatchPlayer>();
+            this.TournamentBrackets = new HashSet<TournamentBrackets>();
+            this.TournamentBrackets1 = new HashSet<TournamentBrackets>();
+            this.TournamentBrackets2 = new HashSet<TournamentBrackets>();
+            this.TournamentParticipants = new HashSet<TournamentParticipants>();
         }
     
         public int userID { get; set; }
@@ -49,5 +53,13 @@ namespace TrucoServer
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
         public virtual ICollection<MatchPlayer> MatchPlayer { get; set; }
         public virtual UserProfile UserProfile { get; set; }
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
+        public virtual ICollection<TournamentBrackets> TournamentBrackets { get; set; }
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
+        public virtual ICollection<TournamentBrackets> TournamentBrackets1 { get; set; }
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
+        public virtual ICollection<TournamentBrackets> TournamentBrackets2 { get; set; }
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
+        public virtual ICollection<TournamentParticipants> TournamentParticipants { get; set; }
     }
 }
