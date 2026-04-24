@@ -179,6 +179,15 @@
     <Compile Include="Services\TrucoFriendServiceImplementation.cs" />
     <Compile Include="Services\TrucoMatchServiceImplementation.cs" />
     <Compile Include="Services\TrucoUserServiceImplementation.cs" />
+    <Compile Include="TournamentBrackets.cs">
+      <DependentUpon>baseDatosTruco.tt</DependentUpon>
+    </Compile>
+    <Compile Include="TournamentParticipants.cs">
+      <DependentUpon>baseDatosTruco.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Tournaments.cs">
+      <DependentUpon>baseDatosTruco.tt</DependentUpon>
+    </Compile>
     <Compile Include="Utilities\BanService.cs" />
     <Compile Include="Utilities\BruteForceProtector.cs" />
     <Compile Include="Utilities\ConfigurationFileWrapper.cs" />
