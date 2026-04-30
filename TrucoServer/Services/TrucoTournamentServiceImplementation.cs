@@ -11,25 +11,32 @@ namespace TrucoServer.Services
     [ServiceBehavior(ConcurrencyMode = ConcurrencyMode.Multiple, InstanceContextMode = InstanceContextMode.Single)]
     public class TrucoTournamentServiceImplementation : ITrucoTournamentService
     {
-        private static readonly Dictionary<int, List<ITrucoTournamentCallback>> tournamentSubscribers =
-            new Dictionary<int, List<ITrucoTournamentCallback>>();
+        private baseDatosTrucoEntities databaseContext;
+        private static readonly Dictionary<int, List<ITrucoTournamentCallback>> tournamentSubscribers = new Dictionary<int, List<ITrucoTournamentCallback>>();
+
+        public TrucoTournamentServiceImplementation()
+        {
+            this.databaseContext = new baseDatosTrucoEntities();
+        }
+
+        public TrucoTournamentServiceImplementation(baseDatosTrucoEntities injectedContext)
+        {
+            this.databaseContext = injectedContext;
+        }
 
         public List<TournamentDTO> GetAvailableTournaments()
         {
             try
             {
-                using (var context = new baseDatosTrucoEntities())
-                {
-                    return context.Tournaments
-                        .Where(t => t.Status == "Waiting")
-                        .Select(t => new TournamentDTO
-                        {
-                            Id = t.Id,
-                            Name = t.Name,
-                            Capacity = t.Capacity,
-                            Status = t.Status
-                        }).ToList();
-                }
+                return this.databaseContext.Tournaments
+                    .Where(t => t.Status == "Waiting")
+                    .Select(t => new TournamentDTO
+                    {
+                        Id = t.Id,
+                        Name = t.Name,
+                        Capacity = t.Capacity,
+                        Status = t.Status
+                    }).ToList();
             }
             catch (Exception ex)
             {
