@@ -47,54 +47,6 @@ namespace TrucoServer.Tests.ServicesTests
         }
 
         [TestMethod]
-        public void GetAvailableTournaments_ReturnsOnlyWaitingStatus()
-        {
-            List<Tournaments> fakeTournaments = new List<Tournaments>
-            {
-                new Tournaments { Id = 1, Name = "Torneo A", Status = "Waiting", Capacity = 8 },
-                new Tournaments { Id = 2, Name = "Torneo B", Status = "InProgress", Capacity = 4 },
-                new Tournaments { Id = 3, Name = "Torneo C", Status = "Finished", Capacity = 8 }
-            };
-
-            mockTournamentsSet = SetupMockDbSet(fakeTournaments);
-            mockContainer.Setup(c => c.Tournaments).Returns(mockTournamentsSet.Object);
-
-            List<TournamentDTO> result = null;
-            try
-            {
-                result = tournamentService.GetAvailableTournaments();
-            }
-            catch (Exception ex)
-            {
-                Assert.Fail("Se lanzó una excepción inesperada: " + ex.Message);
-            }
-
-            Assert.IsNotNull(result);
-            Assert.AreEqual(1, result.Count);
-            Assert.AreEqual("Torneo A", result[0].Name);
-        }
-
-        [TestMethod]
-        public void GetAvailableTournaments_DatabaseError_ThrowsFaultException()
-        {
-            mockContainer.Setup(c => c.Tournaments).Throws(new Exception("Database connection lost"));
-
-            try
-            {
-                tournamentService.GetAvailableTournaments();
-                Assert.Fail("Se esperaba una FaultException.");
-            }
-            catch (FaultException<CustomFault> fault)
-            {
-                Assert.IsNotNull(fault);
-            }
-            catch (Exception ex)
-            {
-                Assert.Fail("Se esperaba FaultException<CustomFault>, pero se recibió: " + ex.GetType().Name);
-            }
-        }
-
-        [TestMethod]
         public void GetTournamentTree_ReturnsOrderedBrackets()
         {
             List<TournamentBrackets> fakeBrackets = new List<TournamentBrackets>
@@ -108,6 +60,7 @@ namespace TrucoServer.Tests.ServicesTests
             mockContainer.Setup(c => c.TournamentBrackets).Returns(mockBracketsSet.Object);
 
             List<BracketDTO> result = null;
+
             try
             {
                 result = tournamentService.GetTournamentTree(10);
@@ -140,6 +93,7 @@ namespace TrucoServer.Tests.ServicesTests
             mockContainer.Setup(c => c.TournamentBrackets).Returns(mockBracketsSet.Object);
 
             List<BracketDTO> result = null;
+
             try
             {
                 result = tournamentService.GetTournamentTree(99);
@@ -150,9 +104,59 @@ namespace TrucoServer.Tests.ServicesTests
             }
 
             Assert.IsNotNull(result);
+
             if (result != null)
             {
                 Assert.AreEqual(0, result.Count);
+            }
+        }
+
+        [TestMethod]
+        public void GetAvailableTournaments_ReturnsOnlyWaitingStatus()
+        {
+            List<Tournaments> fakeTournaments = new List<Tournaments>
+            {
+                new Tournaments { Id = 1, Name = "Torneo A", Status = "Waiting", Capacity = 8 },
+                new Tournaments { Id = 2, Name = "Torneo B", Status = "InProgress", Capacity = 4 },
+                new Tournaments { Id = 3, Name = "Torneo C", Status = "Finished", Capacity = 8 }
+            };
+
+            mockTournamentsSet = SetupMockDbSet(fakeTournaments);
+            mockContainer.Setup(c => c.Tournaments).Returns(mockTournamentsSet.Object);
+
+            List<TournamentDTO> result = null;
+
+            try
+            {
+                result = tournamentService.GetAvailableTournaments();
+            }
+            catch (Exception ex)
+            {
+                Assert.Fail("Se lanzó una excepción inesperada: " + ex.Message);
+            }
+
+            Assert.IsNotNull(result);
+            Assert.AreEqual(1, result.Count);
+            Assert.AreEqual("Torneo A", result[0].Name);
+        }
+
+        [TestMethod]
+        public void GetAvailableTournaments_DatabaseError_ThrowsFaultException()
+        {
+            mockContainer.Setup(c => c.Tournaments).Throws(new Exception("Database connection lost"));
+
+            try
+            {
+                tournamentService.GetAvailableTournaments();
+                Assert.Fail("Se esperaba una FaultException.");
+            }
+            catch (FaultException<CustomFault> fault)
+            {
+                Assert.IsNotNull(fault);
+            }
+            catch (Exception ex)
+            {
+                Assert.Fail("Se esperaba FaultException<CustomFault>, pero se recibió: " + ex.GetType().Name);
             }
         }
     }

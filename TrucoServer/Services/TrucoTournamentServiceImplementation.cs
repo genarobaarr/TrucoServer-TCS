@@ -41,7 +41,7 @@ namespace TrucoServer.Services
             catch (Exception ex)
             {
                 LogManager.LogError(ex, nameof(GetAvailableTournaments));
-                throw FaultFactory.CreateFault("Error", "Error al obtener torneos disponibles");
+                throw FaultFactory.CreateFault("Error", ex.Message);
             }
         }
 
@@ -49,92 +49,118 @@ namespace TrucoServer.Services
         {
             try
             {
-                ITrucoTournamentCallback callback = OperationContext.Current.GetCallbackChannel<ITrucoTournamentCallback>();
+                ITrucoTournamentCallback callback = null;
 
-                using (var context = new baseDatosTrucoEntities())
+                if (OperationContext.Current != null)
                 {
-                    var tournament = context.Tournaments.Find(tournamentId);
-                    if (tournament == null || tournament.Status != "Waiting")
-                    {
-                        return false;
-                    }
-
-                    if (tournament.TournamentParticipants.Any(p => p.UserId == userId))
-                    {
-                        return false;
-                    }
-
-                    int currentPosition = tournament.TournamentParticipants.Count();
-                    var participant = new TournamentParticipants
-                    {
-                        TournamentId = tournamentId,
-                        UserId = userId,
-                        SeedPosition = currentPosition
-                    };
-                    context.TournamentParticipants.Add(participant);
-                    context.SaveChanges();
-
-                    RegisterCallback(tournamentId, callback);
-
-                    NotifyPlayerJoined(tournamentId, context.User.Find(userId).username, tournament.TournamentParticipants.Count());
-
-                    if (tournament.TournamentParticipants.Count() == tournament.Capacity)
-                    {
-                        StartTournamentLogic(tournamentId, context);
-                    }
-
-                    return true;
+                    callback = OperationContext.Current.GetCallbackChannel<ITrucoTournamentCallback>();
                 }
+
+                var tournament = this.databaseContext.Tournaments.Find(tournamentId);
+
+                if (tournament == null || tournament.Status != "Waiting")
+                {
+                    return false;
+                }
+
+                if (tournament.TournamentParticipants.Any(p => p.UserId == userId))
+                {
+                    return false;
+                }
+
+                int currentPosition = tournament.TournamentParticipants.Count();
+                var participant = new TournamentParticipants
+                {
+                    TournamentId = tournamentId,
+                    UserId = userId,
+                    SeedPosition = currentPosition
+                };
+
+                this.databaseContext.TournamentParticipants.Add(participant);
+                this.databaseContext.SaveChanges();
+
+                if (callback != null)
+                {
+                    this.RegisterCallback(tournamentId, callback);
+                }
+
+                var user = this.databaseContext.User.Find(userId);
+                string username = "Unknown";
+
+                if (user != null)
+                {
+                    username = user.username;
+                }
+
+                this.NotifyPlayerJoined(tournamentId, username, tournament.TournamentParticipants.Count());
+
+                if (tournament.TournamentParticipants.Count() == tournament.Capacity)
+                {
+                    this.StartTournamentLogic(tournamentId);
+                }
+
+                return true;
             }
             catch (Exception ex)
             {
                 LogManager.LogError(ex, nameof(SubscribeToTournament));
-                throw FaultFactory.CreateFault("Error", "Error al suscribirse a torneo");
+                throw FaultFactory.CreateFault("Error", ex.Message);
             }
         }
 
-        private void StartTournamentLogic(int tournamentId, baseDatosTrucoEntities context)
+        private void StartTournamentLogic(int tournamentId)
         {
-            var tournament = context.Tournaments.Find(tournamentId);
-            tournament.Status = "InProgress";
-
-            var players = tournament.TournamentParticipants.OrderBy(x => Guid.NewGuid()).ToList();
-
-            int numMatches = tournament.Capacity - 1;
-            int matchesInFirstRound = tournament.Capacity / 2;
-
-            for (int i = 0; i < matchesInFirstRound; i++)
+            try
             {
-                var bracket = new TournamentBrackets
-                {
-                    TournamentId = tournamentId,
-                    Round = 1,
-                    Position = i,
-                    Player1Id = players[i * 2].UserId,
-                    Player2Id = players[(i * 2) + 1].UserId
-                };
-                context.TournamentBrackets.Add(bracket);
-            }
+                var tournament = this.databaseContext.Tournaments.Find(tournamentId);
 
-            for (int i = matchesInFirstRound; i < numMatches; i++)
+                if (tournament != null)
+                {
+                    tournament.Status = "InProgress";
+
+                    var players = tournament.TournamentParticipants.OrderBy(x => Guid.NewGuid()).ToList();
+
+                    int numMatches = tournament.Capacity - 1;
+                    int matchesInFirstRound = tournament.Capacity / 2;
+
+                    for (int i = 0; i < matchesInFirstRound; i++)
+                    {
+                        var bracket = new TournamentBrackets
+                        {
+                            TournamentId = tournamentId,
+                            Round = 1,
+                            Position = i,
+                            Player1Id = players[i * 2].UserId,
+                            Player2Id = players[(i * 2) + 1].UserId
+                        };
+                        this.databaseContext.TournamentBrackets.Add(bracket);
+                    }
+
+                    for (int i = matchesInFirstRound; i < numMatches; i++)
+                    {
+                        this.databaseContext.TournamentBrackets.Add(new TournamentBrackets
+                        {
+                            TournamentId = tournamentId,
+                            Round = (i < matchesInFirstRound + (matchesInFirstRound / 2)) ? 2 : 3,
+                            Position = i
+                        });
+                    }
+
+                    this.databaseContext.SaveChanges();
+                    this.NotifyTournamentStarted(tournamentId, this.GetTournamentTree(tournamentId));
+                }
+            }
+            catch (Exception ex)
             {
-                context.TournamentBrackets.Add(new TournamentBrackets
-                {
-                    TournamentId = tournamentId,
-                    Round = (i < matchesInFirstRound + (matchesInFirstRound / 2)) ? 2 : 3,
-                    Position = i
-                });
+                LogManager.LogError(ex, nameof(StartTournamentLogic));
             }
-
-            context.SaveChanges();
-            NotifyTournamentStarted(tournamentId, GetTournamentTree(tournamentId));
         }
 
         public List<BracketDTO> GetTournamentTree(int tournamentId)
         {
-            using (var context = new baseDatosTrucoEntities())
+            try
             {
-                return context.TournamentBrackets
+                return this.databaseContext.TournamentBrackets
                     .Where(b => b.TournamentId == tournamentId)
                     .OrderBy(b => b.Round).ThenBy(b => b.Position)
                     .Select(b => new BracketDTO
@@ -148,13 +174,16 @@ namespace TrucoServer.Services
                         MatchId = b.MatchId
                     }).ToList();
             }
+            catch (Exception ex)
+            {
+                LogManager.LogError(ex, nameof(GetTournamentTree));
+                throw FaultFactory.CreateFault("Error", ex.Message);
+            }
         }
 
-        #region Helpers de Callbacks
         private void RegisterCallback(int tournamentId, ITrucoTournamentCallback callback)
         {
             if (!tournamentSubscribers.ContainsKey(tournamentId))
-
             {
                 tournamentSubscribers[tournamentId] = new List<ITrucoTournamentCallback>();
             }
@@ -171,13 +200,13 @@ namespace TrucoServer.Services
             {
                 foreach (var cb in tournamentSubscribers[tournamentId])
                 {
-                    try 
-                    { 
-                        cb.OnPlayerJoined(username, count); 
-                    } 
-                    catch 
-                    { 
-                        /* Clean broken channels */ 
+                    try
+                    {
+                        cb.OnPlayerJoined(username, count);
+                    }
+                    catch
+                    {
+                        // Ignorar canales desconectados para no bloquear el bucle
                     }
                 }
             }
@@ -189,16 +218,16 @@ namespace TrucoServer.Services
             {
                 foreach (var cb in tournamentSubscribers[tournamentId])
                 {
-                    try 
-                    { 
-                        cb.OnTournamentStarted(tree); 
+                    try
+                    {
+                        cb.OnTournamentStarted(tree);
                     }
-                    catch 
-                    { 
+                    catch
+                    {
+                        // Ignorar canales desconectados para no bloquear el bucle
                     }
                 }
             }
         }
-        #endregion
     }
 }
