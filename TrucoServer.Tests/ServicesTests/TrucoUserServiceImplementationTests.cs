@@ -126,9 +126,9 @@ namespace TrucoServer.Tests.ServicesTests
         {
             var data = new List<User>
             {
-                new User 
+                new User
                 {
-                    email = "exist@gmail.com" 
+                    email = "exist@gmail.com"
                 }
             }.AsQueryable();
 
@@ -170,7 +170,7 @@ namespace TrucoServer.Tests.ServicesTests
         [TestMethod]
         public void TestUpdateUserAvatarAsyncReturnsFalseForInvalidUsername()
         {
-            var result = service.UpdateUserAvatarAsync(null, "avatar_aaa_default").Result;
+            bool result = service.UpdateUserAvatarAsync(null, "avatar_aaa_default");
             Assert.IsFalse(result);
         }
 
@@ -180,7 +180,7 @@ namespace TrucoServer.Tests.ServicesTests
             mockProfile.Setup(p => p.ProcessAvatarUpdate(It.IsAny<string>(), It.IsAny<string>()))
                         .Throws(new Exception("Fail"));
 
-            var result = service.UpdateUserAvatarAsync("User", "avatar_aaa_default").Result;
+            bool result = service.UpdateUserAvatarAsync("User", "avatar_aaa_default");
             Assert.IsFalse(result);
         }
 
@@ -188,7 +188,7 @@ namespace TrucoServer.Tests.ServicesTests
         public void TestUpdateUserAvatarAsyncReturnsTrueOnSuccess()
         {
             mockProfile.Setup(p => p.ProcessAvatarUpdate("User", "avatar_aaa_default")).Returns(true);
-            var result = service.UpdateUserAvatarAsync("User", "avatar_aaa_default").Result;
+            bool result = service.UpdateUserAvatarAsync("User", "avatar_aaa_default");
             Assert.IsTrue(result);
         }
 
@@ -283,8 +283,8 @@ namespace TrucoServer.Tests.ServicesTests
         {
             var userList = new List<User>
             {
-                new User 
-                { 
+                new User
+                {
                     username = "User"
                 }
             };
@@ -314,9 +314,9 @@ namespace TrucoServer.Tests.ServicesTests
         {
             var data = new List<User>
             {
-                new User 
-                { 
-                    email = "found@gmail.com" 
+                new User
+                {
+                    email = "found@gmail.com"
                 }
             }.AsQueryable();
 
@@ -352,7 +352,7 @@ namespace TrucoServer.Tests.ServicesTests
         [TestMethod]
         public void TestGetUserProfileByEmailAsyncReturnsNullForInvalidEmail()
         {
-            var result = service.GetUserProfileByEmailAsync("bad").Result;
+            UserProfileData result = service.GetUserProfileByEmailAsync("bad");
             Assert.IsNull(result);
         }
 
@@ -360,7 +360,7 @@ namespace TrucoServer.Tests.ServicesTests
         public void TestGetUserProfileByEmailAsyncReturnsNullOnException()
         {
             mockUserSet.As<IQueryable<User>>().Setup(m => m.Provider).Throws(new Exception("AsyncFail"));
-            var result = service.GetUserProfileByEmailAsync("valid@gmail.com").Result;
+            UserProfileData result = service.GetUserProfileByEmailAsync("valid@gmail.com");
             Assert.IsNull(result);
         }
 
@@ -377,8 +377,8 @@ namespace TrucoServer.Tests.ServicesTests
         {
             var list = new List<PlayerStatistics>
             {
-                new PlayerStatistics 
-                { 
+                new PlayerStatistics
+                {
                     PlayerName = "Angel"
                 }
             };
@@ -408,9 +408,9 @@ namespace TrucoServer.Tests.ServicesTests
         {
             var matches = new List<MatchScore>
             {
-                new MatchScore 
-                { 
-                    MatchID = "1" 
+                new MatchScore
+                {
+                    MatchID = "1"
                 }
             };
 

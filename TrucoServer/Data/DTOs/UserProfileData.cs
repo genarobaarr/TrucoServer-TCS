@@ -1,5 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Runtime.Serialization;
+﻿using System.Runtime.Serialization;
 
 namespace TrucoServer.Data.DTOs
 {
@@ -7,10 +6,12 @@ namespace TrucoServer.Data.DTOs
     public class UserProfileData
     {
         [DataMember]
+        public int PlayerId { get; set; }
+        [DataMember]
         public string Username { get; set; }
         [DataMember]
         public string Email { get; set; }
-        [DataMember] 
+        [DataMember]
         public string AvatarId { get; set; }
         [DataMember]
         public int NameChangeCount { get; set; }

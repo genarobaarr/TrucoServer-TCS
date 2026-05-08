@@ -1,23 +1,24 @@
 ﻿using System.Collections.Generic;
 using System.ServiceModel;
-using System.Threading.Tasks;
 using TrucoServer.Contracts;
 using TrucoServer.Data.DTOs;
 
 namespace TrucoServer.Services
 {
     [ServiceBehavior(InstanceContextMode = InstanceContextMode.Single, ConcurrencyMode = ConcurrencyMode.Multiple)]
-    public partial class TrucoServer : ITrucoUserService, ITrucoFriendService, ITrucoMatchService
+    public partial class TrucoServer : ITrucoUserService, ITrucoFriendService, ITrucoMatchService, ITrucoTournamentService
     {
         private readonly ITrucoUserService userService;
         private readonly ITrucoFriendService friendService;
         private readonly ITrucoMatchService matchService;
+        private readonly ITrucoTournamentService tournamentService;
 
         public TrucoServer()
         {
             userService = new TrucoUserServiceImplementation();
             friendService = new TrucoFriendServiceImplementation();
             matchService = new TrucoMatchServiceImplementation();
+            tournamentService = new TrucoTournamentServiceImplementation();
         }
 
 
@@ -47,7 +48,7 @@ namespace TrucoServer.Services
             return userService.GetUserProfile(username);
         }
 
-        public Task<UserProfileData> GetUserProfileByEmailAsync(string email)
+        public UserProfileData GetUserProfileByEmailAsync(string email)
         {
             return userService.GetUserProfileByEmailAsync(email);
         }
@@ -57,7 +58,7 @@ namespace TrucoServer.Services
             return userService.SaveUserProfile(profile);
         }
 
-        public Task<bool> UpdateUserAvatarAsync(string username, string newAvatarId)
+        public bool UpdateUserAvatarAsync(string username, string newAvatarId)
         {
             return userService.UpdateUserAvatarAsync(username, newAvatarId);
         }
@@ -224,6 +225,23 @@ namespace TrucoServer.Services
         public BannedWordList GetBannedWords()
         {
             return matchService.GetBannedWords();
+        }
+
+
+
+        public List<TournamentDTO> GetAvailableTournaments()
+        {
+            return tournamentService.GetAvailableTournaments();
+        }
+
+        public bool SubscribeToTournament(int tournamentId, int userId)
+        {
+            return tournamentService.SubscribeToTournament(tournamentId, userId);
+        }
+
+        public List<BracketDTO> GetTournamentTree(int tournamentId)
+        {
+            return tournamentService.GetTournamentTree(tournamentId);
         }
     }
 }

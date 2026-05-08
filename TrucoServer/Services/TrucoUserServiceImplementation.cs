@@ -11,7 +11,6 @@ using System.Linq;
 using System.Net;
 using System.Net.Mail;
 using System.ServiceModel;
-using System.Threading.Tasks;
 using TrucoServer.Contracts;
 using TrucoServer.Data.DTOs;
 using TrucoServer.Helpers.Authentication;
@@ -65,7 +64,6 @@ namespace TrucoServer.Services
             var mapper = new UserMapper();
             var ranking = new RankingService();
             var history = new MatchHistoryService();
-
             var verifySvc = new VerificationService(authHelper, emailSvc);
             var banSvc = new BanService(this.context);
 
@@ -113,7 +111,6 @@ namespace TrucoServer.Services
             this.userMapper = dependencies.UserMapper;
             this.rankingService = dependencies.RankingService;
             this.matchHistoryService = dependencies.MatchHistoryService;
-
             this.banService = dependencies.BanService ?? new BanService(context);
         }
 
@@ -130,20 +127,17 @@ namespace TrucoServer.Services
             try
             {
                 LanguageManager.SetLanguage(languageCode);
-
                 banService.ValidateBanStatus(username);
-
                 authenticationHelper.ValidateBruteForceStatus(username);
 
                 User user = authenticationHelper.AuthenticateUser(username, password);
-               
+
                 if (user == null)
                 {
                     return false;
                 }
 
                 sessionManager.HandleExistingSession(user.username);
-
                 sessionManager.RegisterSession(user.username);
                 emailSender.SendLoginEmailAsync(user);
                 BruteForceProtector.RegisterSuccess(username);
@@ -157,13 +151,11 @@ namespace TrucoServer.Services
             catch (InvalidOperationException ex) when (ex.Source.Contains("System.ServiceModel"))
             {
                 ServerException.HandleException(ex, nameof(Login));
-               
                 return false;
             }
             catch (Exception ex)
             {
                 ServerException.HandleException(ex, nameof(Login));
-               
                 return false;
             }
         }
@@ -194,9 +186,7 @@ namespace TrucoServer.Services
                 };
 
                 context.User.Add(newUser);
-
                 context.SaveChanges();
-
                 profileUpdater.CreateAndSaveDefaultProfile(newUser.userID);
 
                 return true;
@@ -204,25 +194,21 @@ namespace TrucoServer.Services
             catch (DbUpdateException ex)
             {
                 ServerException.HandleException(ex, nameof(Register));
-               
                 return false;
             }
             catch (SqlException ex)
             {
                 ServerException.HandleException(ex, nameof(Register));
-               
                 return false;
             }
             catch (InvalidOperationException ex)
             {
                 ServerException.HandleException(ex, nameof(Register));
-               
                 return false;
             }
             catch (Exception ex)
             {
                 ServerException.HandleException(ex, nameof(Register));
-               
                 return false;
             }
         }
@@ -263,55 +249,47 @@ namespace TrucoServer.Services
                 };
 
                 profileUpdater.UpdateProfileDetails(user, updateOptions);
-
                 context.SaveChanges();
-              
+
                 return true;
             }
             catch (JsonSerializationException ex)
             {
                 ServerException.HandleException(ex, $"{nameof(SaveUserProfile)} - JSON Serialization Error");
-              
                 return false;
             }
             catch (DbUpdateException ex)
             {
                 ServerException.HandleException(ex, nameof(SaveUserProfile));
-            
                 return false;
             }
             catch (SqlException ex)
             {
                 ServerException.HandleException(ex, nameof(SaveUserProfile));
-             
                 return false;
             }
             catch (InvalidOperationException ex)
             {
                 ServerException.HandleException(ex, nameof(SaveUserProfile));
-             
                 return false;
             }
             catch (Exception ex)
             {
                 ServerException.HandleException(ex, nameof(SaveUserProfile));
-               
                 return false;
             }
         }
 
-        public Task<bool> UpdateUserAvatarAsync(string username, string newAvatarId)
+        public bool UpdateUserAvatarAsync(string username, string newAvatarId)
         {
             if (!ServerValidator.IsUsernameValid(username) || string.IsNullOrWhiteSpace(newAvatarId))
             {
-                return Task.FromResult(false);
+                return false;
             }
 
             try
             {
-                bool result = profileUpdater.ProcessAvatarUpdate(username, newAvatarId);
-               
-                return Task.FromResult(result);
+                return profileUpdater.ProcessAvatarUpdate(username, newAvatarId);
             }
             catch (DbUpdateException ex)
             {
@@ -326,7 +304,37 @@ namespace TrucoServer.Services
                 ServerException.HandleException(ex, nameof(UpdateUserAvatarAsync));
             }
 
-            return Task.FromResult(false);
+            return false;
+        }
+
+        public UserProfileData GetUserProfileByEmailAsync(string email)
+        {
+            if (!ServerValidator.IsEmailValid(email))
+            {
+                return null;
+            }
+
+            try
+            {
+                var user = context.User.Include(u => u.UserProfile).FirstOrDefault(u => u.email == email);
+
+                if (user == null)
+                {
+                    return null;
+                }
+
+                return userMapper.MapUserToProfileData(user);
+            }
+            catch (SqlException ex)
+            {
+                ServerException.HandleException(ex, nameof(GetUserProfileByEmailAsync));
+                return null;
+            }
+            catch (Exception ex)
+            {
+                ServerException.HandleException(ex, nameof(GetUserProfileByEmailAsync));
+                return null;
+            }
         }
 
         public bool PasswordChange(string email, string newPassword, string languageCode)
@@ -515,49 +523,16 @@ namespace TrucoServer.Services
             catch (SqlException ex)
             {
                 ServerException.HandleException(ex, nameof(GetUserProfile));
-            
                 return null;
             }
             catch (DataException ex)
             {
                 ServerException.HandleException(ex, nameof(GetUserProfile));
-             
                 return null;
             }
             catch (Exception ex)
             {
                 ServerException.HandleException(ex, nameof(GetUserProfile));
-               
-                return null;
-            }
-        }
-
-        public async Task<UserProfileData> GetUserProfileByEmailAsync(string email)
-        {
-            if (!ServerValidator.IsEmailValid(email))
-            {
-                return null;
-            }
-
-            try
-            {
-                var user = await context.User.Include(u => u.UserProfile).FirstOrDefaultAsync(u => u.email == email);
-
-                if (user == null)
-                {
-                    return null;
-                }
-
-                return userMapper.MapUserToProfileData(user);
-            }
-            catch (SqlException ex)
-            {
-                ServerException.HandleException(ex, nameof(GetUserProfileByEmailAsync));
-                return null;
-            }
-            catch (Exception ex)
-            {
-                ServerException.HandleException(ex, nameof(GetUserProfileByEmailAsync));
                 return null;
             }
         }
@@ -568,7 +543,6 @@ namespace TrucoServer.Services
             {
                 return rankingService.GetGlobalRanking();
             }
-
             catch (FaultException<CustomFault>)
             {
                 throw;
@@ -591,7 +565,6 @@ namespace TrucoServer.Services
             {
                 return matchHistoryService.GetLastMatches(username);
             }
-
             catch (FaultException<CustomFault>)
             {
                 throw;
@@ -626,7 +599,6 @@ namespace TrucoServer.Services
             try
             {
                 string formattedLog = $"[CLIENT-ERROR] User: {clientUsername ?? "Anonymous"} | Msg: {errorMessage}";
-
                 LogManager.LogWarn($"{formattedLog} | Stack: {stackTrace}", "ClientReport");
             }
             catch (FormatException ex)

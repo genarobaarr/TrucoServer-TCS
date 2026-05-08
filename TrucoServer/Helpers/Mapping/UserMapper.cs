@@ -26,6 +26,7 @@ namespace TrucoServer.Helpers.Mapping
 
             return new UserProfileData
             {
+                PlayerId = user.userID,
                 Username = user.username,
                 Email = user.email,
                 AvatarId = user.UserProfile?.avatarID ?? DEFAULT_AVATAR_ID,

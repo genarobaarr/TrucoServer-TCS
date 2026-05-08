@@ -202,11 +202,10 @@ namespace TrucoServer.Services
                 {
                     try
                     {
-                        cb.OnPlayerJoined(username, count);
+                        cb.OnTournamentPlayerJoined(username, count); // antes: OnPlayerJoined
                     }
                     catch
                     {
-                        // Ignorar canales desconectados para no bloquear el bucle
                     }
                 }
             }

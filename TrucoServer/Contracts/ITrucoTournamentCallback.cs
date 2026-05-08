@@ -8,7 +8,7 @@ namespace TrucoServer.Contracts
     public interface ITrucoTournamentCallback
     {
         [OperationContract(IsOneWay = true)]
-        void OnPlayerJoined(string username, int currentCapacity);
+        void OnTournamentPlayerJoined(string username, int currentCapacity);
 
         [OperationContract(IsOneWay = true)]
         void OnTournamentStarted(List<BracketDTO> initialBrackets);
