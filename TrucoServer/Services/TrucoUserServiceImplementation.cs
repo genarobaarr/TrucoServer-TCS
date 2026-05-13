@@ -399,36 +399,15 @@ namespace TrucoServer.Services
             {
                 return verificationService.RequestEmailVerification(email, languageCode);
             }
-            catch (SmtpFailedRecipientsException ex)
+            catch (FaultException)
             {
-                ServerException.HandleException(ex, nameof(RequestEmailVerification));
-            }
-            catch (SmtpException ex)
-            {
-                ServerException.HandleException(ex, nameof(RequestEmailVerification));
-            }
-            catch (WebException ex)
-            {
-                ServerException.HandleException(ex, nameof(RequestEmailVerification));
-            }
-            catch (CultureNotFoundException ex)
-            {
-                ServerException.HandleException(ex, nameof(RequestEmailVerification));
-            }
-            catch (FormatException ex)
-            {
-                ServerException.HandleException(ex, nameof(RequestEmailVerification));
-            }
-            catch (ArgumentNullException ex)
-            {
-                ServerException.HandleException(ex, nameof(RequestEmailVerification));
+                throw;
             }
             catch (Exception ex)
             {
                 ServerException.HandleException(ex, nameof(RequestEmailVerification));
+                return false;
             }
-
-            return false;
         }
 
         public bool ConfirmEmailVerification(string email, string code)
@@ -445,7 +424,10 @@ namespace TrucoServer.Services
 
             try
             {
-                return context.User.Any(u => u.username == username);
+                using (var ctx = new baseDatosTrucoEntities())
+                {
+                    return ctx.User.Any(u => u.username == username);
+                }
             }
             catch (SqlException ex)
             {
@@ -478,7 +460,10 @@ namespace TrucoServer.Services
 
             try
             {
-                return context.User.Any(u => u.email == email);
+                using (var ctx = new baseDatosTrucoEntities())
+                {
+                    return ctx.User.Any(u => u.email == email);
+                }
             }
             catch (SqlException ex)
             {
@@ -487,7 +472,7 @@ namespace TrucoServer.Services
             }
             catch (EntityException ex)
             {
-                ServerException.HandleException(ex, nameof(UsernameExists));
+                ServerException.HandleException(ex, nameof(EmailExists));
                 throw FaultFactory.CreateFault(ERROR_CODE_DB_ERROR_EMAIL, Lang.ExceptionTextDBErrorUsernameExists);
             }
             catch (TimeoutException ex)
