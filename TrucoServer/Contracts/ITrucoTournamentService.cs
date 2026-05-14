@@ -9,11 +9,19 @@ namespace TrucoServer.Contracts
     {
         [OperationContract]
         [FaultContract(typeof(CustomFault))]
-        List<TournamentDTO> GetAvailableTournaments();
+        string CreateTournament(int capacity, int hostUserId);
 
         [OperationContract]
         [FaultContract(typeof(CustomFault))]
-        bool SubscribeToTournament(int tournamentId, int userId);
+        bool JoinTournamentByCode(string code, int userId);
+
+        [OperationContract]
+        [FaultContract(typeof(CustomFault))]
+        bool StartTournament(string code, int hostUserId);
+
+        [OperationContract]
+        [FaultContract(typeof(CustomFault))]
+        bool LeaveTournament(string code, int userId);
 
         [OperationContract]
         [FaultContract(typeof(CustomFault))]

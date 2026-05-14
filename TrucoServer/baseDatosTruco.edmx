@@ -115,6 +115,8 @@
           <Property Name="Capacity" Type="int" Nullable="false" />
           <Property Name="Status" Type="nvarchar" MaxLength="50" Nullable="false" />
           <Property Name="CreationDate" Type="datetime" Nullable="false" />
+          <Property Name="Code" Type="nvarchar" MaxLength="10" />
+          <Property Name="HostUserId" Type="int" />
         </EntityType>
         <EntityType Name="User">
           <Key>
@@ -379,6 +381,18 @@
             </Dependent>
           </ReferentialConstraint>
         </Association>
+        <Association Name="FK_Tournaments_HostUser">
+          <End Role="User" Type="Self.User" Multiplicity="0..1" />
+          <End Role="Tournaments" Type="Self.Tournaments" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="User">
+              <PropertyRef Name="userID" />
+            </Principal>
+            <Dependent Role="Tournaments">
+              <PropertyRef Name="HostUserId" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
         <Association Name="FK_UserProfile_User">
           <End Role="User" Type="Self.User" Multiplicity="1" />
           <End Role="UserProfile" Type="Self.UserProfile" Multiplicity="0..1" />
@@ -477,6 +491,10 @@
           <AssociationSet Name="FK_TournamentParticipants_User" Association="Self.FK_TournamentParticipants_User">
             <End Role="User" EntitySet="User" />
             <End Role="TournamentParticipants" EntitySet="TournamentParticipants" />
+          </AssociationSet>
+          <AssociationSet Name="FK_Tournaments_HostUser" Association="Self.FK_Tournaments_HostUser">
+            <End Role="User" EntitySet="User" />
+            <End Role="Tournaments" EntitySet="Tournaments" />
           </AssociationSet>
           <AssociationSet Name="FK_UserProfile_User" Association="Self.FK_UserProfile_User">
             <End Role="User" EntitySet="User" />
@@ -604,6 +622,7 @@
           <NavigationProperty Name="TournamentBrackets1" Relationship="baseDatosTrucoModel.FK_TournamentBrackets_Player2" FromRole="User" ToRole="TournamentBrackets" />
           <NavigationProperty Name="TournamentBrackets2" Relationship="baseDatosTrucoModel.FK_TournamentBrackets_Winner" FromRole="User" ToRole="TournamentBrackets" />
           <NavigationProperty Name="TournamentParticipants" Relationship="baseDatosTrucoModel.FK_TournamentParticipants_User" FromRole="User" ToRole="TournamentParticipants" />
+          <NavigationProperty Name="Tournaments" Relationship="baseDatosTrucoModel.FK_Tournaments_HostUser" FromRole="User" ToRole="Tournaments" />
         </EntityType>
         <EntityType Name="UserProfile">
           <Key>
@@ -886,6 +905,10 @@
             <End Role="User" EntitySet="User" />
             <End Role="TournamentParticipants" EntitySet="TournamentParticipants" />
           </AssociationSet>
+          <AssociationSet Name="FK_Tournaments_HostUser" Association="baseDatosTrucoModel.FK_Tournaments_HostUser">
+            <End Role="User" EntitySet="User" />
+            <End Role="Tournaments" EntitySet="Tournaments" />
+          </AssociationSet>
         </EntityContainer>
         <EntityType Name="TournamentBrackets">
           <Key>
@@ -926,6 +949,9 @@
           <Property Name="CreationDate" Type="DateTime" Nullable="false" Precision="3" />
           <NavigationProperty Name="TournamentBrackets" Relationship="baseDatosTrucoModel.FK_TournamentBrackets_Tournament" FromRole="Tournaments" ToRole="TournamentBrackets" />
           <NavigationProperty Name="TournamentParticipants" Relationship="baseDatosTrucoModel.FK_TournamentParticipants_Tournament" FromRole="Tournaments" ToRole="TournamentParticipants" />
+          <Property Name="Code" Type="String" MaxLength="10" FixedLength="false" Unicode="true" />
+          <Property Name="HostUserId" Type="Int32" />
+          <NavigationProperty Name="User" Relationship="baseDatosTrucoModel.FK_Tournaments_HostUser" FromRole="Tournaments" ToRole="User" />
         </EntityType>
         <Association Name="FK_TournamentBrackets_Player1">
           <End Type="baseDatosTrucoModel.User" Role="User" Multiplicity="0..1" />
@@ -1000,6 +1026,18 @@
             </Principal>
             <Dependent Role="TournamentParticipants">
               <PropertyRef Name="UserId" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_Tournaments_HostUser">
+          <End Type="baseDatosTrucoModel.User" Role="User" Multiplicity="0..1" />
+          <End Type="baseDatosTrucoModel.Tournaments" Role="Tournaments" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="User">
+              <PropertyRef Name="userID" />
+            </Principal>
+            <Dependent Role="Tournaments">
+              <PropertyRef Name="HostUserId" />
             </Dependent>
           </ReferentialConstraint>
         </Association>
@@ -1153,6 +1191,8 @@
           <EntitySetMapping Name="Tournaments">
             <EntityTypeMapping TypeName="baseDatosTrucoModel.Tournaments">
               <MappingFragment StoreEntitySet="Tournaments">
+                <ScalarProperty Name="HostUserId" ColumnName="HostUserId" />
+                <ScalarProperty Name="Code" ColumnName="Code" />
                 <ScalarProperty Name="CreationDate" ColumnName="CreationDate" />
                 <ScalarProperty Name="Status" ColumnName="Status" />
                 <ScalarProperty Name="Capacity" ColumnName="Capacity" />

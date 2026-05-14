@@ -40,6 +40,7 @@
         <AssociationConnector Association="baseDatosTrucoModel.FK_TournamentBrackets_Winner" />
         <AssociationConnector Association="baseDatosTrucoModel.FK_TournamentParticipants_Tournament" />
         <AssociationConnector Association="baseDatosTrucoModel.FK_TournamentParticipants_User" />
+        <AssociationConnector Association="baseDatosTrucoModel.FK_Tournaments_HostUser" />
       </Diagram>
     </edmx:Diagrams>
   </edmx:Designer>

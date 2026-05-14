@@ -28,6 +28,7 @@ namespace TrucoServer
             this.TournamentBrackets1 = new HashSet<TournamentBrackets>();
             this.TournamentBrackets2 = new HashSet<TournamentBrackets>();
             this.TournamentParticipants = new HashSet<TournamentParticipants>();
+            this.Tournaments = new HashSet<Tournaments>();
         }
     
         public int userID { get; set; }
@@ -61,5 +62,7 @@ namespace TrucoServer
         public virtual ICollection<TournamentBrackets> TournamentBrackets2 { get; set; }
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
         public virtual ICollection<TournamentParticipants> TournamentParticipants { get; set; }
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
+        public virtual ICollection<Tournaments> Tournaments { get; set; }
     }
 }

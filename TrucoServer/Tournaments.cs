@@ -26,10 +26,13 @@ namespace TrucoServer
         public int Capacity { get; set; }
         public string Status { get; set; }
         public System.DateTime CreationDate { get; set; }
+        public string Code { get; set; }
+        public Nullable<int> HostUserId { get; set; }
     
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
         public virtual ICollection<TournamentBrackets> TournamentBrackets { get; set; }
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
         public virtual ICollection<TournamentParticipants> TournamentParticipants { get; set; }
+        public virtual User User { get; set; }
     }
 }

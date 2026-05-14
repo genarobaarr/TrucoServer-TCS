@@ -229,14 +229,24 @@ namespace TrucoServer.Services
 
 
 
-        public List<TournamentDTO> GetAvailableTournaments()
+        public string CreateTournament(int capacity, int hostUserId)
         {
-            return tournamentService.GetAvailableTournaments();
+            return tournamentService.CreateTournament(capacity, hostUserId);
         }
 
-        public bool SubscribeToTournament(int tournamentId, int userId)
+        public bool JoinTournamentByCode(string code, int userId)
         {
-            return tournamentService.SubscribeToTournament(tournamentId, userId);
+            return tournamentService.JoinTournamentByCode(code, userId);
+        }
+
+        public bool StartTournament(string code, int hostUserId)
+        {
+            return tournamentService.StartTournament(code, hostUserId);
+        }
+
+        public bool LeaveTournament(string code, int userId)
+        {
+            return tournamentService.LeaveTournament(code, userId);
         }
 
         public List<BracketDTO> GetTournamentTree(int tournamentId)

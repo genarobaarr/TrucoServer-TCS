@@ -11,7 +11,13 @@ namespace TrucoServer.Contracts
         void OnTournamentPlayerJoined(string username, int currentCapacity);
 
         [OperationContract(IsOneWay = true)]
+        void OnTournamentPlayerLeft(string username, int currentCapacity);
+
+        [OperationContract(IsOneWay = true)]
         void OnTournamentStarted(List<BracketDTO> initialBrackets);
+
+        [OperationContract(IsOneWay = true)]
+        void OnTournamentCancelled(string reason);
 
         [OperationContract(IsOneWay = true)]
         void OnBracketUpdated(BracketDTO updatedBracket);
