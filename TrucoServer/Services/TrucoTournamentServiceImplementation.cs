@@ -17,6 +17,7 @@ namespace TrucoServer.Services
         public TrucoTournamentServiceImplementation()
         {
             this.databaseContext = new baseDatosTrucoEntities();
+            EnsureWaitingTournamentExists();
         }
 
         public TrucoTournamentServiceImplementation(baseDatosTrucoEntities injectedContext)
@@ -148,6 +149,7 @@ namespace TrucoServer.Services
 
                     this.databaseContext.SaveChanges();
                     this.NotifyTournamentStarted(tournamentId, this.GetTournamentTree(tournamentId));
+                    EnsureWaitingTournamentExists();
                 }
             }
             catch (Exception ex)
@@ -181,6 +183,30 @@ namespace TrucoServer.Services
             }
         }
 
+        private void EnsureWaitingTournamentExists()
+        {
+            try
+            {
+                bool hasWaiting = this.databaseContext.Tournaments.Any(t => t.Status == "Waiting");
+
+                if (!hasWaiting)
+                {
+                    this.databaseContext.Tournaments.Add(new Tournaments
+                    {
+                        Name = "Torneo eliminatorio",
+                        Capacity = 4,
+                        Status = "Waiting",
+                        CreationDate = DateTime.Now
+                    });
+                    this.databaseContext.SaveChanges();
+                }
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError(ex, nameof(EnsureWaitingTournamentExists));
+            }
+        }
+
         private void RegisterCallback(int tournamentId, ITrucoTournamentCallback callback)
         {
             if (!tournamentSubscribers.ContainsKey(tournamentId))
@@ -202,7 +228,7 @@ namespace TrucoServer.Services
                 {
                     try
                     {
-                        cb.OnTournamentPlayerJoined(username, count); // antes: OnPlayerJoined
+                        cb.OnTournamentPlayerJoined(username, count);
                     }
                     catch
                     {
