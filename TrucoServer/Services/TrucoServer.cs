@@ -259,5 +259,10 @@ ITrucoTournamentService
         {
             tournamentService.ReportMatchResult(tournamentCode, matchCode, winnerUserId);
         }
+
+        public List<TournamentDTO> GetAvailableTournaments()
+        {
+            return tournamentService.GetAvailableTournaments();
+        }
     }
 }

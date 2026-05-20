@@ -30,5 +30,9 @@ namespace TrucoServer.Contracts
         [OperationContract]
         [FaultContract(typeof(CustomFault))]
         void ReportMatchResult(string tournamentCode, string matchCode, int winnerUserId);
+
+        [OperationContract]
+        [FaultContract(typeof(CustomFault))]
+        List<TournamentDTO> GetAvailableTournaments();
     }
 }

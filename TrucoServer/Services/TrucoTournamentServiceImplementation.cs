@@ -13,12 +13,23 @@ namespace TrucoServer.Services
     public class TrucoTournamentServiceImplementation : ITrucoTournamentService
     {
         private readonly IMatchCodeGenerator codeGenerator = new MatchCodeGenerator();
+        private readonly baseDatosTrucoEntities injectedContext;
 
         private static readonly Dictionary<string, Dictionary<int, ITrucoTournamentCallback>> tournamentCallbacks
             = new Dictionary<string, Dictionary<int, ITrucoTournamentCallback>>();
         private static readonly object stateLock = new object();
 
         public TrucoTournamentServiceImplementation() { }
+
+        public TrucoTournamentServiceImplementation(baseDatosTrucoEntities context)
+        {
+            injectedContext = context;
+        }
+
+        private baseDatosTrucoEntities CreateContext()
+        {
+            return injectedContext ?? new baseDatosTrucoEntities();
+        }
 
         public string CreateTournament(int capacity, int hostUserId)
         {
@@ -202,7 +213,7 @@ namespace TrucoServer.Services
         {
             try
             {
-                using (var ctx = new baseDatosTrucoEntities())
+                using (var ctx = CreateContext())
                 {
                     return ctx.TournamentBrackets
                         .Where(b => b.TournamentId == tournamentId)
@@ -222,6 +233,30 @@ namespace TrucoServer.Services
             catch (Exception ex)
             {
                 LogManager.LogError(ex, nameof(GetTournamentTree));
+                throw FaultFactory.CreateFault("Error", ex.Message);
+            }
+        }
+
+        public List<TournamentDTO> GetAvailableTournaments()
+        {
+            try
+            {
+                using (var ctx = CreateContext())
+                {
+                    return ctx.Tournaments
+                        .Where(t => t.Status == "Waiting")
+                        .Select(t => new TournamentDTO
+                        {
+                            Id = t.Id,
+                            Name = t.Name,
+                            Capacity = t.Capacity,
+                            Status = t.Status
+                        }).ToList();
+                }
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError(ex, nameof(GetAvailableTournaments));
                 throw FaultFactory.CreateFault("Error", ex.Message);
             }
         }
@@ -363,7 +398,8 @@ namespace TrucoServer.Services
                             Round = 1,
                             Position = i,
                             Player1Id = players[i * 2].UserId,
-                            Player2Id = players[(i * 2) + 1].UserId
+                            Player2Id = players[(i * 2) + 1].UserId,
+                            MatchId = codeGenerator.GenerateMatchCode()
                         };
                         ctx.TournamentBrackets.Add(bracket);
                     }
