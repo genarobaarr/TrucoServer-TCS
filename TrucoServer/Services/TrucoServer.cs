@@ -6,7 +6,8 @@ using TrucoServer.Data.DTOs;
 namespace TrucoServer.Services
 {
     [ServiceBehavior(InstanceContextMode = InstanceContextMode.Single, ConcurrencyMode = ConcurrencyMode.Multiple)]
-    public partial class TrucoServer : ITrucoUserService, ITrucoFriendService, ITrucoMatchService, ITrucoTournamentService
+    public partial class TrucoServer : ITrucoUserService, ITrucoFriendService, ITrucoMatchService,
+ITrucoTournamentService
     {
         private readonly ITrucoUserService userService;
         private readonly ITrucoFriendService friendService;
@@ -252,6 +253,11 @@ namespace TrucoServer.Services
         public List<BracketDTO> GetTournamentTree(int tournamentId)
         {
             return tournamentService.GetTournamentTree(tournamentId);
+        }
+
+        public void ReportMatchResult(string tournamentCode, string matchCode, int winnerUserId)
+        {
+            tournamentService.ReportMatchResult(tournamentCode, matchCode, winnerUserId);
         }
     }
 }

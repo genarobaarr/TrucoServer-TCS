@@ -184,7 +184,7 @@ namespace TrucoServer.Services
                         if (tournamentCallbacks.ContainsKey(code))
                         {
                             tournamentCallbacks[code].Remove(userId);
-                        }   
+                        }
                     }
 
                     NotifyPlayerLeft(code, username, tournament.TournamentParticipants.Count());
@@ -222,6 +222,99 @@ namespace TrucoServer.Services
             catch (Exception ex)
             {
                 LogManager.LogError(ex, nameof(GetTournamentTree));
+                throw FaultFactory.CreateFault("Error", ex.Message);
+            }
+        }
+
+        public void ReportMatchResult(string tournamentCode, string matchCode, int winnerUserId)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(tournamentCode) || string.IsNullOrWhiteSpace(matchCode)) return;
+
+                using (var ctx = new baseDatosTrucoEntities())
+                {
+                    var tournament = ctx.Tournaments.FirstOrDefault(t => t.Code == tournamentCode);
+                    if (tournament == null || tournament.Status != "InProgress") return;
+
+                    var bracket = ctx.TournamentBrackets
+                        .FirstOrDefault(b => b.TournamentId == tournament.Id && b.MatchId == matchCode);
+                    if (bracket == null || bracket.WinnerId.HasValue) return;
+                    if (bracket.Player1Id != winnerUserId && bracket.Player2Id != winnerUserId) return;
+
+                    int loserId = (bracket.Player1Id == winnerUserId)
+                        ? bracket.Player2Id.Value
+                        : bracket.Player1Id.Value;
+
+                    bracket.WinnerId = winnerUserId;
+
+                    var winnerUser = ctx.User.Find(winnerUserId);
+                    var updatedDTO = new BracketDTO
+                    {
+                        Id = bracket.Id,
+                        Round = bracket.Round,
+                        Position = bracket.Position,
+                        Player1Name = bracket.User1 != null ? bracket.User1.username : "TBD",
+                        Player2Name = bracket.User2 != null ? bracket.User2.username : "TBD",
+                        WinnerName = winnerUser != null ? winnerUser.username : null,
+                        MatchId = bracket.MatchId
+                    };
+
+                    int matchesInFirstRound = tournament.Capacity / 2;
+                    int roundStart = GetRoundStart(bracket.Round, matchesInFirstRound);
+                    int relativePos = bracket.Position - roundStart;
+                    int nextAbsolutePos = GetRoundStart(bracket.Round + 1, matchesInFirstRound) + (relativePos / 2);
+                    bool isPlayer1Next = (relativePos % 2 == 0);
+
+                    var nextBracket = ctx.TournamentBrackets
+                        .FirstOrDefault(b => b.TournamentId == tournament.Id && b.Position == nextAbsolutePos);
+
+                    string nextMatchCode = null;
+                    if (nextBracket != null)
+                    {
+                        if (isPlayer1Next) nextBracket.Player1Id = winnerUserId;
+                        else nextBracket.Player2Id = winnerUserId;
+
+                        if (nextBracket.Player1Id.HasValue && nextBracket.Player2Id.HasValue)
+                        {
+                            nextMatchCode = codeGenerator.GenerateMatchCode();
+                            nextBracket.MatchId = nextMatchCode;
+                        }
+                    }
+                    else
+                    {
+                        tournament.Status = "Completed";
+                    }
+
+                    ctx.SaveChanges();
+
+                    BroadcastWithCleanup(tournamentCode, cb => cb.OnBracketUpdated(updatedDTO));
+
+                    lock (stateLock)
+                    {
+                        if (tournamentCallbacks.ContainsKey(tournamentCode) &&
+                            tournamentCallbacks[tournamentCode].TryGetValue(loserId, out var loserCb))
+                        {
+                            try { loserCb.OnTournamentEliminated(); } catch { }
+                        }
+                    }
+
+                    if (nextMatchCode != null)
+                    {
+                        lock (stateLock)
+                        {
+                            if (tournamentCallbacks.ContainsKey(tournamentCode) &&
+                                tournamentCallbacks[tournamentCode].TryGetValue(winnerUserId, out var winnerCb))
+                            {
+                                try { winnerCb.OnAdvanceToFinal(nextMatchCode); } catch { }
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError(ex, nameof(ReportMatchResult));
                 throw FaultFactory.CreateFault("Error", ex.Message);
             }
         }
@@ -294,6 +387,18 @@ namespace TrucoServer.Services
             {
                 LogManager.LogError(ex, nameof(StartTournamentLogic));
             }
+        }
+
+        private static int GetRoundStart(int round, int matchesInFirstRound)
+        {
+            int start = 0;
+            int count = matchesInFirstRound;
+            for (int r = 1; r < round; r++)
+            {
+                start += count;
+                count /= 2;
+            }
+            return start;
         }
 
         private string GenerateUniqueCode(baseDatosTrucoEntities ctx)
