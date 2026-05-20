@@ -21,5 +21,11 @@ namespace TrucoServer.Contracts
 
         [OperationContract(IsOneWay = true)]
         void OnBracketUpdated(BracketDTO updatedBracket);
+
+        [OperationContract(IsOneWay = true)]
+        void OnTournamentEliminated();
+
+        [OperationContract(IsOneWay = true)]
+        void OnAdvanceToFinal(string matchCode);
     }
 }

@@ -26,5 +26,9 @@ namespace TrucoServer.Contracts
         [OperationContract]
         [FaultContract(typeof(CustomFault))]
         List<BracketDTO> GetTournamentTree(int tournamentId);
+
+        [OperationContract]
+        [FaultContract(typeof(CustomFault))]
+        void ReportMatchResult(string tournamentCode, string matchCode, int winnerUserId);
     }
 }

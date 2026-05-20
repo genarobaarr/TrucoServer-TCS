@@ -184,7 +184,7 @@ namespace TrucoServer.Services
                         if (tournamentCallbacks.ContainsKey(code))
                         {
                             tournamentCallbacks[code].Remove(userId);
-                        }
+                        }   
                     }
 
                     NotifyPlayerLeft(code, username, tournament.TournamentParticipants.Count());
