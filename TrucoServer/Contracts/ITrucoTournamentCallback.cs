@@ -26,6 +26,9 @@ namespace TrucoServer.Contracts
         void OnTournamentEliminated();
 
         [OperationContract(IsOneWay = true)]
-        void OnAdvanceToFinal(string matchCode);
+        void OnAdvanceToFinal(string matchCode, bool isPlayer1);
+
+        [OperationContract(IsOneWay = true)]
+        void OnTournamentChampion(string winnerUsername);
     }
 }

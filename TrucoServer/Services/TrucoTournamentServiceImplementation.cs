@@ -70,9 +70,7 @@ namespace TrucoServer.Services
                     {
                         tournamentCallbacks[code] = new Dictionary<int, ITrucoTournamentCallback>();
                         if (hostCallback != null)
-                        {
                             tournamentCallbacks[code][hostUserId] = hostCallback;
-                        }
                     }
 
                     return code;
@@ -118,13 +116,9 @@ namespace TrucoServer.Services
                     lock (stateLock)
                     {
                         if (!tournamentCallbacks.ContainsKey(code))
-                        {
                             tournamentCallbacks[code] = new Dictionary<int, ITrucoTournamentCallback>();
-                        }
                         if (joinerCallback != null)
-                        {
                             tournamentCallbacks[code][userId] = joinerCallback;
-                        }
                     }
 
                     NotifyPlayerJoined(code, username, newCount);
@@ -177,9 +171,7 @@ namespace TrucoServer.Services
                     if (tournament == null || tournament.Status != "Waiting") return false;
 
                     if (tournament.HostUserId == userId)
-                    {
                         return CancelTournamentInternal(ctx, tournament, "El host canceló el torneo");
-                    }
 
                     var participant = tournament.TournamentParticipants.FirstOrDefault(p => p.UserId == userId);
                     if (participant == null) return false;
@@ -193,9 +185,7 @@ namespace TrucoServer.Services
                     lock (stateLock)
                     {
                         if (tournamentCallbacks.ContainsKey(code))
-                        {
                             tournamentCallbacks[code].Remove(userId);
-                        }
                     }
 
                     NotifyPlayerLeft(code, username, tournament.TournamentParticipants.Count());
@@ -325,24 +315,40 @@ namespace TrucoServer.Services
 
                     BroadcastWithCleanup(tournamentCode, cb => cb.OnBracketUpdated(updatedDTO));
 
-                    lock (stateLock)
+                    if (nextMatchCode != null && nextBracket != null)
                     {
-                        if (tournamentCallbacks.ContainsKey(tournamentCode) &&
-                            tournamentCallbacks[tournamentCode].TryGetValue(loserId, out var loserCb))
+                        var p1User = ctx.User.Find(nextBracket.Player1Id);
+                        var p2User = ctx.User.Find(nextBracket.Player2Id);
+                        var nextBracketDTO = new BracketDTO
                         {
-                            try { loserCb.OnTournamentEliminated(); } catch { }
-                        }
+                            Id = nextBracket.Id,
+                            Round = nextBracket.Round,
+                            Position = nextBracket.Position,
+                            Player1Name = p1User != null ? p1User.username : "TBD",
+                            Player2Name = p2User != null ? p2User.username : "TBD",
+                            WinnerName = null,
+                            MatchId = nextMatchCode
+                        };
+                        BroadcastWithCleanup(tournamentCode, cb => cb.OnBracketUpdated(nextBracketDTO));
                     }
 
-                    if (nextMatchCode != null)
+                    lock (stateLock)
                     {
-                        lock (stateLock)
+                        if (!tournamentCallbacks.ContainsKey(tournamentCode)) return;
+
+                        if (tournamentCallbacks[tournamentCode].TryGetValue(loserId, out var loserCb))
+                            try { loserCb.OnTournamentEliminated(); } catch { }
+
+                        if (nextMatchCode != null)
                         {
-                            if (tournamentCallbacks.ContainsKey(tournamentCode) &&
-                                tournamentCallbacks[tournamentCode].TryGetValue(winnerUserId, out var winnerCb))
-                            {
-                                try { winnerCb.OnAdvanceToFinal(nextMatchCode); } catch { }
-                            }
+                            if (tournamentCallbacks[tournamentCode].TryGetValue(winnerUserId, out var winnerCb))
+                                try { winnerCb.OnAdvanceToFinal(nextMatchCode, isPlayer1Next); } catch { }
+                        }
+                        else if (tournament.Status == "Completed")
+                        {
+                            string winnerName = winnerUser != null ? winnerUser.username : "Unknown";
+                            if (tournamentCallbacks[tournamentCode].TryGetValue(winnerUserId, out var winnerCb))
+                                try { winnerCb.OnTournamentChampion(winnerName); } catch { }
                         }
                     }
                 }
@@ -354,15 +360,52 @@ namespace TrucoServer.Services
             }
         }
 
+        public void UpdateBracketMatchCode(string tournamentCode, string oldMatchCode, string newMatchCode)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(tournamentCode) || string.IsNullOrWhiteSpace(newMatchCode)) return;
+
+                using (var ctx = new baseDatosTrucoEntities())
+                {
+                    var tournament = ctx.Tournaments.FirstOrDefault(t => t.Code == tournamentCode);
+                    if (tournament == null) return;
+
+                    var bracket = ctx.TournamentBrackets
+                        .FirstOrDefault(b => b.TournamentId == tournament.Id && b.MatchId == oldMatchCode);
+                    if (bracket == null) return;
+
+                    bracket.MatchId = newMatchCode;
+                    ctx.SaveChanges();
+
+                    var updatedDTO = new BracketDTO
+                    {
+                        Id = bracket.Id,
+                        Round = bracket.Round,
+                        Position = bracket.Position,
+                        Player1Name = bracket.User1 != null ? bracket.User1.username : "TBD",
+                        Player2Name = bracket.User2 != null ? bracket.User2.username : "TBD",
+                        WinnerName = bracket.User != null ? bracket.User.username : null,
+                        MatchId = newMatchCode
+                    };
+
+                    BroadcastWithCleanup(tournamentCode, cb => cb.OnBracketUpdated(updatedDTO));
+                }
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError(ex, nameof(UpdateBracketMatchCode));
+            }
+        }
+
         private bool CancelTournamentInternal(baseDatosTrucoEntities ctx, Tournaments tournament, string reason)
         {
             string code = tournament.Code;
 
             var participants = tournament.TournamentParticipants.ToList();
             foreach (var p in participants)
-            {
                 ctx.TournamentParticipants.Remove(p);
-            }
+
             ctx.Tournaments.Remove(tournament);
             ctx.SaveChanges();
 
@@ -444,9 +487,7 @@ namespace TrucoServer.Services
                 string candidate = codeGenerator.GenerateMatchCode();
                 if (string.IsNullOrEmpty(candidate)) continue;
                 if (!ctx.Tournaments.Any(t => t.Code == candidate))
-                {
                     return candidate;
-                }
             }
             return string.Empty;
         }
@@ -465,24 +506,16 @@ namespace TrucoServer.Services
         }
 
         private void NotifyPlayerJoined(string code, string username, int count)
-        {
-            BroadcastWithCleanup(code, cb => cb.OnTournamentPlayerJoined(username, count));
-        }
+            => BroadcastWithCleanup(code, cb => cb.OnTournamentPlayerJoined(username, count));
 
         private void NotifyPlayerLeft(string code, string username, int count)
-        {
-            BroadcastWithCleanup(code, cb => cb.OnTournamentPlayerLeft(username, count));
-        }
+            => BroadcastWithCleanup(code, cb => cb.OnTournamentPlayerLeft(username, count));
 
         private void NotifyTournamentStarted(string code, List<BracketDTO> tree)
-        {
-            BroadcastWithCleanup(code, cb => cb.OnTournamentStarted(tree));
-        }
+            => BroadcastWithCleanup(code, cb => cb.OnTournamentStarted(tree));
 
         private void NotifyTournamentCancelled(string code, string reason)
-        {
-            BroadcastWithCleanup(code, cb => cb.OnTournamentCancelled(reason));
-        }
+            => BroadcastWithCleanup(code, cb => cb.OnTournamentCancelled(reason));
 
         private void BroadcastWithCleanup(string code, Action<ITrucoTournamentCallback> action)
         {
@@ -496,20 +529,12 @@ namespace TrucoServer.Services
             var dead = new List<int>();
             foreach (var entry in snapshot)
             {
-                try
-                {
-                    action(entry.Value);
-                }
-                catch
-                {
-                    dead.Add(entry.Key);
-                }
+                try { action(entry.Value); }
+                catch { dead.Add(entry.Key); }
             }
 
             foreach (int userId in dead)
-            {
                 HandleDeadCallback(code, userId);
-            }
         }
 
         private void HandleDeadCallback(string code, int userId)
@@ -519,9 +544,7 @@ namespace TrucoServer.Services
                 lock (stateLock)
                 {
                     if (tournamentCallbacks.ContainsKey(code))
-                    {
                         tournamentCallbacks[code].Remove(userId);
-                    }
                 }
 
                 using (var ctx = new baseDatosTrucoEntities())

@@ -34,5 +34,9 @@ namespace TrucoServer.Contracts
         [OperationContract]
         [FaultContract(typeof(CustomFault))]
         List<TournamentDTO> GetAvailableTournaments();
+
+        [OperationContract]
+        [FaultContract(typeof(CustomFault))]
+        void UpdateBracketMatchCode(string tournamentCode, string oldMatchCode, string newMatchCode);
     }
 }

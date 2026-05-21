@@ -264,5 +264,10 @@ ITrucoTournamentService
         {
             return tournamentService.GetAvailableTournaments();
         }
+
+        public void UpdateBracketMatchCode(string tournamentCode, string oldMatchCode, string newMatchCode)
+        {
+            tournamentService.UpdateBracketMatchCode(tournamentCode, oldMatchCode, newMatchCode);
+        }
     }
 }
