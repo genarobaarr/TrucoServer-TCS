@@ -213,9 +213,9 @@ namespace TrucoServer.Services
                             Id = b.Id,
                             Round = b.Round,
                             Position = b.Position,
-                            Player1Name = b.User1 != null ? b.User1.username : "TBD",
-                            Player2Name = b.User2 != null ? b.User2.username : "TBD",
-                            WinnerName = b.User != null ? b.User.username : null,
+                            Player1Name = b.User != null ? b.User.username : "TBD",
+                            Player2Name = b.User1 != null ? b.User1.username : "TBD",
+                            WinnerName = b.User2 != null ? b.User2.username : null,
                             MatchId = b.MatchId
                         }).ToList();
                 }
@@ -279,8 +279,8 @@ namespace TrucoServer.Services
                         Id = bracket.Id,
                         Round = bracket.Round,
                         Position = bracket.Position,
-                        Player1Name = bracket.User1 != null ? bracket.User1.username : "TBD",
-                        Player2Name = bracket.User2 != null ? bracket.User2.username : "TBD",
+                        Player1Name = bracket.User != null ? bracket.User.username : "TBD",
+                        Player2Name = bracket.User1 != null ? bracket.User1.username : "TBD",
                         WinnerName = winnerUser != null ? winnerUser.username : null,
                         MatchId = bracket.MatchId
                     };
@@ -360,6 +360,28 @@ namespace TrucoServer.Services
             }
         }
 
+        public List<string> GetTournamentParticipants(string code)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(code)) return new List<string>();
+                using (var ctx = CreateContext())
+                {
+                    var tournament = ctx.Tournaments.FirstOrDefault(t => t.Code == code);
+                    if (tournament == null) return new List<string>();
+                    return tournament.TournamentParticipants
+                        .Select(p => p.User != null ? p.User.username : null)
+                        .Where(u => u != null)
+                        .ToList();
+                }
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogError(ex, nameof(GetTournamentParticipants));
+                throw FaultFactory.CreateFault("Error", ex.Message);
+            }
+        }
+
         public void UpdateBracketMatchCode(string tournamentCode, string oldMatchCode, string newMatchCode)
         {
             try
@@ -383,9 +405,9 @@ namespace TrucoServer.Services
                         Id = bracket.Id,
                         Round = bracket.Round,
                         Position = bracket.Position,
-                        Player1Name = bracket.User1 != null ? bracket.User1.username : "TBD",
-                        Player2Name = bracket.User2 != null ? bracket.User2.username : "TBD",
-                        WinnerName = bracket.User != null ? bracket.User.username : null,
+                        Player1Name = bracket.User != null ? bracket.User.username : "TBD",
+                        Player2Name = bracket.User1 != null ? bracket.User1.username : "TBD",
+                        WinnerName = bracket.User2 != null ? bracket.User2.username : null,
                         MatchId = newMatchCode
                     };
 

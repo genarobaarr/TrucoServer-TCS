@@ -269,5 +269,10 @@ ITrucoTournamentService
         {
             tournamentService.UpdateBracketMatchCode(tournamentCode, oldMatchCode, newMatchCode);
         }
+
+        public List<string> GetTournamentParticipants(string code)
+        {
+            return tournamentService.GetTournamentParticipants(code);
+        }
     }
 }
